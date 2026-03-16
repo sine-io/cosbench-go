@@ -1,7 +1,7 @@
 # TODO (Phase 0)
 
 ## Environment
-- [ ] Install Go toolchain in this runtime (go command currently missing)
+- [x] Go toolchain available via `/snap/bin/go` (note: `go` may not be on PATH in this runtime)
 
 ## Bootstrap
 - [ ] Initialize go.mod: module `github.com/sine-io/cosbench-go`
