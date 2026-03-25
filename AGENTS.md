@@ -32,6 +32,7 @@ There is also a manual GitHub Actions workflow for `make smoke-s3`; it reads `CO
 That smoke workflow now uses an explicit backend choice and writes a small GitHub job summary with the selected inputs.
 That summary also shows whether the required endpoint and credential secrets were present.
 The workflow fails fast when any required smoke secret is missing.
+The workflow also uploads the raw `make smoke-s3` output as an artifact.
 `make compare-local-list` prints the valid curated fixture names for `COMPARE_LOCAL_FILTER`.
 `make compare-local-list-json` prints the curated fixture names and workload paths as JSON.
 Those listing targets also respect `COMPARE_LOCAL_FILTER`.

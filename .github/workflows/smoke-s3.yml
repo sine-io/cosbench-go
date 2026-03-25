@@ -58,7 +58,7 @@ jobs:
           fi
 
       - name: Run opt-in smoke suite
-        run: GO=go make smoke-s3
+        run: GO=go make smoke-s3 | tee smoke-s3-output.txt
 
       - name: Write smoke summary
         run: |
@@ -79,3 +79,9 @@ jobs:
             echo
             echo "Bucket prefix: \`${COSBENCH_SMOKE_BUCKET_PREFIX:-}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload smoke artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-s3-output
+          path: smoke-s3-output.txt
