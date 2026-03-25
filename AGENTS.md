@@ -31,6 +31,7 @@ In `-json` mode, stdout is reserved for machine-readable JSON.
 There is also a manual GitHub Actions workflow for `make smoke-s3`; it reads `COSBENCH_SMOKE_*` from repository secrets and optional workflow inputs.
 That smoke workflow now uses an explicit backend choice and writes a small GitHub job summary with the selected inputs.
 That summary also shows whether the required endpoint and credential secrets were present.
+The workflow fails fast when any required smoke secret is missing.
 `make compare-local-list` prints the valid curated fixture names for `COMPARE_LOCAL_FILTER`.
 `make compare-local-list-json` prints the curated fixture names and workload paths as JSON.
 Those listing targets also respect `COMPARE_LOCAL_FILTER`.

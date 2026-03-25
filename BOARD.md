@@ -24,6 +24,7 @@ Owner: Ross
 - Manual smoke-s3 workflow
 - Smoke workflow summary and backend choice
 - Smoke workflow secret presence summary
+- Smoke workflow secret preflight
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -91,6 +92,7 @@ Owner: Ross
 - Manual smoke-s3 workflow landed
 - Smoke workflow summary and backend choice landed
 - Smoke workflow secret presence summary landed
+- Smoke workflow secret preflight landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed
