@@ -3,6 +3,7 @@
 This document records the current, repeatable comparison view between `cosbench-go` and the legacy `cosbench-sineio` project for the repository's representative workload subset.
 
 Companion code-level notes live in `docs/storage-driver-comparison-notes.md`.
+Execution guidance for future live runs lives in `docs/legacy-live-run-checklist.md`.
 
 ## Result Labels
 
@@ -26,13 +27,16 @@ Each row uses the same dimensions:
 
 | Fixture | Legacy Reference Status | `cosbench-go` Status | Comparison Class | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `testdata/legacy/s3-config-sample.xml` | direct legacy sample from `../cosbench-sineio/release/conf/config-samples/s3-config-sample.xml` | parser-covered; local CLI run completed on 2026-03-24 with `-backend mock`; JSON summary produced | runnable with live endpoint setup | acceptable delta | mock-override evidence: 5 stages / 5 works / 1,508,071 samples / 1,206,814 errors. This confirms current parser + execution path can ingest the legacy sample, but the mixed read/write workload shows high error volume under mock-backed local execution, so direct legacy/live comparison is still pending |
-| `testdata/legacy/sio-config-sample.xml` | direct legacy sample from `../cosbench-sineio/release/conf/config-samples/sio-config-sample.xml` | parser-covered; local CLI run completed on 2026-03-24 with `-backend mock`; JSON summary produced | runnable with live endpoint setup | acceptable delta | mock-override evidence: 2 stages / 2 works / 268,090 samples / 0 errors. Strongest current candidate for a first live legacy-side comparison of `mprepare` + `mwrite` |
-| `testdata/workloads/s3-active-subset.xml` | go-curated representative derived from active legacy semantics | parser-covered; local execution and exports verified | runnable now | acceptable delta | no direct legacy file twin; use as focused subset rather than artifact-equivalence proof |
+| `testdata/legacy/s3-config-sample.xml` | direct legacy sample from `../cosbench-sineio/release/conf/config-samples/s3-config-sample.xml` | parser-covered; local CLI run completed on 2026-03-24 with `-backend mock`; JSON summary produced | runnable with live endpoint setup | acceptable delta | one sampled mock-override run completed all 5 stages and 5 works, but the mixed read/write workload produced heavy operation errors. Treat this as evidence that the sample is ingestible, not as a stable quantitative baseline |
+| `testdata/legacy/sio-config-sample.xml` | direct legacy sample from `../cosbench-sineio/release/conf/config-samples/sio-config-sample.xml` | parser-covered; local CLI run completed on 2026-03-24 with `-backend mock`; JSON summary produced | runnable with live endpoint setup | acceptable delta | one sampled mock-override run completed both stages with no observed errors. This remains the strongest candidate for first live legacy-side comparison of `mprepare` + `mwrite` |
+| `testdata/workloads/s3-active-subset.xml` | go-curated representative derived from active legacy semantics | parser-covered; local `make compare-local` run completed on 2026-03-25 with `-backend mock`; JSON summary produced and stored under `.artifacts/compare-local/` | runnable now | acceptable delta | mock-backed local compare consistently shows read-side errors because the fixture has no prepare stage. Use it as structural evidence, not as a stable quantitative baseline |
 | `testdata/workloads/sio-multipart-subset.xml` | go-curated representative derived from active legacy semantics | parser-covered; local execution path and opt-in live smoke support exist | runnable with live endpoint setup | acceptable delta | narrower than the legacy sample but aligned with the active multipart path |
+| `testdata/workloads/mock-stage-aware.xml` | go-curated representative focused on local stage continuity | local `make compare-local` run completed on 2026-03-25 with `-backend mock`; JSON summary produced and stored under `.artifacts/compare-local/` | runnable now | match | mock-backed local compare evidence: 6 stages / 6 works / 8 samples / 0 errors. Confirms stage-aware mock continuity is behaving as intended |
+| `testdata/workloads/mock-reusedata-subset.xml` | go-curated representative derived from legacy reuse-data structure | local `make compare-local` run completed on 2026-03-25 with `-backend mock`; JSON summary produced and stored under `.artifacts/compare-local/` | runnable now | acceptable delta | mock-backed local compare evidence: 6 stages / 6 works / 7 samples / 0 errors. Useful local proof that prepared data survives across multiple main stages |
 | `testdata/workloads/xml-inheritance-subset.xml` | no direct legacy sample; compares against documented inheritance behavior | parser and normalization covered | parser-only comparison | acceptable delta | locks workload/workflow/stage/work/op config inheritance, storage override, omitted-ratio defaulting, zero-ratio filtering |
 | `testdata/workloads/xml-attribute-subset.xml` | no direct legacy sample; compares against documented XML model | parser and normalization covered | parser-only comparison | acceptable delta | locks `trigger`, `closuredelay`, `interval`, `division`, `rampup`, `rampdown`, `driver` |
 | `testdata/workloads/xml-special-ops-subset.xml` | informed by legacy sample family and SineIO changelog | parser and normalization covered | parser-only comparison | acceptable delta | locks XML shapes for `delay`, `cleanup`, `localwrite`, `mfilewrite`; not yet directly compared against a live legacy run |
+| `testdata/workloads/xml-splitrw-subset.xml` | go-curated representative derived from legacy split read/write shape | local `make compare-local` run completed on 2026-03-25 with `-backend mock`; JSON summary produced and stored under `.artifacts/compare-local/` | runnable now | acceptable delta | mock-backed local compare may still surface read-side errors because the fixture deliberately splits read and write target ranges. Use it to verify structure and stage behavior, not to claim parity from error counts alone |
 
 ## Current Known Deltas
 
@@ -63,6 +67,29 @@ GO=$(which go || echo /snap/bin/go) go run ./cmd/cosbench-go -workload testdata/
 
 This is useful for checking normalized shape, CLI summary, and local execution category without requiring live credentials.
 
+### 2a. Run the curated local comparison set
+
+Run:
+
+```bash
+GO=$(which go || echo /snap/bin/go) make compare-local
+```
+
+This is the fastest way to refresh the safe mock-backed fixture set in one pass.
+It recreates `.artifacts/compare-local/` and refreshes per-fixture JSON summaries there.
+It currently covers:
+
+- `s3-active-subset.xml`
+- `mock-stage-aware.xml`
+- `mock-reusedata-subset.xml`
+- `xml-splitrw-subset.xml`
+
+The single source of truth for that curated set is:
+
+```bash
+testdata/workloads/compare-local-fixtures.txt
+```
+
 ### 3. Run live endpoint smoke coverage
 
 Set:
@@ -85,6 +112,12 @@ GO=$(which go || echo /snap/bin/go) make smoke-s3
 ```
 
 This confirms live adapter connectivity and the minimal object lifecycle. It does not replace workload-level comparison by itself.
+
+For the full live-run sequence and recording checklist, use:
+
+```bash
+docs/legacy-live-run-checklist.md
+```
 
 ### 4. Locate legacy references
 

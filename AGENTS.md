@@ -9,6 +9,7 @@ Use the `Makefile` for the common paths:
 - `make fmt` formats all Go packages with `go fmt ./...`
 - `make test` runs the full test suite with `go test ./...`
 - `make build` compiles all packages and binaries with `go build ./...`
+- `make compare-local` runs the curated mock-backed comparison fixture set through the CLI
 - `make validate` runs `go vet`, tests, and a full build for CI-style verification
 - `make smoke-s3` runs the opt-in live endpoint smoke test for `internal/driver/s3`
 - `make tidy` syncs `go.mod` and `go.sum`
@@ -17,6 +18,7 @@ For local runs, use the package entrypoints directly:
 
 - `go run ./cmd/server -data-dir ./data -view-dir ./web/templates`
 - `go run ./cmd/cosbench-go -workload testdata/workloads/s3-active-subset.xml -backend mock -json`
+- `go run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock -json -quiet -summary-file .artifacts/compare-local/s3-active-subset.json`
 - `go run ./cmd/cosbench-go -f testdata/workloads/s3-active-subset.xml -backend mock`
 - `go run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock`
 - `go build ./...` to catch compile errors across both binaries
@@ -25,6 +27,14 @@ If `/snap/bin/go` is not your Go binary, override the Makefile variable, for exa
 Live smoke tests require `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`; without them the smoke suite skips.
 Repository CI runs `make validate`; keep smoke tests opt-in and out of the default CI path.
 In `-json` mode, stdout is reserved for machine-readable JSON.
+`make compare-local` is the fastest way to refresh local comparison evidence without live credentials.
+A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
+That manual workflow now uploads the compare output as a downloadable artifact.
+Use `-quiet` when you want the CLI to suppress progress output entirely.
+Use `-summary-file` when you want the CLI to persist the summary JSON to a stable path.
+`make compare-local` refreshes the contents of `.artifacts/compare-local/`, refreshes its `*.json` files, and the manual workflow uploads that directory.
+The curated fixture set behind `make compare-local` is defined in `testdata/workloads/compare-local-fixtures.txt`.
+If you override `COMPARE_LOCAL_OUTPUT_DIR`, keep its basename as `compare-local`.
 
 ## Coding Style & Naming Conventions
 This is a Go repository; follow `gofmt` output exactly and keep package names lowercase. Exported types and functions use `CamelCase`; unexported helpers use `camelCase`. Keep packages focused on one layer or boundary, and prefer small adapters over cross-layer shortcuts. When wrapping errors, preserve context with `%w`, as in `fmt.Errorf("snapshot store: %w", err)`.

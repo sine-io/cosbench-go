@@ -1,16 +1,21 @@
 # COSBench-Go Kanban
 
-Last updated: 2026-03-24
+Last updated: 2026-03-25
 Owner: Ross
 
 ## Doing
 - Live-endpoint behavior comparison against legacy workloads
 - Storage-driver comparison notes against legacy Java behavior
-- Broader external automation only if the repo needs smoke or release workflows
+- Release/branch hygiene once the current migration slice is stable
+- Structured compare-local result outputs for local and manual workflow reuse
+- Compare-local fixture manifest cleanup
+- Compare-local output pruning cleanup
+- Compare-local output safety cleanup
 
 ## Next
-- Local workflow polish around comparison/runbook ergonomics
-- Release/branch hygiene once the current migration slice is stable
+- Local workflow polish only if comparison ergonomics need more than `make compare-local`
+- Environment provisioning for actual legacy live checks
+- Broader smoke/release automation only if the repository actually needs it
 
 ## Done
 - Migration strategy chosen
@@ -54,7 +59,15 @@ Owner: Ross
 - Parser-facing coverage landed for deferred compatibility aliases and range/prefetch config shapes
 - Parser-tolerated coverage landed for deferred auth-bearing XML shapes
 - Minimal CI workflow landed for `make validate`
+- Manual compare-local workflow landed
+- Compare-local workflow artifact upload landed
+- Structured compare-local JSON output directory landed
+- Compare-local fixture manifest landed
+- Compare-local output pruning landed
+- Compare-local output safety guard landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
+- Local comparison command landed for curated mock-backed fixtures
+- Legacy live-run checklist landed
 - Representative S3/SIO workload fixtures added
 - `go vet` passing
 - Current unit tests passing

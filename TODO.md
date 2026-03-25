@@ -1,6 +1,6 @@
 # COSBench-Go Migration Board
 
-Last updated: 2026-03-24
+Last updated: 2026-03-25
 Owner: Ross
 Status: In Progress
 
@@ -25,6 +25,12 @@ Status: In Progress
 - [x] Establish baseline verification (`go vet`, `go test ./...`)
 - [x] Add CI-friendly Make targets for validate / test / build
 - [x] Add repository-local CI automation for `make validate`
+- [x] Add manual workflow automation for `make compare-local`
+- [x] Upload `compare-local` workflow output as an artifact
+- [x] Add structured per-fixture JSON outputs for `make compare-local`
+- [x] Define a single manifest for the curated `compare-local` fixture set
+- [x] Recreate the `compare-local` output directory before regenerating results
+- [x] Guard `COMPARE_LOCAL_OUTPUT_DIR` so compare-local only refreshes dedicated directories
 
 ---
 
@@ -128,6 +134,8 @@ Status: In Progress
 - [x] Output JSON result summary
 - [x] Output human-readable console summary
 - [x] Improve local CLI ergonomics (`-f`, positional workload path, pure JSON stdout)
+- [x] Add `make compare-local` for repeatable mock-backed comparison runs
+- [x] Add CLI `-summary-file` support for reusable local comparison artifacts
 
 ---
 
@@ -171,7 +179,7 @@ Status: In Progress
 - [x] Add parser-tolerated coverage for deferred auth-bearing XML shapes
 - [x] Add storage adapter tests
 - [x] Add real S3/SIO smoke-test workflow
-- [~] Compare benchmark behavior against legacy workloads (matrix seeded; mock-override evidence collected for legacy S3/SIO samples; live runs still pending)
+- [~] Compare benchmark behavior against legacy workloads (matrix seeded; local `compare-local` evidence collected; live-run checklist documented; live environment still pending)
 - [x] Add storage-driver comparison notes from legacy Java code review
 
 ---

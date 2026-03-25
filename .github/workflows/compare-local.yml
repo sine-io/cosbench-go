@@ -1,0 +1,25 @@
+name: Compare Local
+
+on:
+  workflow_dispatch:
+
+jobs:
+  compare-local:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run local comparison set
+        run: GO=go make compare-local
+
+      - name: Upload compare-local artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compare-local-output
+          path: .artifacts/compare-local
