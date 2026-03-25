@@ -28,6 +28,7 @@ Repository CI runs `make validate`; keep smoke tests opt-in and out of the defau
 In `-json` mode, stdout is reserved for machine-readable JSON.
 `make compare-local` is the fastest way to refresh local comparison evidence without live credentials.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
+That manual workflow now uploads the compare output as a downloadable artifact.
 
 ## Coding Style & Naming Conventions
 This is a Go repository; follow `gofmt` output exactly and keep package names lowercase. Exported types and functions use `CamelCase`; unexported helpers use `camelCase`. Keep packages focused on one layer or boundary, and prefer small adapters over cross-layer shortcuts. When wrapping errors, preserve context with `%w`, as in `fmt.Errorf("snapshot store: %w", err)`.

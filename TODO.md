@@ -26,6 +26,7 @@ Status: In Progress
 - [x] Add CI-friendly Make targets for validate / test / build
 - [x] Add repository-local CI automation for `make validate`
 - [x] Add manual workflow automation for `make compare-local`
+- [x] Upload `compare-local` workflow output as an artifact
 
 ---
 

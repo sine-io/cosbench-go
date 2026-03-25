@@ -44,6 +44,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Repository CI runs `make validate` on `push` and `pull_request`
 - The default CI path does not run `make smoke-s3`; live endpoint checks remain opt-in
 - A manual GitHub Actions workflow can run `make compare-local` on demand
+- The manual `compare-local` workflow uploads its output as a downloadable artifact
 
 ## Legacy Comparison
 - The current comparison checklist and runbook live in `docs/legacy-comparison-matrix.md`

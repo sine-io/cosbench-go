@@ -16,4 +16,10 @@ jobs:
           go-version-file: go.mod
 
       - name: Run local comparison set
-        run: GO=go make compare-local
+        run: GO=go make compare-local | tee compare-local-output.txt
+
+      - name: Upload compare-local artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compare-local-output
+          path: compare-local-output.txt

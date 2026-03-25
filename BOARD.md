@@ -56,6 +56,7 @@ Owner: Ross
 - Parser-tolerated coverage landed for deferred auth-bearing XML shapes
 - Minimal CI workflow landed for `make validate`
 - Manual compare-local workflow landed
+- Compare-local workflow artifact upload landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed
