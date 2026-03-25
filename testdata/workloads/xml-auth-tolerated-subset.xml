@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-auth-tolerated-subset" description="auth-bearing xml tolerated">
+  <auth type="mock" config="username=test;password=testing" />
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <auth type="mock" config="username=stage;password=testing" />
+      <work name="main" workers="1" totalOps="1">
+        <auth type="mock" config="username=work;password=testing" />
+        <operation type="write" ratio="100" config="cprefix=auth;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

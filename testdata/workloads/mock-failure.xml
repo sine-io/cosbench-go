@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="mock-failure" description="diagnostic failure path">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="missing-read" workers="1" totalOps="1">
+        <operation type="read" ratio="100" config="cprefix=missing;containers=c(1);objects=c(1)" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

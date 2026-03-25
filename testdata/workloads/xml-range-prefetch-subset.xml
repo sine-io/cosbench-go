@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-range-prefetch-subset" description="prefetch and range parser coverage">
+  <workflow>
+    <workstage name="prefetch-stage">
+      <storage type="sio" config="accesskey=test;secretkey=test;is_prefetch=true;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+      <work name="prefetch" workers="1" totalOps="1">
+        <operation type="read" ratio="100" config="containers=c(1);objects=c(1)" />
+      </work>
+    </workstage>
+    <workstage name="range-stage">
+      <storage type="sio" config="accesskey=test;secretkey=test;is_range_request=true;file_length=15000000;chunk_length=5000000;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+      <work name="range" workers="1" totalOps="1">
+        <operation type="read" ratio="100" config="containers=c(1);objects=c(1)" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="sio-multipart-subset" description="representative sio subset">
+  <workflow>
+    <workstage name="mprepare-stage">
+      <storage type="sio" config="accesskey=test;secretkey=test;endpoint=http://127.0.0.1:9000;path_style_access=true;part_size=5242880;restore_days=2;aws_region=cn-east-1;no_verify_ssl=true" />
+      <work type="mprepare" workers="1" config="cprefix=sio;containers=c(1);objects=s(1,2);sizes=c(64)KiB" />
+    </workstage>
+    <workstage name="mwrite-stage">
+      <work name="multipart-main" workers="2" runtime="1">
+        <storage type="sio" config="accesskey=test;secretkey=test;endpoint=http://127.0.0.1:9000;path_style_access=true;part_size=5242880;restore_days=2;aws_region=cn-east-1;no_verify_ssl=true" />
+        <operation type="mwrite" ratio="100" config="cprefix=sio;containers=u(1,1);objects=u(3,10);sizes=c(64)KiB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

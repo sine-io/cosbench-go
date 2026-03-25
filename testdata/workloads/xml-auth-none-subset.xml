@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-auth-none-subset" description="auth none tolerated" trigger="demo">
+  <auth type="none" />
+  <storage type="mock" />
+  <workflow>
+    <workstage name="init" closuredelay="0">
+      <auth type="none" />
+      <work type="init" workers="1" config="cprefix=none;containers=c(1)" />
+    </workstage>
+    <workstage name="main">
+      <auth type="none" />
+      <work name="main" workers="1" totalOps="1">
+        <operation type="read" ratio="100" config="cprefix=none;containers=c(1);objects=c(1)" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

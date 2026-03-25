@@ -1,0 +1,22 @@
+{{define "workload_upload.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card narrow">
+  <h1>Upload Workload XML</h1>
+  <form action="/workloads" method="post" enctype="multipart/form-data" class="form-grid">
+    <label>
+      <span>Workload XML</span>
+      <input type="file" name="workload" accept=".xml,text/xml" required>
+    </label>
+    <label>
+      <span>Endpoint</span>
+      <select name="endpoint_id">
+        <option value="">Use XML storage config</option>
+        {{range .Endpoints}}
+        <option value="{{.ID}}">{{.Name}} ({{.Type}})</option>
+        {{end}}
+      </select>
+    </label>
+    <button class="button primary" type="submit">Create Job</button>
+  </form>
+</section>
+{{end}}

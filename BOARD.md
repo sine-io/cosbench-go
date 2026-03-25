@@ -1,0 +1,67 @@
+# COSBench-Go Kanban
+
+Last updated: 2026-03-24
+Owner: Ross
+
+## Doing
+- Live-endpoint behavior comparison against legacy workloads
+- Storage-driver comparison notes against legacy Java behavior
+- Broader external automation only if the repo needs smoke or release workflows
+
+## Next
+- Local workflow polish around comparison/runbook ergonomics
+- Release/branch hygiene once the current migration slice is stable
+
+## Done
+- Migration strategy chosen
+- Local-only v1 scope defined
+- Migration spec written
+- Workload domain model created
+- Config inheritance implemented
+- Special work normalization implemented
+- Validation rules implemented
+- XML workload parser implemented
+- KV config parser implemented
+- Legacy S3/SIO sample testdata added
+- Parser tests added and passing
+- Storage adapter port defined
+- S3 adapter skeleton created
+- SIO adapter skeleton created
+- Storage factory created
+- Execution engine skeleton created
+- Real AWS SDK v2 S3/SIO wiring landed
+- Web control plane and snapshot persistence landed
+- JSON/CSV result export landed
+- Migration docs aligned to the local-only v1 boundary
+- Work-level result summaries landed in snapshots, exports, and job detail pages
+- Start-time preflight validation landed
+- Real local `mfilewrite` / `delay` semantics landed
+- Sequential cleanup / list scanning landed
+- CI-friendly `make build` / `make validate` targets landed
+- Normalization-focused unit tests landed
+- Storage-adapter focused request-level tests landed
+- Multipart upload now preserves `storage_class`
+- Opt-in S3/SIO smoke-test workflow landed
+- High-value XML fixture coverage landed for inheritance, attributes, and special-op shapes
+- Legacy comparison matrix and runbook landed
+- Mock-override evidence captured for legacy S3/SIO sample XML
+- Storage-driver comparison notes landed from legacy Java code review
+- Storage-level `part_size` / `restore_days` fallback landed for execution parity
+- Local cancel flow landed for running jobs
+- Restart/recovery polish landed for cancelling jobs
+- Stage-aware mock realism landed for local runs
+- Representative edge XML fixtures landed for delay-stage, splitrw, and reuse-data shapes
+- Parser-facing coverage landed for deferred compatibility aliases and range/prefetch config shapes
+- Parser-tolerated coverage landed for deferred auth-bearing XML shapes
+- Minimal CI workflow landed for `make validate`
+- Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
+- Representative S3/SIO workload fixtures added
+- `go vet` passing
+- Current unit tests passing
+- In-repo checklist / board established
+
+## Deferred
+- Remote controller/driver HTTP split
+- Legacy web UI parity
+- Legacy-style charts
+- Non-S3/SIO storages

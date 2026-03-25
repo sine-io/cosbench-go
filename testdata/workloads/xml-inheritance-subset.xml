@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-inheritance-subset" description="config inheritance and storage overrides" config="wk=1">
+  <storage type="s3" config="endpoint=http://workload;region=us-east-1;accesskey=test;secretkey=test" />
+  <workflow config="wf=1">
+    <workstage name="override-stage" config="stage=1">
+      <storage type="s3" config="endpoint=http://stage;region=us-east-1;accesskey=test;secretkey=test" />
+      <work name="defaulted-ratio" workers="1" totalOps="1" config="work=1">
+        <operation type="read" config="op=1;containers=c(1);objects=c(1)" />
+        <operation type="write" ratio="0" config="op=zero;containers=c(1);objects=c(2);sizes=c(1)KB" />
+      </work>
+      <work name="work-storage" workers="1" totalOps="1" config="work2=1">
+        <storage type="s3" config="endpoint=http://work;region=us-east-1;accesskey=test;secretkey=test" />
+        <operation type="write" ratio="100" config="op=2;containers=c(1);objects=c(2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

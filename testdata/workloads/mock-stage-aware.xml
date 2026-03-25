@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="mock-stage-aware" description="stage-aware mock continuity">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="init">
+      <work type="init" workers="1" config="cprefix=stage;containers=c(1)" />
+    </workstage>
+    <workstage name="populate">
+      <work name="populate" workers="1" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=stage;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="read-back">
+      <work name="read-back" workers="1" totalOps="2">
+        <operation type="read" ratio="100" config="cprefix=stage;containers=c(1);objects=s(1,2)" />
+      </work>
+    </workstage>
+    <workstage name="list-back">
+      <work name="list-back" workers="1" totalOps="1">
+        <operation type="list" ratio="100" config="cprefix=stage;containers=c(1)" />
+      </work>
+    </workstage>
+    <workstage name="cleanup">
+      <work type="cleanup" workers="1" config="cprefix=stage;containers=c(1);objects=s(1,2)" />
+    </workstage>
+    <workstage name="dispose">
+      <work type="dispose" workers="1" config="cprefix=stage;containers=c(1)" />
+    </workstage>
+  </workflow>
+</workload>

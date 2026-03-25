@@ -1,0 +1,55 @@
+{{define "dashboard.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="hero">
+  <div>
+    <h1>Minimum usable benchmark loop</h1>
+    <p>Upload workload XML, bind an endpoint, start a local run, and inspect metrics without leaving the browser.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="button primary" href="/workloads/new">Upload Workload</a>
+    <a class="button" href="/endpoints">Configure Endpoint</a>
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="card">
+    <h2>Recent Jobs</h2>
+    {{if .Jobs}}
+    <table>
+      <thead><tr><th>Name</th><th>Status</th><th>Ops</th><th>Updated</th></tr></thead>
+      <tbody>
+      {{range .Jobs}}
+      <tr>
+        <td><a href="/jobs/{{.ID}}">{{.Name}}</a></td>
+        <td><span class="status {{.Status}}">{{.Status}}</span></td>
+        <td>{{.Metrics.OperationCount}}</td>
+        <td>{{.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+    {{else}}<p class="empty">No jobs yet.</p>{{end}}
+  </div>
+  <div class="card">
+    <h2>Configured Endpoints</h2>
+    {{if .Endpoints}}
+    <ul class="stack-list">
+      {{range .Endpoints}}
+      <li><strong>{{.Name}}</strong><span>{{.Type}}</span><code>{{.Endpoint}}</code></li>
+      {{end}}
+    </ul>
+    {{else}}<p class="empty">No endpoints configured.</p>{{end}}
+  </div>
+</section>
+
+<section class="card">
+  <h2>Recent Error Events</h2>
+  {{if .RecentErrors}}
+  <ul class="timeline">
+    {{range .RecentErrors}}
+    <li><strong>{{.OccurredAt.Format "2006-01-02 15:04:05"}}</strong> <span class="status {{.Level}}">{{.Level}}</span> {{.Message}}</li>
+    {{end}}
+  </ul>
+  {{else}}<p class="empty">No recent error events.</p>{{end}}
+</section>
+{{end}}

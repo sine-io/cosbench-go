@@ -1,0 +1,132 @@
+{{define "job_detail.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <div class="job-header">
+    <div>
+      <h1>{{.Job.Name}}</h1>
+      <p>Endpoint: {{if .Job.EndpointName}}{{.Job.EndpointName}}{{else}}from workload XML{{end}}</p>
+      {{if .Job.ErrorMessage}}<p class="detail-error">Execution note: {{.Job.ErrorMessage}}</p>{{end}}
+    </div>
+    <div class="job-actions">
+      <span class="status {{.Job.Status}}">{{.Job.Status}}</span>
+      {{if eq .Job.Status "created"}}
+      <form method="post" action="/jobs/{{.Job.ID}}/start"><button class="button primary" type="submit">Start Job</button></form>
+      {{end}}
+      {{if eq .Job.Status "running"}}
+      <form method="post" action="/jobs/{{.Job.ID}}/cancel"><button class="button" type="submit">Cancel Job</button></form>
+      {{end}}
+      <a class="button" href="/exports/jobs/{{.Job.ID}}/result.json">Export JSON</a>
+      <a class="button" href="/exports/jobs/{{.Job.ID}}/result.csv">Export CSV</a>
+    </div>
+  </div>
+  <div class="metrics-grid">
+    <article><span>Ops</span><strong>{{.Job.Metrics.OperationCount}}</strong></article>
+    <article><span>Bytes</span><strong>{{.Job.Metrics.ByteCount}}</strong></article>
+    <article><span>Errors</span><strong>{{.Job.Metrics.ErrorCount}}</strong></article>
+    <article><span>Ops/s</span><strong>{{printf "%.2f" .Job.Metrics.OpsPerSecond}}</strong></article>
+    <article><span>P50 ms</span><strong>{{printf "%.2f" .Job.Metrics.P50LatencyMs}}</strong></article>
+    <article><span>P95 ms</span><strong>{{printf "%.2f" .Job.Metrics.P95LatencyMs}}</strong></article>
+    <article><span>P99 ms</span><strong>{{printf "%.2f" .Job.Metrics.P99LatencyMs}}</strong></article>
+    <article><span>Avg ms</span><strong>{{printf "%.2f" .Job.Metrics.AvgLatencyMs}}</strong></article>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Lifecycle Detail</h2>
+  <table>
+    <thead><tr><th>Stage</th><th>Status</th><th>Started</th><th>Finished</th><th>Failure</th></tr></thead>
+    <tbody>
+    {{range .Job.Stages}}
+    <tr>
+      <td>{{.Name}}</td>
+      <td><span class="status {{.Status}}">{{.Status}}</span></td>
+      <td>{{if .StartedAt}}{{.StartedAt.Format "2006-01-02 15:04:05"}}{{else}}-{{end}}</td>
+      <td>{{if .FinishedAt}}{{.FinishedAt.Format "2006-01-02 15:04:05"}}{{else}}-{{end}}</td>
+      <td>{{if .ErrorMessage}}{{.ErrorMessage}}{{else}}-{{end}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<section class="grid two">
+  <div class="card">
+    <h2>Stages</h2>
+    <table>
+      <thead><tr><th>Stage</th><th>Status</th><th>Works</th><th>Ops</th></tr></thead>
+      <tbody>
+      {{range .Job.Stages}}
+      <tr>
+        <td>{{.Name}}</td>
+        <td><span class="status {{.Status}}">{{.Status}}</span></td>
+        <td>{{.Works}}</td>
+        <td>{{.Metrics.OperationCount}}</td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Events</h2>
+    {{if .JobEvents}}
+    <ul class="timeline">
+      {{range .JobEvents}}
+      <li><strong>{{.OccurredAt.Format "15:04:05"}}</strong> <span class="status {{.Level}}">{{.Level}}</span> {{.Message}}</li>
+      {{end}}
+    </ul>
+    {{else}}<p class="empty">No events yet.</p>{{end}}
+  </div>
+</section>
+
+<section class="card">
+  <h2>Operation Summary</h2>
+  {{if .JobResult.Metrics.ByOperation}}
+  <table>
+    <thead><tr><th>Operation</th><th>Count</th><th>Bytes</th><th>Errors</th><th>Avg ms</th><th>P50 ms</th><th>P95 ms</th><th>P99 ms</th></tr></thead>
+    <tbody>
+    {{range .JobResult.Metrics.ByOperation}}
+    <tr>
+      <td>{{.Operation}}</td>
+      <td>{{.OperationCount}}</td>
+      <td>{{.ByteCount}}</td>
+      <td>{{.ErrorCount}}</td>
+      <td>{{printf "%.2f" .AvgLatencyMs}}</td>
+      <td>{{printf "%.2f" .P50LatencyMs}}</td>
+      <td>{{printf "%.2f" .P95LatencyMs}}</td>
+      <td>{{printf "%.2f" .P99LatencyMs}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="empty">Run the job to collect metrics.</p>{{end}}
+</section>
+
+<section class="card">
+  <h2>Work Summary</h2>
+  {{if .JobResult.StageTotals}}
+  <table>
+    <thead><tr><th>Stage</th><th>Work</th><th>Ops</th><th>Bytes</th><th>Errors</th><th>Avg ms</th></tr></thead>
+    <tbody>
+    {{range .JobResult.StageTotals}}
+      {{$stage := .}}
+      {{range .WorkResults}}
+      <tr>
+        <td>{{$stage.Name}}</td>
+        <td>{{.Name}}</td>
+        <td>{{.Metrics.OperationCount}}</td>
+        <td>{{.Metrics.ByteCount}}</td>
+        <td>{{.Metrics.ErrorCount}}</td>
+        <td>{{printf "%.2f" .Metrics.AvgLatencyMs}}</td>
+      </tr>
+      {{end}}
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="empty">Run the job to collect work-level summaries.</p>{{end}}
+</section>
+
+<section class="card">
+  <h2>Uploaded XML</h2>
+  {{if .RawXML}}<pre class="code-block">{{.RawXML}}</pre>{{else}}<p class="empty">No XML captured.</p>{{end}}
+</section>
+{{end}}
