@@ -15,6 +15,7 @@ Owner: Ross
 - Compare-local workflow summary
 - Compare-local artifact metrics
 - Compare-local fixture filter
+- Compare-local filter validation
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -73,6 +74,7 @@ Owner: Ross
 - Compare-local workflow summary landed
 - Compare-local artifact metrics landed
 - Compare-local fixture filter landed
+- Compare-local filter validation landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

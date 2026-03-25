@@ -35,6 +35,7 @@ Status: In Progress
 - [x] Add a GitHub job summary for the manual compare-local workflow
 - [x] Include per-fixture metrics in the compare-local index and workflow summary
 - [x] Add a single-fixture filter for local and manual compare-local runs
+- [x] Fail fast when `COMPARE_LOCAL_FILTER` does not match a curated fixture
 
 ---
 

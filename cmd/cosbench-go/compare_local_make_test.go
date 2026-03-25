@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -153,5 +154,34 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 	}
 	if len(payload.Fixtures) != 1 || payload.Fixtures[0].Name != "mock-stage-aware" {
 		t.Fatalf("fixtures = %#v", payload.Fixtures)
+	}
+}
+
+func TestCompareLocalFilterRejectsUnknownFixture(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("look path go: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	outputDir := filepath.Join(t.TempDir(), "compare-local")
+	cmd := exec.Command(
+		makeBin,
+		"compare-local",
+		"GO="+goBin,
+		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
+		"COMPARE_LOCAL_FILTER=does-not-exist",
+	)
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected compare-local to reject unknown fixture\n%s", output)
+	}
+	if !strings.Contains(string(output), "does-not-exist") {
+		t.Fatalf("unexpected output: %s", output)
 	}
 }
