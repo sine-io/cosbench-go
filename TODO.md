@@ -42,6 +42,7 @@ Status: In Progress
 - [x] Add a GitHub job summary for the manual compare-local workflow
 - [x] Include per-fixture metrics in the compare-local index and workflow summary
 - [x] Add a single-fixture filter for local and manual compare-local runs
+- [x] Add a non-destructive `worktree-audit` helper for local cleanup planning
 - [x] Fail fast when `COMPARE_LOCAL_FILTER` does not match a curated fixture
 - [x] Add `make compare-local-list` for fixture-name discovery
 - [x] Add a local `summary.md` artifact for compare-local outputs
