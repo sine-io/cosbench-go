@@ -30,6 +30,7 @@ In `-json` mode, stdout is reserved for machine-readable JSON.
 `make compare-local` is the fastest way to refresh local comparison evidence without live credentials.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
+That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.
 Use `-quiet` when you want the CLI to suppress progress output entirely.
 Use `-summary-file` when you want the CLI to persist the summary JSON to a stable path.
 `make compare-local` refreshes the contents of `.artifacts/compare-local/`, refreshes its `*.json` files, and the manual workflow uploads that directory.

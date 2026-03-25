@@ -12,6 +12,7 @@ Owner: Ross
 - Compare-local output pruning cleanup
 - Compare-local output safety cleanup
 - Compare-local artifact index
+- Compare-local workflow summary
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -67,6 +68,7 @@ Owner: Ross
 - Compare-local output pruning landed
 - Compare-local output safety guard landed
 - Compare-local artifact index landed
+- Compare-local workflow summary landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed
