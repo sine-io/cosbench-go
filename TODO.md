@@ -44,6 +44,7 @@ Status: In Progress
 - [x] Add a single-fixture filter for local and manual compare-local runs
 - [x] Add a non-destructive `worktree-audit` helper for local cleanup planning
 - [x] Fail fast when `COMPARE_LOCAL_FILTER` does not match a curated fixture
+- [x] Add a machine-readable `worktree-audit-json` helper
 - [x] Add `make compare-local-list` for fixture-name discovery
 - [x] Add a local `summary.md` artifact for compare-local outputs
 - [x] Allow comma-separated compare-local fixture subsets
