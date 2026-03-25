@@ -27,8 +27,11 @@ def main():
 
     rows = []
     for row in source_rows:
+        state = row.get("state", "")
         branch = row.get("branch", "")
         path = row.get("path", "")
+        if state not in ("merged", "integrated"):
+            continue
         if branch in ("main", "master") or not path or path == current_worktree:
             continue
         rows.append(

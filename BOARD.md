@@ -22,6 +22,7 @@ Owner: Ross
 - Compare-local multi-fixture filter
 - Worktree audit helper
 - Worktree audit JSON output
+- Worktree audit integrated state
 - Worktree audit current marker
 - Worktree audit stale/prune counts
 - Worktree audit base-ref override
@@ -108,6 +109,7 @@ Owner: Ross
 - Compare-local multi-fixture filter landed
 - Worktree audit helper landed
 - Worktree audit JSON output landed
+- Worktree audit integrated state landed
 - Worktree audit current marker landed
 - Worktree audit stale/prune counts landed
 - Worktree audit base-ref override landed
