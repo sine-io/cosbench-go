@@ -13,12 +13,15 @@ def read_manifest(manifest_path: str):
 
 
 def parse_filter(raw_filter: str):
-    return [item for item in raw_filter.split(",") if item]
+    items = [item for item in raw_filter.split(",") if item]
+    if items == ["all"]:
+        return []
+    return items
 
 
 def validate_filter(fixtures, raw_filter: str):
     selected = parse_filter(raw_filter)
-    if not selected:
+    if not selected and raw_filter in ("", "all"):
         return
     known = {fixture["name"] for fixture in fixtures}
     for name in selected:

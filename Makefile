@@ -31,7 +31,7 @@ compare-local:
 		if [ -z "$$name" ] || [ "$${name#\#}" != "$$name" ]; then \
 			continue; \
 		fi; \
-		if [ -n "$(COMPARE_LOCAL_FILTER)" ]; then \
+		if [ -n "$(COMPARE_LOCAL_FILTER)" ] && [ "$(COMPARE_LOCAL_FILTER)" != "all" ]; then \
 			case ",$(COMPARE_LOCAL_FILTER)," in \
 				*,"$$name",*) ;; \
 				*) continue ;; \
