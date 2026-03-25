@@ -30,12 +30,12 @@ jobs:
               "",
               "Artifact directory: `.artifacts/compare-local/`",
               "",
-              "| Fixture | Workload | Summary |",
-              "| --- | --- | --- |",
+              "| Fixture | Workload | Stages | Works | Samples | Errors | Summary |",
+              "| --- | --- | --- | --- | --- | --- | --- |",
           ]
           for fixture in payload.get("fixtures", []):
               lines.append(
-                  f"| `{fixture['name']}` | `{fixture['workload']}` | `{fixture['summary']}` |"
+                  f"| `{fixture['name']}` | `{fixture['workload']}` | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | `{fixture['summary']}` |"
               )
           print("\n".join(lines))
           PY

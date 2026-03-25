@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+
+import json
+import sys
+from pathlib import Path
+
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir>")
+
+    manifest_path = Path(sys.argv[1])
+    output_dir = Path(sys.argv[2])
+    fixtures = []
+
+    for raw_line in manifest_path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        name, workload = line.split()
+        summary_name = f"{name}.json"
+        summary = json.loads((output_dir / summary_name).read_text())
+        fixtures.append(
+            {
+                "name": name,
+                "workload": workload,
+                "summary": summary_name,
+                "stages": summary["stages"],
+                "works": summary["works"],
+                "samples": summary["samples"],
+                "errors": summary["errors"],
+            }
+        )
+
+    (output_dir / "index.json").write_text(json.dumps({"fixtures": fixtures}, indent=2) + "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
