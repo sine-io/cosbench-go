@@ -39,6 +39,7 @@ Status: In Progress
 - [x] Add `make compare-local-list` for fixture-name discovery
 - [x] Allow comma-separated compare-local fixture subsets
 - [x] Add `make compare-local-list-json` for machine-readable fixture discovery
+- [x] Make compare-local listing targets respect `COMPARE_LOCAL_FILTER`
 
 ---
 

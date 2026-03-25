@@ -83,6 +83,7 @@ You can also pass a comma-separated `COMPARE_LOCAL_FILTER` to refresh a curated 
 Unknown filter names now fail fast instead of silently producing an empty result set.
 Run `make compare-local-list` when you want to see the valid curated names first.
 Run `make compare-local-list-json` when you want the curated names and workload paths in machine-readable form.
+Both listing targets also respect `COMPARE_LOCAL_FILTER`.
 It currently covers:
 
 - `s3-active-subset.xml`
