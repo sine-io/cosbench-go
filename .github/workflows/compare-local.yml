@@ -18,6 +18,29 @@ jobs:
       - name: Run local comparison set
         run: GO=go make compare-local
 
+      - name: Write compare-local summary
+        run: |
+          python3 - <<'PY' > compare-local-summary.md
+          import json
+          from pathlib import Path
+          index_path = Path(".artifacts/compare-local/index.json")
+          payload = json.loads(index_path.read_text())
+          lines = [
+              "## Compare Local",
+              "",
+              "Artifact directory: `.artifacts/compare-local/`",
+              "",
+              "| Fixture | Workload | Summary |",
+              "| --- | --- | --- |",
+          ]
+          for fixture in payload.get("fixtures", []):
+              lines.append(
+                  f"| `{fixture['name']}` | `{fixture['workload']}` | `{fixture['summary']}` |"
+              )
+          print("\n".join(lines))
+          PY
+          cat compare-local-summary.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload compare-local artifact
         uses: actions/upload-artifact@v4
         with:

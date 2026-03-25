@@ -32,6 +32,7 @@ Status: In Progress
 - [x] Recreate the `compare-local` output directory before regenerating results
 - [x] Guard `COMPARE_LOCAL_OUTPUT_DIR` so compare-local only refreshes dedicated directories
 - [x] Add a top-level `index.json` for compare-local artifact discovery
+- [x] Add a GitHub job summary for the manual compare-local workflow
 
 ---
 
