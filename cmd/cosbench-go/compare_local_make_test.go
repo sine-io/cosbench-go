@@ -532,6 +532,38 @@ func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-prune-plan-json")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-prune-plan-json failed: %v\n%s", err, output)
+	}
+
+	var payload []struct {
+		Path     string   `json:"path"`
+		Branch   string   `json:"branch"`
+		Commands []string `json:"commands"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	for _, row := range payload {
+		if row.Path == "" || row.Branch == "" {
+			t.Fatalf("unexpected row: %#v", row)
+		}
+		if len(row.Commands) == 0 {
+			t.Fatalf("unexpected row: %#v", row)
+		}
+	}
+}
+
 func TestCompareLocalListRespectsFilter(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
