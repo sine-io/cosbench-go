@@ -26,6 +26,7 @@ Owner: Ross
 - Smoke workflow secret presence summary
 - Smoke workflow secret preflight
 - Smoke workflow output artifact
+- Smoke workflow always-summary
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -95,6 +96,7 @@ Owner: Ross
 - Smoke workflow secret presence summary landed
 - Smoke workflow secret preflight landed
 - Smoke workflow output artifact landed
+- Smoke workflow always-summary landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

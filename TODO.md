@@ -31,6 +31,7 @@ Status: In Progress
 - [x] Show required smoke secret presence in the manual smoke workflow summary
 - [x] Fail the manual smoke workflow early when required secrets are missing
 - [x] Upload the raw smoke workflow output as an artifact
+- [x] Keep the smoke summary visible even when preflight fails
 - [x] Upload `compare-local` workflow output as an artifact
 - [x] Add structured per-fixture JSON outputs for `make compare-local`
 - [x] Define a single manifest for the curated `compare-local` fixture set
