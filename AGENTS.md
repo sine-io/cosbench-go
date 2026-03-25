@@ -29,6 +29,7 @@ Repository CI runs `make validate`; keep smoke tests opt-in and out of the defau
 In `-json` mode, stdout is reserved for machine-readable JSON.
 `make compare-local` is the fastest way to refresh local comparison evidence without live credentials.
 `make compare-local-list` prints the valid curated fixture names for `COMPARE_LOCAL_FILTER`.
+`make compare-local-list-json` prints the curated fixture names and workload paths as JSON.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
 That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.
