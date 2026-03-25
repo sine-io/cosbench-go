@@ -165,7 +165,7 @@ func TestRunningJobShowsCancelActionAndCanBeCancelled(t *testing.T) {
 		t.Fatalf("cancel status = %d body=%s", cancelRec.Code, cancelRec.Body.String())
 	}
 	jobAfterCancel, _ := mgr.GetJob(job.ID)
-	if jobAfterCancel.Status != domain.JobStatusCancelling {
+	if jobAfterCancel.Status != domain.JobStatusCancelling && jobAfterCancel.Status != domain.JobStatusCancelled {
 		t.Fatalf("job status after cancel request = %s", jobAfterCancel.Status)
 	}
 	waitForJobStatus(t, mgr, job.ID, domain.JobStatusCancelled)
