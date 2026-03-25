@@ -82,6 +82,7 @@ Set `COMPARE_LOCAL_FILTER=<fixture-name>` when you want to refresh just one cura
 You can also pass a comma-separated `COMPARE_LOCAL_FILTER` to refresh a curated subset.
 Unknown filter names now fail fast instead of silently producing an empty result set.
 Run `make compare-local-list` when you want to see the valid curated names first.
+Run `make compare-local-list-json` when you want the curated names and workload paths in machine-readable form.
 It currently covers:
 
 - `s3-active-subset.xml`

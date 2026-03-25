@@ -306,3 +306,32 @@ func TestCompareLocalListShowsFixtureNames(t *testing.T) {
 		}
 	}
 }
+
+func TestCompareLocalListJSONShowsFixtureMetadata(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list-json")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make compare-local-list-json failed: %v\n%s", err, output)
+	}
+
+	var payload []struct {
+		Name     string `json:"name"`
+		Workload string `json:"workload"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if len(payload) != 4 {
+		t.Fatalf("payload = %#v", payload)
+	}
+	if payload[0].Name != "s3-active-subset" || payload[0].Workload != "testdata/workloads/s3-active-subset.xml" {
+		t.Fatalf("payload = %#v", payload)
+	}
+}

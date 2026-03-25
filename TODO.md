@@ -38,6 +38,7 @@ Status: In Progress
 - [x] Fail fast when `COMPARE_LOCAL_FILTER` does not match a curated fixture
 - [x] Add `make compare-local-list` for fixture-name discovery
 - [x] Allow comma-separated compare-local fixture subsets
+- [x] Add `make compare-local-list-json` for machine-readable fixture discovery
 
 ---
 
