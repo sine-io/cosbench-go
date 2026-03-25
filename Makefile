@@ -7,13 +7,13 @@ build:
 
 compare-local:
 	@echo "== s3-active-subset =="
-	$(GO) run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock -json
+	@$(GO) run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock -json
 	@echo "== mock-stage-aware =="
-	$(GO) run ./cmd/cosbench-go testdata/workloads/mock-stage-aware.xml -backend mock -json
+	@$(GO) run ./cmd/cosbench-go testdata/workloads/mock-stage-aware.xml -backend mock -json
 	@echo "== mock-reusedata-subset =="
-	$(GO) run ./cmd/cosbench-go testdata/workloads/mock-reusedata-subset.xml -backend mock -json
+	@$(GO) run ./cmd/cosbench-go testdata/workloads/mock-reusedata-subset.xml -backend mock -json
 	@echo "== xml-splitrw-subset =="
-	$(GO) run ./cmd/cosbench-go testdata/workloads/xml-splitrw-subset.xml -backend mock -json
+	@$(GO) run ./cmd/cosbench-go testdata/workloads/xml-splitrw-subset.xml -backend mock -json
 
 smoke-s3:
 	$(GO) test ./internal/driver/s3 -run Smoke -v
