@@ -16,17 +16,17 @@ def main():
     base_ref = args[0] if args else "origin/main"
     output_path = sys.argv[2] if len(sys.argv) > 2 else ""
     audit = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", base_ref))
-    merged = run("python3", "./scripts/worktree_audit.py", "--merged-only", base_ref).rstrip()
-    stale = run("python3", "./scripts/worktree_audit.py", "--stale-only", base_ref).rstrip()
-    prune = run("python3", "./scripts/worktree_prune_plan.py", base_ref).rstrip()
+    merged_text = run("python3", "./scripts/worktree_audit.py", "--merged-only", base_ref).rstrip()
+    stale_text = run("python3", "./scripts/worktree_audit.py", "--stale-only", base_ref).rstrip()
+    prune_text = run("python3", "./scripts/worktree_prune_plan.py", base_ref).rstrip()
 
     summary = audit["summary"]
     if json_mode:
         payload = {
             "summary": summary,
-            "merged": merged,
-            "stale": stale,
-            "prune_plan": prune,
+            "merged": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref)),
+            "stale": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref)),
+            "prune_plan": json.loads(run("python3", "./scripts/worktree_prune_plan.py", "--json", base_ref)),
         }
         print(json.dumps(payload, indent=2))
         return
@@ -46,19 +46,19 @@ def main():
         "## Merged",
         "",
         "```text",
-        merged,
+        merged_text,
         "```",
         "",
         "## Stale",
         "",
         "```text",
-        stale,
+        stale_text,
         "```",
         "",
         "## Prune Plan",
         "",
         "```text",
-        prune,
+        prune_text,
         "```",
     ]
     report = "\n".join(lines) + "\n"

@@ -710,6 +710,15 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 			t.Fatalf("missing %s: %#v", key, payload)
 		}
 	}
+	if _, ok := payload["merged"].(map[string]any); !ok {
+		t.Fatalf("merged is not structured: %#v", payload["merged"])
+	}
+	if _, ok := payload["stale"].(map[string]any); !ok {
+		t.Fatalf("stale is not structured: %#v", payload["stale"])
+	}
+	if _, ok := payload["prune_plan"].([]any); !ok {
+		t.Fatalf("prune_plan is not structured: %#v", payload["prune_plan"])
+	}
 }
 
 func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
