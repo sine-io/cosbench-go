@@ -90,6 +90,78 @@ func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 	}
 }
 
+func TestWorktreePrunePlanJSONIncludesBranchContext(t *testing.T) {
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("look path git: %v", err)
+	}
+	pythonBin, err := exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("look path python3: %v", err)
+	}
+
+	repoDir := t.TempDir()
+	runCmd(t, repoDir, gitBin, "init", "-b", "main")
+	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
+	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
+
+	filePath := filepath.Join(repoDir, "note.txt")
+	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
+		t.Fatalf("write base file: %v", err)
+	}
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
+
+	featureDir := filepath.Join(t.TempDir(), "feature")
+	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "feature")
+
+	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
+	runCmd(t, featureDir, gitBin, "add", "note.txt")
+	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
+
+	appendLine(t, filepath.Join(repoDir, "note.txt"), "feature\n")
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "squash-equivalent")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_prune_plan.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "--json", "main")
+	cmd.Dir = repoDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("run script: %v\n%s", err, output)
+	}
+
+	var payload []struct {
+		Branch   string   `json:"branch"`
+		State    string   `json:"state"`
+		Details  string   `json:"details"`
+		Ahead    int      `json:"ahead"`
+		Behind   int      `json:"behind"`
+		Commands []string `json:"commands"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if len(payload) != 1 {
+		t.Fatalf("payload = %#v", payload)
+	}
+	if payload[0].Branch != "feature" || payload[0].State != "integrated" {
+		t.Fatalf("row = %#v", payload[0])
+	}
+	if payload[0].Details == "" {
+		t.Fatalf("row = %#v", payload[0])
+	}
+	if payload[0].Ahead < 0 || payload[0].Behind < 0 {
+		t.Fatalf("row = %#v", payload[0])
+	}
+	if len(payload[0].Commands) != 2 {
+		t.Fatalf("row = %#v", payload[0])
+	}
+}
+
 func runCmd(t *testing.T, dir, bin string, args ...string) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
