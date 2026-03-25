@@ -96,6 +96,7 @@ def main():
 
     if json_mode:
         summary = {
+            "base_ref": base_ref,
             "total": len(rows),
             "merged": sum(1 for row in rows if row["state"] == "merged"),
             "active": sum(1 for row in rows if row["state"] == "active"),
