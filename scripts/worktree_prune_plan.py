@@ -3,12 +3,15 @@
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 
 def main():
     json_mode = "--json" in sys.argv[1:]
     args = [arg for arg in sys.argv[1:] if arg != "--json"]
     base_ref = args[0] if args else "origin/main"
+    script_dir = Path(__file__).resolve().parent
+    audit_script = str(script_dir / "worktree_audit.py")
     cwd_proc = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
         check=True,
@@ -17,7 +20,7 @@ def main():
     )
     current_worktree = cwd_proc.stdout.strip()
     proc = subprocess.run(
-        ["python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref],
+        ["python3", audit_script, "--json", base_ref],
         check=True,
         text=True,
         capture_output=True,
@@ -30,6 +33,9 @@ def main():
         state = row.get("state", "")
         branch = row.get("branch", "")
         path = row.get("path", "")
+        details = row.get("details", "")
+        ahead = row.get("ahead", 0)
+        behind = row.get("behind", 0)
         if state not in ("merged", "integrated"):
             continue
         if branch in ("main", "master") or not path or path == current_worktree:
@@ -38,6 +44,10 @@ def main():
             {
                 "path": path,
                 "branch": branch,
+                "state": state,
+                "details": details,
+                "ahead": ahead,
+                "behind": behind,
                 "commands": [
                     f"git worktree remove '{path}'",
                     f"git branch -D {branch}",
