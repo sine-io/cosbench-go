@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import subprocess
 import sys
 
@@ -49,12 +50,30 @@ def classify(branch, base_ref):
 
 
 def main():
-    base_ref = sys.argv[1] if len(sys.argv) > 1 else "origin/main"
-    print("PATH\tBRANCH\tSTATE\tDETAILS")
+    json_mode = "--json" in sys.argv[1:]
+    args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    base_ref = args[0] if args else "origin/main"
+
+    rows = []
     for entry in worktree_entries():
         branch = branch_name(entry)
         state, details = classify(branch, base_ref)
-        print(f"{entry['worktree']}\t{branch}\t{state}\t{details}")
+        rows.append(
+            {
+                "path": entry["worktree"],
+                "branch": branch,
+                "state": state,
+                "details": details,
+            }
+        )
+
+    if json_mode:
+        print(json.dumps(rows, indent=2))
+        return
+
+    print("PATH\tBRANCH\tSTATE\tDETAILS")
+    for row in rows:
+        print(f"{row['path']}\t{row['branch']}\t{row['state']}\t{row['details']}")
 
 
 if __name__ == "__main__":

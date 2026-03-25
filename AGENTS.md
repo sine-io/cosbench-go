@@ -39,6 +39,7 @@ The smoke summary step runs with `if: always()` so failed preflight runs still s
 `make compare-local-list-json` prints the curated fixture names and workload paths as JSON.
 Those listing targets also respect `COMPARE_LOCAL_FILTER`.
 `make --no-print-directory worktree-audit` is a non-destructive helper that shows local worktrees and their status relative to `origin/main`.
+`make --no-print-directory worktree-audit-json` exposes the same audit data in machine-readable form.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
 That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.

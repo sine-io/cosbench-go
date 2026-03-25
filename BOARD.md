@@ -21,6 +21,7 @@ Owner: Ross
 - Compare-local filtered listing targets
 - Compare-local multi-fixture filter
 - Worktree audit helper
+- Worktree audit JSON output
 - Compare-local local summary artifact
 - Manual smoke-s3 workflow
 - Smoke workflow path-style choice
@@ -93,6 +94,7 @@ Owner: Ross
 - Compare-local filtered listing targets landed
 - Compare-local multi-fixture filter landed
 - Worktree audit helper landed
+- Worktree audit JSON output landed
 - Compare-local local summary artifact landed
 - Manual smoke-s3 workflow landed
 - Smoke workflow path-style choice landed

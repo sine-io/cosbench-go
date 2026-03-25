@@ -408,6 +408,36 @@ func TestWorktreeAuditTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-json")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-audit-json failed: %v\n%s", err, output)
+	}
+
+	var payload []struct {
+		Path   string `json:"path"`
+		Branch string `json:"branch"`
+		State  string `json:"state"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if len(payload) == 0 {
+		t.Fatal("expected at least one worktree entry")
+	}
+	if payload[0].Path == "" || payload[0].Branch == "" || payload[0].State == "" {
+		t.Fatalf("unexpected payload: %#v", payload[0])
+	}
+}
+
 func TestCompareLocalListRespectsFilter(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
