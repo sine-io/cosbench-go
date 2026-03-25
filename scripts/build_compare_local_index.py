@@ -8,6 +8,29 @@ from pathlib import Path
 from compare_local_manifest import parse_filter, read_manifest
 
 
+def build_summary(payload):
+    meta = payload["meta"]
+    lines = [
+        "## Compare Local",
+        "",
+        "Artifact directory: `.artifacts/compare-local/`",
+        "",
+        f"Filter: `{meta.get('filter', '')}`",
+        "",
+        f"Fixture count: {meta.get('fixture_count', 0)}",
+        "",
+        f"Generated at: `{meta.get('generated_at', '')}`",
+        "",
+        "| Fixture | Workload | Stages | Works | Samples | Errors | Summary |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for fixture in payload.get("fixtures", []):
+        lines.append(
+            f"| `{fixture['name']}` | `{fixture['workload']}` | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | `{fixture['summary']}` |"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     if len(sys.argv) not in (3, 4):
         raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
@@ -45,6 +68,7 @@ def main() -> int:
         "fixtures": fixtures,
     }
     (output_dir / "index.json").write_text(json.dumps(payload, indent=2) + "\n")
+    (output_dir / "summary.md").write_text(build_summary(payload))
     return 0
 
 
