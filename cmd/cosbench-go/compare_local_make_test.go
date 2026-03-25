@@ -460,6 +460,9 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	if _, ok := payload.Summary["total"]; !ok {
 		t.Fatalf("missing total: %#v", payload.Summary)
 	}
+	if _, ok := payload.Summary["base_ref"]; !ok {
+		t.Fatalf("missing base_ref: %#v", payload.Summary)
+	}
 	if len(payload.Rows) == 0 {
 		t.Fatal("expected at least one worktree entry")
 	}
