@@ -647,15 +647,30 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-prune-plan-json failed: %v\n%s", err, output)
 	}
 
-	var payload []struct {
-		Path     string   `json:"path"`
-		Branch   string   `json:"branch"`
-		Commands []string `json:"commands"`
+	var payload struct {
+		Summary struct {
+			BaseRef         string `json:"base_ref"`
+			CurrentWorktree string `json:"current_worktree"`
+			Total           int    `json:"total"`
+			Merged          int    `json:"merged"`
+			Integrated      int    `json:"integrated"`
+		} `json:"summary"`
+		Rows []struct {
+			Path     string   `json:"path"`
+			Branch   string   `json:"branch"`
+			Commands []string `json:"commands"`
+		} `json:"rows"`
 	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
-	for _, row := range payload {
+	if payload.Summary.Total < 0 {
+		t.Fatalf("unexpected summary: %#v", payload.Summary)
+	}
+	if payload.Summary.CurrentWorktree == "" {
+		t.Fatalf("unexpected summary: %#v", payload.Summary)
+	}
+	for _, row := range payload.Rows {
 		if row.Path == "" || row.Branch == "" {
 			t.Fatalf("unexpected row: %#v", row)
 		}
@@ -727,8 +742,15 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 	if _, ok := payload["stale"].(map[string]any); !ok {
 		t.Fatalf("stale is not structured: %#v", payload["stale"])
 	}
-	if _, ok := payload["prune_plan"].([]any); !ok {
+	prunePlan, ok := payload["prune_plan"].(map[string]any)
+	if !ok {
 		t.Fatalf("prune_plan is not structured: %#v", payload["prune_plan"])
+	}
+	if _, ok := prunePlan["summary"].(map[string]any); !ok {
+		t.Fatalf("prune_plan summary is not structured: %#v", prunePlan)
+	}
+	if _, ok := prunePlan["rows"].([]any); !ok {
+		t.Fatalf("prune_plan rows are not structured: %#v", prunePlan)
 	}
 }
 

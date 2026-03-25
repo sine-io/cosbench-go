@@ -56,7 +56,14 @@ def main():
         )
 
     if json_mode:
-        print(json.dumps(rows, indent=2))
+        summary = {
+            "base_ref": base_ref,
+            "current_worktree": current_worktree,
+            "total": len(rows),
+            "merged": sum(1 for row in rows if row["state"] == "merged"),
+            "integrated": sum(1 for row in rows if row["state"] == "integrated"),
+        }
+        print(json.dumps({"summary": summary, "rows": rows}, indent=2))
         return
 
     print("# Suggested cleanup commands")
