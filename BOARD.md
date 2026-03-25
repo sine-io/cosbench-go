@@ -21,6 +21,7 @@ Owner: Ross
 - Compare-local filtered listing targets
 - Compare-local multi-fixture filter
 - Compare-local local summary artifact
+- Manual smoke-s3 workflow
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -85,6 +86,7 @@ Owner: Ross
 - Compare-local filtered listing targets landed
 - Compare-local multi-fixture filter landed
 - Compare-local local summary artifact landed
+- Manual smoke-s3 workflow landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed
