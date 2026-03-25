@@ -47,6 +47,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The default CI path does not run `make smoke-s3`; live endpoint checks remain opt-in
 - A manual GitHub Actions workflow can run `make compare-local` on demand
 - A separate manual GitHub Actions workflow can run `make smoke-s3` with `COSBENCH_SMOKE_*` secrets and optional workflow inputs
+- That smoke workflow uses an explicit `s3` / `sio` backend choice and writes a small GitHub job summary with the selected inputs
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`
 

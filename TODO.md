@@ -27,6 +27,7 @@ Status: In Progress
 - [x] Add repository-local CI automation for `make validate`
 - [x] Add manual workflow automation for `make compare-local`
 - [x] Add manual workflow automation for `make smoke-s3`
+- [x] Add a GitHub job summary and explicit backend choice for the manual smoke workflow
 - [x] Upload `compare-local` workflow output as an artifact
 - [x] Add structured per-fixture JSON outputs for `make compare-local`
 - [x] Define a single manifest for the curated `compare-local` fixture set
