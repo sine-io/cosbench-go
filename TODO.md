@@ -49,6 +49,7 @@ Status: In Progress
 - [x] Add top-level summary counts to the JSON worktree audit output
 - [x] Add a merged-only `worktree-audit-merged` helper
 - [x] Add a machine-readable `worktree-audit-merged-json` helper
+- [x] Add a stale-only `worktree-audit-stale` helper
 - [x] Add a non-destructive `worktree-prune-plan` helper
 - [x] Add a machine-readable `worktree-prune-plan-json` helper
 - [x] Add `make compare-local-list` for fixture-name discovery

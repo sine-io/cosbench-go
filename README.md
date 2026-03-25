@@ -70,6 +70,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The JSON audit output now also includes a top-level `summary` section with total and per-state counts
 - Run `make --no-print-directory worktree-audit-merged` to list only worktrees already merged into `origin/main`
 - Run `make --no-print-directory worktree-audit-merged-json` to get the merged-only worktree audit data as JSON
+- Run `make --no-print-directory worktree-audit-stale` to list only active worktrees that are behind `origin/main`
 - Run `make --no-print-directory worktree-prune-plan` to print suggested cleanup commands for merged worktrees without executing them
 - Run `make --no-print-directory worktree-prune-plan-json` to get the same non-destructive cleanup plan in machine-readable form
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local COMPARE_LOCAL_FILTER=mock-stage-aware` to refresh only one curated fixture

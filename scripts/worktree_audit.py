@@ -52,7 +52,8 @@ def classify(branch, base_ref):
 def main():
     json_mode = "--json" in sys.argv[1:]
     merged_only = "--merged-only" in sys.argv[1:]
-    args = [arg for arg in sys.argv[1:] if arg not in ("--json", "--merged-only")]
+    stale_only = "--stale-only" in sys.argv[1:]
+    args = [arg for arg in sys.argv[1:] if arg not in ("--json", "--merged-only", "--stale-only")]
     base_ref = args[0] if args else "origin/main"
 
     rows = []
@@ -60,6 +61,8 @@ def main():
         branch = branch_name(entry)
         state, details, ahead, behind = classify(branch, base_ref)
         if merged_only and state != "merged":
+            continue
+        if stale_only and not (state == "active" and behind > 0):
             continue
         rows.append(
             {
