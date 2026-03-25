@@ -37,6 +37,7 @@ Status: In Progress
 - [x] Add a single-fixture filter for local and manual compare-local runs
 - [x] Fail fast when `COMPARE_LOCAL_FILTER` does not match a curated fixture
 - [x] Add `make compare-local-list` for fixture-name discovery
+- [x] Allow comma-separated compare-local fixture subsets
 
 ---
 

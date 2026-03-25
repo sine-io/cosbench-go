@@ -79,6 +79,7 @@ This is the fastest way to refresh the safe mock-backed fixture set in one pass.
 It recreates `.artifacts/compare-local/` and refreshes per-fixture JSON summaries there.
 Use `.artifacts/compare-local/index.json` as the stable top-level entrypoint for those results and their key per-fixture metrics.
 Set `COMPARE_LOCAL_FILTER=<fixture-name>` when you want to refresh just one curated row.
+You can also pass a comma-separated `COMPARE_LOCAL_FILTER` to refresh a curated subset.
 Unknown filter names now fail fast instead of silently producing an empty result set.
 Run `make compare-local-list` when you want to see the valid curated names first.
 It currently covers:
