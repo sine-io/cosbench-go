@@ -681,6 +681,31 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report-json")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-cleanup-report-json failed: %v\n%s", err, output)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	for _, key := range []string{"summary", "merged", "stale", "prune_plan"} {
+		if _, ok := payload[key]; !ok {
+			t.Fatalf("missing %s: %#v", key, payload)
+		}
+	}
+}
+
 func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {

@@ -11,7 +11,9 @@ def run(*args):
 
 
 def main():
-    base_ref = sys.argv[1] if len(sys.argv) > 1 else "origin/main"
+    json_mode = "--json" in sys.argv[1:]
+    args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    base_ref = args[0] if args else "origin/main"
     output_path = sys.argv[2] if len(sys.argv) > 2 else ""
     audit = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", base_ref))
     merged = run("python3", "./scripts/worktree_audit.py", "--merged-only", base_ref).rstrip()
@@ -19,6 +21,16 @@ def main():
     prune = run("python3", "./scripts/worktree_prune_plan.py", base_ref).rstrip()
 
     summary = audit["summary"]
+    if json_mode:
+        payload = {
+            "summary": summary,
+            "merged": merged,
+            "stale": stale,
+            "prune_plan": prune,
+        }
+        print(json.dumps(payload, indent=2))
+        return
+
     lines = [
         "# Worktree Cleanup Report",
         "",
