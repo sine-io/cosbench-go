@@ -15,7 +15,7 @@ def build_summary(payload):
         "",
         "Artifact directory: `.artifacts/compare-local/`",
         "",
-        f"Filter: `{meta.get('filter', '')}`",
+        f"Filter: `{meta.get('filter', 'all')}`",
         "",
         f"Fixture count: {meta.get('fixture_count', 0)}",
         "",
@@ -38,6 +38,7 @@ def main() -> int:
     output_dir = Path(sys.argv[2])
     selected = sys.argv[3] if len(sys.argv) == 4 else ""
     selected_set = set(parse_filter(selected))
+    filter_label = selected if selected else "all"
     fixtures = []
 
     for fixture in read_manifest(sys.argv[1]):
@@ -61,7 +62,7 @@ def main() -> int:
 
     payload = {
         "meta": {
-            "filter": selected,
+            "filter": filter_label,
             "fixture_count": len(fixtures),
             "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         },
