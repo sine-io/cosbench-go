@@ -22,21 +22,22 @@ type cliSummary struct {
 }
 
 func main() {
-	path, backend, jsonOut, err := parseCLIArgs(os.Args[1:])
+	path, backend, jsonOut, quiet, err := parseCLIArgs(os.Args[1:])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "usage: cosbench-go [-workload <path> | -f <path> | <path>] [-backend mock|s3|sio] [-json]")
+		fmt.Fprintln(os.Stderr, "usage: cosbench-go [-workload <path> | -f <path> | <path>] [-backend mock|s3|sio] [-json] [-quiet]")
 		os.Exit(2)
 	}
-	if err := runCLI(path, backend, jsonOut, os.Stdout, os.Stderr); err != nil {
+	if err := runCLI(path, backend, jsonOut, quiet, os.Stdout, os.Stderr); err != nil {
 		os.Exit(1)
 	}
 }
 
-func parseCLIArgs(args []string) (string, string, bool, error) {
+func parseCLIArgs(args []string) (string, string, bool, bool, error) {
 	var workloadPath string
 	var shortWorkloadPath string
 	var backend string
 	var jsonOut bool
+	var quiet bool
 	var positional []string
 
 	for i := 0; i < len(args); i++ {
@@ -45,26 +46,28 @@ func parseCLIArgs(args []string) (string, string, bool, error) {
 		case "-workload", "--workload":
 			i++
 			if i >= len(args) {
-				return "", "", false, errors.New("missing value for -workload")
+				return "", "", false, false, errors.New("missing value for -workload")
 			}
 			workloadPath = args[i]
 		case "-f":
 			i++
 			if i >= len(args) {
-				return "", "", false, errors.New("missing value for -f")
+				return "", "", false, false, errors.New("missing value for -f")
 			}
 			shortWorkloadPath = args[i]
 		case "-backend":
 			i++
 			if i >= len(args) {
-				return "", "", false, errors.New("missing value for -backend")
+				return "", "", false, false, errors.New("missing value for -backend")
 			}
 			backend = args[i]
 		case "-json":
 			jsonOut = true
+		case "-quiet":
+			quiet = true
 		default:
 			if len(arg) > 0 && arg[0] == '-' {
-				return "", "", false, fmt.Errorf("unknown flag: %s", arg)
+				return "", "", false, false, fmt.Errorf("unknown flag: %s", arg)
 			}
 			positional = append(positional, arg)
 		}
@@ -72,12 +75,12 @@ func parseCLIArgs(args []string) (string, string, bool, error) {
 
 	path, err := resolveWorkloadPath(workloadPath, shortWorkloadPath, positional)
 	if err != nil {
-		return "", "", false, err
+		return "", "", false, false, err
 	}
-	return path, backend, jsonOut, nil
+	return path, backend, jsonOut, quiet, nil
 }
 
-func runCLI(workloadPath, backend string, jsonOut bool, stdout, stderr io.Writer) error {
+func runCLI(workloadPath, backend string, jsonOut bool, quiet bool, stdout, stderr io.Writer) error {
 	wl, err := xmlparser.ParseWorkloadFile(workloadPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "parse workload: %v\n", err)
@@ -91,7 +94,9 @@ func runCLI(workloadPath, backend string, jsonOut bool, stdout, stderr io.Writer
 	adapters := storagefactory.NewRunAdapters()
 	defer adapters.Close()
 	progressOut := stdout
-	if jsonOut {
+	if quiet {
+		progressOut = io.Discard
+	} else if jsonOut {
 		progressOut = stderr
 	}
 

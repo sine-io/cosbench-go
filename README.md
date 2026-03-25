@@ -20,6 +20,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
   - `go run ./cmd/cosbench-go -f testdata/workloads/s3-active-subset.xml -backend mock`
   - `go run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock`
 - `-json` now emits machine-readable JSON to stdout without progress text mixed in
+- `-quiet` suppresses progress output entirely; `make compare-local` now uses it
 
 ## Technical Direction
 - Go-native rewrite, not line-by-line Java translation

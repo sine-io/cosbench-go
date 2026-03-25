@@ -10,7 +10,7 @@ import (
 func TestRunCLIStageAwareMockFixture(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, &stdout, &stderr)
+	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, false, &stdout, &stderr)
 	if err != nil {
 		t.Fatalf("runCLI(): %v stderr=%s", err, stderr.String())
 	}
@@ -26,7 +26,7 @@ func TestRunCLIStageAwareMockFixture(t *testing.T) {
 func TestRunCLIWithFWorkloadAlias(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, &stdout, &stderr)
+	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, false, &stdout, &stderr)
 	if err != nil {
 		t.Fatalf("runCLI(): %v stderr=%s", err, stderr.String())
 	}
@@ -68,7 +68,7 @@ func TestResolveWorkloadPathRequiresInput(t *testing.T) {
 }
 
 func TestParseCLIArgsSupportsPositionalPathWithTrailingFlags(t *testing.T) {
-	workload, backend, jsonOut, err := parseCLIArgs([]string{"testdata/workloads/mock-stage-aware.xml", "-backend", "mock", "-json"})
+	workload, backend, jsonOut, quiet, err := parseCLIArgs([]string{"testdata/workloads/mock-stage-aware.xml", "-backend", "mock", "-json", "-quiet"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,5 +80,23 @@ func TestParseCLIArgsSupportsPositionalPathWithTrailingFlags(t *testing.T) {
 	}
 	if !jsonOut {
 		t.Fatal("expected json mode")
+	}
+	if !quiet {
+		t.Fatal("expected quiet mode")
+	}
+}
+
+func TestRunCLIQuietSuppressesProgressOutput(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, true, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("runCLI(): %v stderr=%s", err, stderr.String())
+	}
+	if strings.TrimSpace(stderr.String()) != "" {
+		t.Fatalf("expected no progress output, got: %s", stderr.String())
+	}
+	if !strings.HasPrefix(strings.TrimSpace(stdout.String()), "{") {
+		t.Fatalf("expected pure json output: %s", stdout.String())
 	}
 }
