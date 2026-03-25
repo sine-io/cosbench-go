@@ -51,13 +51,16 @@ def classify(branch, base_ref):
 
 def main():
     json_mode = "--json" in sys.argv[1:]
-    args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    merged_only = "--merged-only" in sys.argv[1:]
+    args = [arg for arg in sys.argv[1:] if arg not in ("--json", "--merged-only")]
     base_ref = args[0] if args else "origin/main"
 
     rows = []
     for entry in worktree_entries():
         branch = branch_name(entry)
         state, details = classify(branch, base_ref)
+        if merged_only and state != "merged":
+            continue
         rows.append(
             {
                 "path": entry["worktree"],
