@@ -19,7 +19,10 @@ def worktree_entries():
                 yield entry
                 entry = {}
             continue
-        key, value = raw_line.split(" ", 1)
+        if " " in raw_line:
+            key, value = raw_line.split(" ", 1)
+        else:
+            key, value = raw_line, ""
         entry[key] = value
     if entry:
         yield entry
