@@ -438,6 +438,20 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	if len(payload.Rows) == 0 {
 		t.Fatal("expected at least one worktree entry")
 	}
+	if payload.Rows[0]["state"] != "merged" {
+		t.Fatalf("expected merged rows first: %#v", payload.Rows[:1])
+	}
+	seenActive := false
+	for _, row := range payload.Rows {
+		state, _ := row["state"].(string)
+		if state == "active" {
+			seenActive = true
+			continue
+		}
+		if state == "merged" && seenActive {
+			t.Fatalf("expected merged rows before active rows: %#v", payload.Rows)
+		}
+	}
 	if payload.Rows[0]["path"] == "" || payload.Rows[0]["branch"] == "" || payload.Rows[0]["state"] == "" {
 		t.Fatalf("unexpected payload: %#v", payload.Rows[0])
 	}

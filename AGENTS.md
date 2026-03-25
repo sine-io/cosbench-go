@@ -42,6 +42,7 @@ Those listing targets also respect `COMPARE_LOCAL_FILTER`.
 `make --no-print-directory worktree-audit-json` exposes the same audit data in machine-readable form.
 That JSON output now includes structured `ahead` / `behind` counts for each row.
 That JSON output also includes a top-level `summary` block with total and per-state counts.
+The audit outputs sort merged rows first and then active rows by descending `behind` count.
 `make --no-print-directory worktree-audit-merged` narrows that view to worktrees already merged into `origin/main`.
 `make --no-print-directory worktree-audit-merged-json` gives the merged-only view in machine-readable form.
 `make --no-print-directory worktree-audit-stale` narrows the view to active worktrees that are behind `origin/main`.

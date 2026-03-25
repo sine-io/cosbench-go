@@ -49,6 +49,20 @@ def classify(branch, base_ref):
     return "active", f"ahead={ahead} behind={behind}", int(ahead), int(behind)
 
 
+def sort_key(row):
+    state_rank = {
+        "merged": 0,
+        "active": 1,
+        "detached": 2,
+        "unknown": 3,
+    }
+    return (
+        state_rank.get(row["state"], 9),
+        -row["behind"],
+        row["branch"],
+    )
+
+
 def main():
     json_mode = "--json" in sys.argv[1:]
     merged_only = "--merged-only" in sys.argv[1:]
@@ -74,6 +88,8 @@ def main():
                 "behind": behind,
             }
         )
+
+    rows.sort(key=sort_key)
 
     if json_mode:
         summary = {
