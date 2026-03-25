@@ -14,6 +14,20 @@ compare-local:
 		echo "COMPARE_LOCAL_OUTPUT_DIR must end with compare-local: $(COMPARE_LOCAL_OUTPUT_DIR)" >&2; \
 		exit 1; \
 	fi
+	@if [ -n "$(COMPARE_LOCAL_FILTER)" ]; then \
+		awk -v want="$(COMPARE_LOCAL_FILTER)" '\
+			NF && $$1 !~ /^#/ { \
+				names = names "  - " $$1 "\n"; \
+				if ($$1 == want) { found = 1 } \
+			} \
+			END { \
+				if (!found) { \
+					printf "unknown compare-local fixture: %s\nknown fixtures:\n%s", want, names > "/dev/stderr"; \
+					exit 1; \
+				} \
+			}\
+		' "$(COMPARE_LOCAL_MANIFEST)"; \
+	fi
 	@mkdir -p $(COMPARE_LOCAL_OUTPUT_DIR)
 	@find "$(COMPARE_LOCAL_OUTPUT_DIR)" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 	@echo "== compare-local results =="
