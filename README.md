@@ -68,6 +68,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Run `make --no-print-directory worktree-audit-json` to get the same worktree audit data as JSON
 - The JSON audit output now includes structured `ahead` / `behind` counts for each row
 - The JSON audit output now also includes a top-level `summary` section with total and per-state counts
+- That summary also includes `stale` and `prune_candidates` counts
 - The JSON audit output now also includes a `current` flag for the current worktree row
 - Audit outputs now sort merged rows first, then active rows by descending `behind` count
 - Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to compare against something other than `origin/main`

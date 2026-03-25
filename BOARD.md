@@ -23,6 +23,7 @@ Owner: Ross
 - Worktree audit helper
 - Worktree audit JSON output
 - Worktree audit current marker
+- Worktree audit stale/prune counts
 - Worktree audit base-ref override
 - Worktree audit summary counts
 - Worktree audit sorting
@@ -108,6 +109,7 @@ Owner: Ross
 - Worktree audit helper landed
 - Worktree audit JSON output landed
 - Worktree audit current marker landed
+- Worktree audit stale/prune counts landed
 - Worktree audit base-ref override landed
 - Worktree audit summary counts landed
 - Worktree audit sorting landed

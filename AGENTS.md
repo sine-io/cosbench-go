@@ -42,6 +42,7 @@ Those listing targets also respect `COMPARE_LOCAL_FILTER`.
 `make --no-print-directory worktree-audit-json` exposes the same audit data in machine-readable form.
 That JSON output now includes structured `ahead` / `behind` counts for each row.
 That JSON output also includes a top-level `summary` block with total and per-state counts.
+That summary also includes `stale` and `prune_candidates` counts.
 That JSON output also includes a `current` flag for the current worktree row.
 The audit outputs sort merged rows first and then active rows by descending `behind` count.
 Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to compare against a different base.
