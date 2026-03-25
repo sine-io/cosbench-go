@@ -18,6 +18,7 @@ Owner: Ross
 - Compare-local filter validation
 - Compare-local fixture listing
 - Compare-local JSON fixture listing
+- Compare-local filtered listing targets
 - Compare-local multi-fixture filter
 
 ## Next
@@ -80,6 +81,7 @@ Owner: Ross
 - Compare-local filter validation landed
 - Compare-local fixture listing landed
 - Compare-local JSON fixture listing landed
+- Compare-local filtered listing targets landed
 - Compare-local multi-fixture filter landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures

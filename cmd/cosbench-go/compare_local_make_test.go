@@ -335,3 +335,54 @@ func TestCompareLocalListJSONShowsFixtureMetadata(t *testing.T) {
 		t.Fatalf("payload = %#v", payload)
 	}
 }
+
+func TestCompareLocalListRespectsFilter(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make compare-local-list failed: %v\n%s", err, output)
+	}
+
+	lines := strings.Fields(strings.TrimSpace(string(output)))
+	want := []string{"mock-stage-aware", "xml-splitrw-subset"}
+	if len(lines) != len(want) {
+		t.Fatalf("lines = %#v", lines)
+	}
+	for i, name := range want {
+		if lines[i] != name {
+			t.Fatalf("lines = %#v", lines)
+		}
+	}
+}
+
+func TestCompareLocalListJSONRespectsFilter(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list-json", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make compare-local-list-json failed: %v\n%s", err, output)
+	}
+
+	var payload []struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if len(payload) != 2 || payload[0].Name != "mock-stage-aware" || payload[1].Name != "xml-splitrw-subset" {
+		t.Fatalf("payload = %#v", payload)
+	}
+}

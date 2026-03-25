@@ -59,6 +59,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local-list-json` to print the curated fixture names and workload paths as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local COMPARE_LOCAL_FILTER=mock-stage-aware` to refresh only one curated fixture
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset` to refresh a curated subset
+- The list targets also respect `COMPARE_LOCAL_FILTER`, so you can preview the selected subset before running it
 - That command refreshes `.artifacts/compare-local/` in place and rewrites its `*.json` results for the curated fixture set
 - The curated fixture list for that command lives in `testdata/workloads/compare-local-fixtures.txt`
 - `.artifacts/compare-local/index.json` is the top-level artifact index for those per-fixture summaries and their key metrics
