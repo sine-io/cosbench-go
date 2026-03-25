@@ -77,6 +77,7 @@ GO=$(which go || echo /snap/bin/go) make compare-local
 
 This is the fastest way to refresh the safe mock-backed fixture set in one pass.
 It recreates `.artifacts/compare-local/` and refreshes per-fixture JSON summaries there.
+Use `.artifacts/compare-local/index.json` as the stable top-level entrypoint for those results.
 It currently covers:
 
 - `s3-active-subset.xml`

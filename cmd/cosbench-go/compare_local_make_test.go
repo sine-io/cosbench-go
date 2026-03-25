@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,6 +48,24 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(outputDir, name)); err != nil {
 			t.Fatalf("expected fresh output %s: %v", name, err)
 		}
+	}
+
+	indexData, err := os.ReadFile(filepath.Join(outputDir, "index.json"))
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+	var payload struct {
+		Fixtures []struct {
+			Name    string `json:"name"`
+			Workload string `json:"workload"`
+			Summary string `json:"summary"`
+		} `json:"fixtures"`
+	}
+	if err := json.Unmarshal(indexData, &payload); err != nil {
+		t.Fatalf("unmarshal index: %v", err)
+	}
+	if len(payload.Fixtures) != 4 {
+		t.Fatalf("fixtures = %#v", payload.Fixtures)
 	}
 }
 
