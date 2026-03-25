@@ -701,6 +701,15 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	if !strings.Contains(text, "# Worktree Cleanup Report") {
 		t.Fatalf("unexpected output: %s", text)
 	}
+	for _, expected := range []string{
+		"- Integrated:",
+		"- Stale:",
+		"- Prune candidates:",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in output: %s", expected, text)
+		}
+	}
 	if !strings.Contains(text, "## Prune Plan") {
 		t.Fatalf("unexpected output: %s", text)
 	}
@@ -710,6 +719,15 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	}
 	if !strings.Contains(string(reportData), "# Worktree Cleanup Report") {
 		t.Fatalf("unexpected report file: %s", reportData)
+	}
+	for _, expected := range []string{
+		"- Integrated:",
+		"- Stale:",
+		"- Prune candidates:",
+	} {
+		if !strings.Contains(string(reportData), expected) {
+			t.Fatalf("missing %q in report file: %s", expected, reportData)
+		}
 	}
 }
 

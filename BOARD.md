@@ -33,6 +33,7 @@ Owner: Ross
 - Worktree prune plan JSON summary
 - Worktree cleanup report
 - Worktree cleanup report JSON output
+- Worktree cleanup report summary counts
 - Worktree prune plan
 - Worktree audit merged-only JSON output
 - Worktree audit structured ahead/behind fields
@@ -121,6 +122,7 @@ Owner: Ross
 - Worktree prune plan JSON summary landed
 - Worktree cleanup report landed
 - Worktree cleanup report JSON output landed
+- Worktree cleanup report summary counts landed
 - Worktree prune plan landed
 - Worktree audit merged-only JSON output landed
 - Worktree audit structured ahead/behind fields landed
