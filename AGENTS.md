@@ -41,6 +41,7 @@ Those listing targets also respect `COMPARE_LOCAL_FILTER`.
 `make --no-print-directory worktree-audit` is a non-destructive helper that shows local worktrees and their status relative to `origin/main`.
 `make --no-print-directory worktree-audit-json` exposes the same audit data in machine-readable form.
 `make --no-print-directory worktree-audit-merged` narrows that view to worktrees already merged into `origin/main`.
+`make --no-print-directory worktree-audit-merged-json` gives the merged-only view in machine-readable form.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
 That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.

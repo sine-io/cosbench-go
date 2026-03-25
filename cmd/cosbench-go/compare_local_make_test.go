@@ -460,6 +460,38 @@ func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-merged-json")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-audit-merged-json failed: %v\n%s", err, output)
+	}
+
+	var payload []struct {
+		Path   string `json:"path"`
+		Branch string `json:"branch"`
+		State  string `json:"state"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if len(payload) == 0 {
+		t.Fatal("expected at least one merged worktree")
+	}
+	for _, row := range payload {
+		if row.State != "merged" {
+			t.Fatalf("unexpected row: %#v", row)
+		}
+	}
+}
+
 func TestCompareLocalListRespectsFilter(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
