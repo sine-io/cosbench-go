@@ -67,6 +67,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Run `make --no-print-directory worktree-audit` to list local worktrees and their status relative to `origin/main`
 - Run `make --no-print-directory worktree-audit-json` to get the same worktree audit data as JSON
 - Run `make --no-print-directory worktree-audit-merged` to list only worktrees already merged into `origin/main`
+- Run `make --no-print-directory worktree-audit-merged-json` to get the merged-only worktree audit data as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local COMPARE_LOCAL_FILTER=mock-stage-aware` to refresh only one curated fixture
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset` to refresh a curated subset
 - The list targets also respect `COMPARE_LOCAL_FILTER`, so you can preview the selected subset before running it
