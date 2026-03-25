@@ -254,6 +254,52 @@ func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
 	}
 }
 
+func TestCompareLocalFilterAcceptsAllAlias(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("look path go: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	outputDir := filepath.Join(t.TempDir(), "compare-local")
+	cmd := exec.Command(
+		makeBin,
+		"compare-local",
+		"GO="+goBin,
+		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
+		"COMPARE_LOCAL_FILTER=all",
+	)
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make compare-local failed: %v\n%s", err, output)
+	}
+
+	indexData, err := os.ReadFile(filepath.Join(outputDir, "index.json"))
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+	var payload struct {
+		Meta struct {
+			Filter       string `json:"filter"`
+			FixtureCount int    `json:"fixture_count"`
+		} `json:"meta"`
+	}
+	if err := json.Unmarshal(indexData, &payload); err != nil {
+		t.Fatalf("unmarshal index: %v", err)
+	}
+	if payload.Meta.Filter != "all" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if payload.Meta.FixtureCount != 4 {
+		t.Fatalf("meta fixture_count = %d", payload.Meta.FixtureCount)
+	}
+}
+
 func TestCompareLocalFilterRejectsUnknownFixture(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
