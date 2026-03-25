@@ -55,6 +55,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Use it to track which representative fixtures are parser-only, runnable now, runnable with live endpoint setup, or still unverified against `cosbench-sineio`
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local` to refresh the safe mock-backed local comparison set
 - That command now refreshes `.artifacts/compare-local/*.json` for the curated fixture set
+- The curated fixture list for that command lives in `testdata/workloads/compare-local-fixtures.txt`
 
 ## References
 - Legacy project reference: `../cosbench-sineio`

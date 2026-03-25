@@ -1,0 +1,5 @@
+# output-name workload-path
+s3-active-subset testdata/workloads/s3-active-subset.xml
+mock-stage-aware testdata/workloads/mock-stage-aware.xml
+mock-reusedata-subset testdata/workloads/mock-reusedata-subset.xml
+xml-splitrw-subset testdata/workloads/xml-splitrw-subset.xml

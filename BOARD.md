@@ -1,6 +1,6 @@
 # COSBench-Go Kanban
 
-Last updated: 2026-03-24
+Last updated: 2026-03-25
 Owner: Ross
 
 ## Doing
@@ -8,6 +8,7 @@ Owner: Ross
 - Storage-driver comparison notes against legacy Java behavior
 - Release/branch hygiene once the current migration slice is stable
 - Structured compare-local result outputs for local and manual workflow reuse
+- Compare-local fixture manifest cleanup
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -59,6 +60,7 @@ Owner: Ross
 - Manual compare-local workflow landed
 - Compare-local workflow artifact upload landed
 - Structured compare-local JSON output directory landed
+- Compare-local fixture manifest landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

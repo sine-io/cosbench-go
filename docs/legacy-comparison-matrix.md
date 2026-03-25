@@ -84,6 +84,12 @@ It currently covers:
 - `mock-reusedata-subset.xml`
 - `xml-splitrw-subset.xml`
 
+The single source of truth for that curated set is:
+
+```bash
+testdata/workloads/compare-local-fixtures.txt
+```
+
 ### 3. Run live endpoint smoke coverage
 
 Set:

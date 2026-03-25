@@ -28,6 +28,7 @@ Status: In Progress
 - [x] Add manual workflow automation for `make compare-local`
 - [x] Upload `compare-local` workflow output as an artifact
 - [x] Add structured per-fixture JSON outputs for `make compare-local`
+- [x] Define a single manifest for the curated `compare-local` fixture set
 
 ---
 
