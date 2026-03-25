@@ -134,31 +134,46 @@ func TestWorktreePrunePlanJSONIncludesBranchContext(t *testing.T) {
 		t.Fatalf("run script: %v\n%s", err, output)
 	}
 
-	var payload []struct {
-		Branch   string   `json:"branch"`
-		State    string   `json:"state"`
-		Details  string   `json:"details"`
-		Ahead    int      `json:"ahead"`
-		Behind   int      `json:"behind"`
-		Commands []string `json:"commands"`
+	var payload struct {
+		Summary struct {
+			BaseRef         string `json:"base_ref"`
+			CurrentWorktree string `json:"current_worktree"`
+			Total           int    `json:"total"`
+			Merged          int    `json:"merged"`
+			Integrated      int    `json:"integrated"`
+		} `json:"summary"`
+		Rows []struct {
+			Branch   string   `json:"branch"`
+			State    string   `json:"state"`
+			Details  string   `json:"details"`
+			Ahead    int      `json:"ahead"`
+			Behind   int      `json:"behind"`
+			Commands []string `json:"commands"`
+		} `json:"rows"`
 	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
-	if len(payload) != 1 {
+	if payload.Summary.BaseRef != "main" {
+		t.Fatalf("summary = %#v", payload.Summary)
+	}
+	if payload.Summary.Total != 1 || payload.Summary.Integrated != 1 || payload.Summary.Merged != 0 {
+		t.Fatalf("summary = %#v", payload.Summary)
+	}
+	if len(payload.Rows) != 1 {
 		t.Fatalf("payload = %#v", payload)
 	}
-	if payload[0].Branch != "feature" || payload[0].State != "integrated" {
-		t.Fatalf("row = %#v", payload[0])
+	if payload.Rows[0].Branch != "feature" || payload.Rows[0].State != "integrated" {
+		t.Fatalf("row = %#v", payload.Rows[0])
 	}
-	if payload[0].Details == "" {
-		t.Fatalf("row = %#v", payload[0])
+	if payload.Rows[0].Details == "" {
+		t.Fatalf("row = %#v", payload.Rows[0])
 	}
-	if payload[0].Ahead < 0 || payload[0].Behind < 0 {
-		t.Fatalf("row = %#v", payload[0])
+	if payload.Rows[0].Ahead < 0 || payload.Rows[0].Behind < 0 {
+		t.Fatalf("row = %#v", payload.Rows[0])
 	}
-	if len(payload[0].Commands) != 2 {
-		t.Fatalf("row = %#v", payload[0])
+	if len(payload.Rows[0].Commands) != 2 {
+		t.Fatalf("row = %#v", payload.Rows[0])
 	}
 }
 

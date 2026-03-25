@@ -57,6 +57,7 @@ Status: In Progress
 - [x] Add a stale-only `worktree-audit-stale` helper
 - [x] Add a non-destructive `worktree-prune-plan` helper
 - [x] Add a machine-readable `worktree-prune-plan-json` helper
+- [x] Add a structured `summary + rows` JSON shape for `worktree-prune-plan-json`
 - [x] Add a Markdown `worktree-cleanup-report` helper
 - [x] Add a machine-readable `worktree-cleanup-report-json` helper
 - [x] Add `make compare-local-list` for fixture-name discovery
