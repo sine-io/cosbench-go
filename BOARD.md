@@ -23,6 +23,7 @@ Owner: Ross
 - Worktree audit helper
 - Worktree audit JSON output
 - Worktree audit merged-only JSON output
+- Worktree audit structured ahead/behind fields
 - Worktree audit merged-only view
 - Compare-local local summary artifact
 - Manual smoke-s3 workflow
@@ -98,6 +99,7 @@ Owner: Ross
 - Worktree audit helper landed
 - Worktree audit JSON output landed
 - Worktree audit merged-only JSON output landed
+- Worktree audit structured ahead/behind fields landed
 - Worktree audit merged-only view landed
 - Compare-local local summary artifact landed
 - Manual smoke-s3 workflow landed

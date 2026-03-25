@@ -45,6 +45,7 @@ Status: In Progress
 - [x] Add a non-destructive `worktree-audit` helper for local cleanup planning
 - [x] Fail fast when `COMPARE_LOCAL_FILTER` does not match a curated fixture
 - [x] Add a machine-readable `worktree-audit-json` helper
+- [x] Add structured `ahead` / `behind` fields to the JSON worktree audit output
 - [x] Add a merged-only `worktree-audit-merged` helper
 - [x] Add a machine-readable `worktree-audit-merged-json` helper
 - [x] Add `make compare-local-list` for fixture-name discovery
