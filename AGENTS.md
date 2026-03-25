@@ -28,6 +28,7 @@ Live smoke tests require `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`,
 Repository CI runs `make validate`; keep smoke tests opt-in and out of the default CI path.
 In `-json` mode, stdout is reserved for machine-readable JSON.
 `make compare-local` is the fastest way to refresh local comparison evidence without live credentials.
+There is also a manual GitHub Actions workflow for `make smoke-s3`; it reads `COSBENCH_SMOKE_*` from repository secrets and optional workflow inputs.
 `make compare-local-list` prints the valid curated fixture names for `COMPARE_LOCAL_FILTER`.
 `make compare-local-list-json` prints the curated fixture names and workload paths as JSON.
 Those listing targets also respect `COMPARE_LOCAL_FILTER`.

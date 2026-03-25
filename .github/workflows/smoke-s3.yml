@@ -1,0 +1,44 @@
+name: Smoke S3
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: Optional backend override (s3 or sio)
+        required: false
+        default: ""
+      region:
+        description: Optional region override
+        required: false
+        default: ""
+      path_style:
+        description: Optional path-style override
+        required: false
+        default: ""
+      bucket_prefix:
+        description: Optional bucket prefix override
+        required: false
+        default: ""
+
+jobs:
+  smoke-s3:
+    runs-on: ubuntu-latest
+    env:
+      COSBENCH_SMOKE_ENDPOINT: ${{ secrets.COSBENCH_SMOKE_ENDPOINT }}
+      COSBENCH_SMOKE_ACCESS_KEY: ${{ secrets.COSBENCH_SMOKE_ACCESS_KEY }}
+      COSBENCH_SMOKE_SECRET_KEY: ${{ secrets.COSBENCH_SMOKE_SECRET_KEY }}
+      COSBENCH_SMOKE_BACKEND: ${{ inputs.backend }}
+      COSBENCH_SMOKE_REGION: ${{ inputs.region }}
+      COSBENCH_SMOKE_PATH_STYLE: ${{ inputs.path_style }}
+      COSBENCH_SMOKE_BUCKET_PREFIX: ${{ inputs.bucket_prefix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run opt-in smoke suite
+        run: GO=go make smoke-s3
