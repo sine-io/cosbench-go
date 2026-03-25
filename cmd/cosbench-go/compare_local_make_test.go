@@ -479,6 +479,28 @@ func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditStaleTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-stale")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-audit-stale failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if !strings.Contains(text, "PATH\tBRANCH\tSTATE\tDETAILS") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if strings.Contains(text, "\tmerged\t") {
+		t.Fatalf("unexpected merged row in stale-only output: %s", text)
+	}
+}
+
 func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {

@@ -3,7 +3,7 @@ COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
 COMPARE_LOCAL_FILTER ?=
 
-.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-prune-plan worktree-prune-plan-json
+.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale
 
 build:
 	$(GO) build ./...
@@ -19,6 +19,9 @@ worktree-audit-json:
 
 worktree-audit-merged-json:
 	@python3 ./scripts/worktree_audit.py --json --merged-only origin/main
+
+worktree-audit-stale:
+	@python3 ./scripts/worktree_audit.py --stale-only origin/main
 
 worktree-prune-plan:
 	@python3 ./scripts/worktree_prune_plan.py

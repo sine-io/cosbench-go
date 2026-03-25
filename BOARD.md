@@ -23,6 +23,7 @@ Owner: Ross
 - Worktree audit helper
 - Worktree audit JSON output
 - Worktree audit summary counts
+- Worktree audit stale view
 - Worktree prune plan JSON output
 - Worktree prune plan
 - Worktree audit merged-only JSON output
@@ -102,6 +103,7 @@ Owner: Ross
 - Worktree audit helper landed
 - Worktree audit JSON output landed
 - Worktree audit summary counts landed
+- Worktree audit stale view landed
 - Worktree prune plan JSON output landed
 - Worktree prune plan landed
 - Worktree audit merged-only JSON output landed
