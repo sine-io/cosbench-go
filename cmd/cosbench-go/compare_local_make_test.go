@@ -193,7 +193,7 @@ func TestCompareLocalListShowsFixtureNames(t *testing.T) {
 	}
 
 	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "compare-local-list")
+	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list")
 	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
