@@ -31,7 +31,7 @@ worktree-prune-plan-json:
 	@python3 ./scripts/worktree_prune_plan.py --json "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-cleanup-report:
-	@python3 ./scripts/worktree_cleanup_report.py
+	@python3 ./scripts/worktree_cleanup_report.py "$(WORKTREE_AUDIT_BASE_REF)"
 
 compare-local-list:
 	@python3 ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" --names "$(COMPARE_LOCAL_FILTER)"

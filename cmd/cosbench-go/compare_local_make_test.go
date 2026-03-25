@@ -673,6 +673,25 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_AUDIT_BASE_REF=HEAD")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-cleanup-report failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if !strings.Contains(text, "- Base ref: `HEAD`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+}
+
 func TestCompareLocalListRespectsFilter(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
