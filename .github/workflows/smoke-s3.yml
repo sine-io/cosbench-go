@@ -52,6 +52,12 @@ jobs:
           {
             echo "## Smoke S3"
             echo
+            echo "Endpoint secret: \`${COSBENCH_SMOKE_ENDPOINT:+set}${COSBENCH_SMOKE_ENDPOINT:-unset}\`"
+            echo
+            echo "Access key secret: \`${COSBENCH_SMOKE_ACCESS_KEY:+set}${COSBENCH_SMOKE_ACCESS_KEY:-unset}\`"
+            echo
+            echo "Secret key secret: \`${COSBENCH_SMOKE_SECRET_KEY:+set}${COSBENCH_SMOKE_SECRET_KEY:-unset}\`"
+            echo
             echo "Backend: \`${COSBENCH_SMOKE_BACKEND:-s3}\`"
             echo
             echo "Region: \`${COSBENCH_SMOKE_REGION:-}\`"
