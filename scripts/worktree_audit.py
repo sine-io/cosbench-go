@@ -73,7 +73,14 @@ def main():
         )
 
     if json_mode:
-        print(json.dumps(rows, indent=2))
+        summary = {
+            "total": len(rows),
+            "merged": sum(1 for row in rows if row["state"] == "merged"),
+            "active": sum(1 for row in rows if row["state"] == "active"),
+            "detached": sum(1 for row in rows if row["state"] == "detached"),
+            "unknown": sum(1 for row in rows if row["state"] == "unknown"),
+        }
+        print(json.dumps({"summary": summary, "rows": rows}, indent=2))
         return
 
     print("PATH\tBRANCH\tSTATE\tDETAILS")

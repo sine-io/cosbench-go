@@ -422,29 +422,38 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-json failed: %v\n%s", err, output)
 	}
 
-	var payload []map[string]any
+	var payload struct {
+		Summary map[string]any   `json:"summary"`
+		Rows    []map[string]any `json:"rows"`
+	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
-	if len(payload) == 0 {
+	if payload.Summary == nil {
+		t.Fatalf("missing summary: %#v", payload)
+	}
+	if _, ok := payload.Summary["total"]; !ok {
+		t.Fatalf("missing total: %#v", payload.Summary)
+	}
+	if len(payload.Rows) == 0 {
 		t.Fatal("expected at least one worktree entry")
 	}
-	if payload[0]["path"] == "" || payload[0]["branch"] == "" || payload[0]["state"] == "" {
-		t.Fatalf("unexpected payload: %#v", payload[0])
+	if payload.Rows[0]["path"] == "" || payload.Rows[0]["branch"] == "" || payload.Rows[0]["state"] == "" {
+		t.Fatalf("unexpected payload: %#v", payload.Rows[0])
 	}
-	if _, ok := payload[0]["ahead"]; !ok {
-		t.Fatalf("missing ahead: %#v", payload[0])
+	if _, ok := payload.Rows[0]["ahead"]; !ok {
+		t.Fatalf("missing ahead: %#v", payload.Rows[0])
 	}
-	if _, ok := payload[0]["behind"]; !ok {
-		t.Fatalf("missing behind: %#v", payload[0])
+	if _, ok := payload.Rows[0]["behind"]; !ok {
+		t.Fatalf("missing behind: %#v", payload.Rows[0])
 	}
-	ahead, ok := payload[0]["ahead"].(float64)
+	ahead, ok := payload.Rows[0]["ahead"].(float64)
 	if !ok || ahead < 0 {
-		t.Fatalf("unexpected payload: %#v", payload[0])
+		t.Fatalf("unexpected payload: %#v", payload.Rows[0])
 	}
-	behind, ok := payload[0]["behind"].(float64)
+	behind, ok := payload.Rows[0]["behind"].(float64)
 	if !ok || behind < 0 {
-		t.Fatalf("unexpected payload: %#v", payload[0])
+		t.Fatalf("unexpected payload: %#v", payload.Rows[0])
 	}
 }
 
@@ -484,15 +493,17 @@ func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-merged-json failed: %v\n%s", err, output)
 	}
 
-	var payload []struct {
-		Path   string `json:"path"`
-		Branch string `json:"branch"`
-		State  string `json:"state"`
+	var payload struct {
+		Rows []struct {
+			Path   string `json:"path"`
+			Branch string `json:"branch"`
+			State  string `json:"state"`
+		} `json:"rows"`
 	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
-	for _, row := range payload {
+	for _, row := range payload.Rows {
 		if row.State != "merged" {
 			t.Fatalf("unexpected row: %#v", row)
 		}

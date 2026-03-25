@@ -22,6 +22,7 @@ Owner: Ross
 - Compare-local multi-fixture filter
 - Worktree audit helper
 - Worktree audit JSON output
+- Worktree audit summary counts
 - Worktree audit merged-only JSON output
 - Worktree audit structured ahead/behind fields
 - Worktree audit merged-only view
@@ -98,6 +99,7 @@ Owner: Ross
 - Compare-local multi-fixture filter landed
 - Worktree audit helper landed
 - Worktree audit JSON output landed
+- Worktree audit summary counts landed
 - Worktree audit merged-only JSON output landed
 - Worktree audit structured ahead/behind fields landed
 - Worktree audit merged-only view landed
