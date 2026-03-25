@@ -651,6 +651,28 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-cleanup-report failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if !strings.Contains(text, "# Worktree Cleanup Report") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if !strings.Contains(text, "## Prune Plan") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+}
+
 func TestCompareLocalListRespectsFilter(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {

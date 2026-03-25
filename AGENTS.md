@@ -50,6 +50,7 @@ Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to
 `make --no-print-directory worktree-audit-stale` narrows the view to active worktrees that are behind `origin/main`.
 `make --no-print-directory worktree-prune-plan` prints suggested cleanup commands without actually deleting anything.
 `make --no-print-directory worktree-prune-plan-json` exposes the same non-destructive cleanup plan in machine-readable form.
+`make --no-print-directory worktree-cleanup-report` combines the main audit, stale view, and prune plan into a single Markdown report.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
 That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.
