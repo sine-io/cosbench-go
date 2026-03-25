@@ -56,6 +56,10 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 		t.Fatalf("read index: %v", err)
 	}
 	var payload struct {
+		Meta struct {
+			Filter       string `json:"filter"`
+			FixtureCount int    `json:"fixture_count"`
+		} `json:"meta"`
 		Fixtures []struct {
 			Name     string `json:"name"`
 			Workload string `json:"workload"`
@@ -71,6 +75,12 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	}
 	if len(payload.Fixtures) != 4 {
 		t.Fatalf("fixtures = %#v", payload.Fixtures)
+	}
+	if payload.Meta.Filter != "" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if payload.Meta.FixtureCount != 4 {
+		t.Fatalf("meta fixture_count = %d", payload.Meta.FixtureCount)
 	}
 	for _, fixture := range payload.Fixtures {
 		if fixture.Stages == 0 {
@@ -145,6 +155,10 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 		t.Fatalf("read index: %v", err)
 	}
 	var payload struct {
+		Meta struct {
+			Filter       string `json:"filter"`
+			FixtureCount int    `json:"fixture_count"`
+		} `json:"meta"`
 		Fixtures []struct {
 			Name string `json:"name"`
 		} `json:"fixtures"`
@@ -154,6 +168,12 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 	}
 	if len(payload.Fixtures) != 1 || payload.Fixtures[0].Name != "mock-stage-aware" {
 		t.Fatalf("fixtures = %#v", payload.Fixtures)
+	}
+	if payload.Meta.Filter != "mock-stage-aware" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if payload.Meta.FixtureCount != 1 {
+		t.Fatalf("meta fixture_count = %d", payload.Meta.FixtureCount)
 	}
 }
 

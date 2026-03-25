@@ -35,7 +35,14 @@ def main() -> int:
             }
         )
 
-    (output_dir / "index.json").write_text(json.dumps({"fixtures": fixtures}, indent=2) + "\n")
+    payload = {
+        "meta": {
+            "filter": selected,
+            "fixture_count": len(fixtures),
+        },
+        "fixtures": fixtures,
+    }
+    (output_dir / "index.json").write_text(json.dumps(payload, indent=2) + "\n")
     return 0
 
 
