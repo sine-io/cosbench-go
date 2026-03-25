@@ -16,6 +16,7 @@ def main():
     base_ref = args[0] if args else "origin/main"
     output_path = sys.argv[2] if len(sys.argv) > 2 else ""
     audit = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", base_ref))
+    prune_plan = json.loads(run("python3", "./scripts/worktree_prune_plan.py", "--json", base_ref))
     merged_text = run("python3", "./scripts/worktree_audit.py", "--merged-only", base_ref).rstrip()
     stale_text = run("python3", "./scripts/worktree_audit.py", "--stale-only", base_ref).rstrip()
     prune_text = run("python3", "./scripts/worktree_prune_plan.py", base_ref).rstrip()
@@ -26,7 +27,7 @@ def main():
             "summary": summary,
             "merged": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref)),
             "stale": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref)),
-            "prune_plan": json.loads(run("python3", "./scripts/worktree_prune_plan.py", "--json", base_ref)),
+            "prune_plan": prune_plan,
         }
         print(json.dumps(payload, indent=2))
         return
@@ -39,6 +40,9 @@ def main():
         f"- Base ref: `{summary['base_ref']}`",
         f"- Total worktrees: {summary['total']}",
         f"- Merged: {summary['merged']}",
+        f"- Integrated: {summary['integrated']}",
+        f"- Stale: {summary['stale']}",
+        f"- Prune candidates: {prune_plan['summary']['total']}",
         f"- Active: {summary['active']}",
         f"- Detached: {summary['detached']}",
         f"- Unknown: {summary['unknown']}",

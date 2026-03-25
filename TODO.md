@@ -60,6 +60,7 @@ Status: In Progress
 - [x] Add a structured `summary + rows` JSON shape for `worktree-prune-plan-json`
 - [x] Add a Markdown `worktree-cleanup-report` helper
 - [x] Add a machine-readable `worktree-cleanup-report-json` helper
+- [x] Add integrated / stale / prune-candidate counts to the Markdown cleanup report summary
 - [x] Add `make compare-local-list` for fixture-name discovery
 - [x] Add a local `summary.md` artifact for compare-local outputs
 - [x] Allow comma-separated compare-local fixture subsets
