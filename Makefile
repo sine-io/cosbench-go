@@ -19,14 +19,24 @@ compare-local:
 	fi
 	@if [ -n "$(COMPARE_LOCAL_FILTER)" ]; then \
 		awk -v want="$(COMPARE_LOCAL_FILTER)" '\
+			BEGIN { \
+				count = split(want, requested, ","); \
+				for (i = 1; i <= count; i++) { \
+					if (requested[i] != "") { \
+						needed[requested[i]] = 1; \
+					} \
+				} \
+			} \
 			NF && $$1 !~ /^#/ { \
 				names = names "  - " $$1 "\n"; \
-				if ($$1 == want) { found = 1 } \
+				known[$$1] = 1; \
 			} \
 			END { \
-				if (!found) { \
-					printf "unknown compare-local fixture: %s\nknown fixtures:\n%s", want, names > "/dev/stderr"; \
-					exit 1; \
+				for (name in needed) { \
+					if (!(name in known)) { \
+						printf "unknown compare-local fixture: %s\nknown fixtures:\n%s", name, names > "/dev/stderr"; \
+						exit 1; \
+					} \
 				} \
 			}\
 		' "$(COMPARE_LOCAL_MANIFEST)"; \
@@ -39,8 +49,11 @@ compare-local:
 		if [ -z "$$name" ] || [ "$${name#\#}" != "$$name" ]; then \
 			continue; \
 		fi; \
-		if [ -n "$(COMPARE_LOCAL_FILTER)" ] && [ "$$name" != "$(COMPARE_LOCAL_FILTER)" ]; then \
-			continue; \
+		if [ -n "$(COMPARE_LOCAL_FILTER)" ]; then \
+			case ",$(COMPARE_LOCAL_FILTER)," in \
+				*,"$$name",*) ;; \
+				*) continue ;; \
+			esac; \
 		fi; \
 		echo "== $$name =="; \
 		$(GO) run ./cmd/cosbench-go "$$fixture" -backend mock -json -quiet -summary-file "$(COMPARE_LOCAL_OUTPUT_DIR)/$$name.json"; \

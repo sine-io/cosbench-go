@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       fixture:
-        description: Optional compare-local fixture name to run
+        description: Optional compare-local fixture name or comma-separated subset to run
         required: false
         default: ""
 
