@@ -33,6 +33,7 @@ Status: In Progress
 - [x] Guard `COMPARE_LOCAL_OUTPUT_DIR` so compare-local only refreshes dedicated directories
 - [x] Add a top-level `index.json` for compare-local artifact discovery
 - [x] Add a GitHub job summary for the manual compare-local workflow
+- [x] Include per-fixture metrics in the compare-local index and workflow summary
 
 ---
 

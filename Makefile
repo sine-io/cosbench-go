@@ -17,21 +17,14 @@ compare-local:
 	@find "$(COMPARE_LOCAL_OUTPUT_DIR)" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 	@echo "== compare-local results =="
 	@echo "$(COMPARE_LOCAL_OUTPUT_DIR)"
-	@printf '{\n  "fixtures": [\n' > "$(COMPARE_LOCAL_OUTPUT_DIR)/index.json"; \
-	first=1; \
-	while read -r name fixture; do \
+	@while read -r name fixture; do \
 		if [ -z "$$name" ] || [ "$${name#\#}" != "$$name" ]; then \
 			continue; \
 		fi; \
 		echo "== $$name =="; \
 		$(GO) run ./cmd/cosbench-go "$$fixture" -backend mock -json -quiet -summary-file "$(COMPARE_LOCAL_OUTPUT_DIR)/$$name.json"; \
-		if [ $$first -eq 0 ]; then \
-			printf ',\n' >> "$(COMPARE_LOCAL_OUTPUT_DIR)/index.json"; \
-		fi; \
-		printf '    {"name":"%s","workload":"%s","summary":"%s.json"}' "$$name" "$$fixture" "$$name" >> "$(COMPARE_LOCAL_OUTPUT_DIR)/index.json"; \
-		first=0; \
-	done < $(COMPARE_LOCAL_MANIFEST); \
-	printf '\n  ]\n}\n' >> "$(COMPARE_LOCAL_OUTPUT_DIR)/index.json"
+	done < $(COMPARE_LOCAL_MANIFEST)
+	@python3 ./scripts/build_compare_local_index.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_OUTPUT_DIR)"
 
 smoke-s3:
 	$(GO) test ./internal/driver/s3 -run Smoke -v

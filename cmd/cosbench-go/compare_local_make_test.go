@@ -56,9 +56,13 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	}
 	var payload struct {
 		Fixtures []struct {
-			Name    string `json:"name"`
+			Name     string `json:"name"`
 			Workload string `json:"workload"`
-			Summary string `json:"summary"`
+			Summary  string `json:"summary"`
+			Stages   int    `json:"stages"`
+			Works    int    `json:"works"`
+			Samples  int    `json:"samples"`
+			Errors   int64  `json:"errors"`
 		} `json:"fixtures"`
 	}
 	if err := json.Unmarshal(indexData, &payload); err != nil {
@@ -66,6 +70,20 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	}
 	if len(payload.Fixtures) != 4 {
 		t.Fatalf("fixtures = %#v", payload.Fixtures)
+	}
+	for _, fixture := range payload.Fixtures {
+		if fixture.Stages == 0 {
+			t.Fatalf("missing stages in fixture %#v", fixture)
+		}
+		if fixture.Works == 0 {
+			t.Fatalf("missing works in fixture %#v", fixture)
+		}
+		if fixture.Samples == 0 {
+			t.Fatalf("missing samples in fixture %#v", fixture)
+		}
+		if fixture.Errors < 0 {
+			t.Fatalf("unexpected errors in fixture %#v", fixture)
+		}
 	}
 }
 
