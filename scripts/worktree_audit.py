@@ -102,6 +102,14 @@ def main():
             "active": sum(1 for row in rows if row["state"] == "active"),
             "detached": sum(1 for row in rows if row["state"] == "detached"),
             "unknown": sum(1 for row in rows if row["state"] == "unknown"),
+            "stale": sum(1 for row in rows if row["state"] == "active" and row["behind"] > 0),
+            "prune_candidates": sum(
+                1
+                for row in rows
+                if row["state"] == "merged"
+                and row["branch"] not in ("main", "master")
+                and not row["current"]
+            ),
         }
         print(json.dumps({"summary": summary, "rows": rows}, indent=2))
         return

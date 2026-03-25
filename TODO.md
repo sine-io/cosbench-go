@@ -47,6 +47,7 @@ Status: In Progress
 - [x] Add a machine-readable `worktree-audit-json` helper
 - [x] Add structured `ahead` / `behind` fields to the JSON worktree audit output
 - [x] Add top-level summary counts to the JSON worktree audit output
+- [x] Add `stale` and `prune_candidates` counts to the JSON worktree audit summary
 - [x] Add an explicit current-worktree marker to the JSON audit output
 - [x] Add a configurable `WORKTREE_AUDIT_BASE_REF` override for audit and prune helpers
 - [x] Sort worktree audit outputs by usefulness
