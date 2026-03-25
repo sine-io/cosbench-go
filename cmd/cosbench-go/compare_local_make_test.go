@@ -510,6 +510,28 @@ func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreePrunePlanTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-prune-plan")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-prune-plan failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if !strings.Contains(text, "# Suggested cleanup commands") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if !strings.Contains(text, "git worktree remove") && !strings.Contains(text, "# no merged worktrees to prune") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+}
+
 func TestCompareLocalListRespectsFilter(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
