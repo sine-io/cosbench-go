@@ -49,3 +49,23 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 		}
 	}
 }
+
+func TestCompareLocalRejectsUnsafeOutputDir(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("look path go: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	unsafeDir := t.TempDir()
+	cmd := exec.Command(makeBin, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+unsafeDir)
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected compare-local to reject unsafe output dir %s\n%s", unsafeDir, output)
+	}
+}

@@ -30,6 +30,7 @@ Status: In Progress
 - [x] Add structured per-fixture JSON outputs for `make compare-local`
 - [x] Define a single manifest for the curated `compare-local` fixture set
 - [x] Recreate the `compare-local` output directory before regenerating results
+- [x] Guard `COMPARE_LOCAL_OUTPUT_DIR` so compare-local only refreshes dedicated directories
 
 ---
 

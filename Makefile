@@ -8,8 +8,13 @@ build:
 	$(GO) build ./...
 
 compare-local:
-	@rm -rf "$(COMPARE_LOCAL_OUTPUT_DIR)"
+	@dir_base="$$(basename -- "$(COMPARE_LOCAL_OUTPUT_DIR)")"; \
+	if [ "$$dir_base" != "compare-local" ]; then \
+		echo "COMPARE_LOCAL_OUTPUT_DIR must end with compare-local: $(COMPARE_LOCAL_OUTPUT_DIR)" >&2; \
+		exit 1; \
+	fi
 	@mkdir -p $(COMPARE_LOCAL_OUTPUT_DIR)
+	@find "$(COMPARE_LOCAL_OUTPUT_DIR)" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 	@echo "== compare-local results =="
 	@echo "$(COMPARE_LOCAL_OUTPUT_DIR)"
 	@while read -r name fixture; do \

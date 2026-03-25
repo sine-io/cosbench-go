@@ -10,6 +10,7 @@ Owner: Ross
 - Structured compare-local result outputs for local and manual workflow reuse
 - Compare-local fixture manifest cleanup
 - Compare-local output pruning cleanup
+- Compare-local output safety cleanup
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -63,6 +64,7 @@ Owner: Ross
 - Structured compare-local JSON output directory landed
 - Compare-local fixture manifest landed
 - Compare-local output pruning landed
+- Compare-local output safety guard landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

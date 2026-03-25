@@ -32,8 +32,9 @@ A manual GitHub Actions workflow also exists for `make compare-local`; use it wh
 That manual workflow now uploads the compare output as a downloadable artifact.
 Use `-quiet` when you want the CLI to suppress progress output entirely.
 Use `-summary-file` when you want the CLI to persist the summary JSON to a stable path.
-`make compare-local` recreates `.artifacts/compare-local/`, refreshes its `*.json` files, and the manual workflow uploads that directory.
+`make compare-local` refreshes the contents of `.artifacts/compare-local/`, refreshes its `*.json` files, and the manual workflow uploads that directory.
 The curated fixture set behind `make compare-local` is defined in `testdata/workloads/compare-local-fixtures.txt`.
+If you override `COMPARE_LOCAL_OUTPUT_DIR`, keep its basename as `compare-local`.
 
 ## Coding Style & Naming Conventions
 This is a Go repository; follow `gofmt` output exactly and keep package names lowercase. Exported types and functions use `CamelCase`; unexported helpers use `camelCase`. Keep packages focused on one layer or boundary, and prefer small adapters over cross-layer shortcuts. When wrapping errors, preserve context with `%w`, as in `fmt.Errorf("snapshot store: %w", err)`.
