@@ -5,22 +5,21 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from compare_local_manifest import parse_filter, read_manifest
+
 
 def main() -> int:
     if len(sys.argv) not in (3, 4):
         raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
 
-    manifest_path = Path(sys.argv[1])
     output_dir = Path(sys.argv[2])
     selected = sys.argv[3] if len(sys.argv) == 4 else ""
-    selected_set = {item for item in selected.split(",") if item}
+    selected_set = set(parse_filter(selected))
     fixtures = []
 
-    for raw_line in manifest_path.read_text().splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        name, workload = line.split()
+    for fixture in read_manifest(sys.argv[1]):
+        name = fixture["name"]
+        workload = fixture["workload"]
         if selected_set and name not in selected_set:
             continue
         summary_name = f"{name}.json"

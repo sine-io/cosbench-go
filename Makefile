@@ -9,7 +9,7 @@ build:
 	$(GO) build ./...
 
 compare-local-list:
-	@awk 'NF && $$1 !~ /^#/ { print $$1 }' "$(COMPARE_LOCAL_MANIFEST)"
+	@python3 ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" --names
 
 compare-local-list-json:
 	@python3 ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)"
@@ -21,28 +21,7 @@ compare-local:
 		exit 1; \
 	fi
 	@if [ -n "$(COMPARE_LOCAL_FILTER)" ]; then \
-		awk -v want="$(COMPARE_LOCAL_FILTER)" '\
-			BEGIN { \
-				count = split(want, requested, ","); \
-				for (i = 1; i <= count; i++) { \
-					if (requested[i] != "") { \
-						needed[requested[i]] = 1; \
-					} \
-				} \
-			} \
-			NF && $$1 !~ /^#/ { \
-				names = names "  - " $$1 "\n"; \
-				known[$$1] = 1; \
-			} \
-			END { \
-				for (name in needed) { \
-					if (!(name in known)) { \
-						printf "unknown compare-local fixture: %s\nknown fixtures:\n%s", name, names > "/dev/stderr"; \
-						exit 1; \
-					} \
-				} \
-			}\
-		' "$(COMPARE_LOCAL_MANIFEST)"; \
+		python3 ./scripts/validate_compare_local_filter.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_FILTER)"; \
 	fi
 	@mkdir -p $(COMPARE_LOCAL_OUTPUT_DIR)
 	@find "$(COMPARE_LOCAL_OUTPUT_DIR)" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +

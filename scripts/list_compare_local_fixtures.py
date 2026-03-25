@@ -2,22 +2,19 @@
 
 import json
 import sys
-from pathlib import Path
+
+from compare_local_manifest import read_manifest
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: list_compare_local_fixtures.py <manifest>")
+    if len(sys.argv) not in (2, 3):
+        raise SystemExit("usage: list_compare_local_fixtures.py <manifest> [--names]")
 
-    manifest_path = Path(sys.argv[1])
-    fixtures = []
-
-    for raw_line in manifest_path.read_text().splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        name, workload = line.split()
-        fixtures.append({"name": name, "workload": workload})
+    fixtures = read_manifest(sys.argv[1])
+    if len(sys.argv) == 3 and sys.argv[2] == "--names":
+        for fixture in fixtures:
+            print(fixture["name"])
+        return 0
 
     print(json.dumps(fixtures, indent=2))
     return 0
