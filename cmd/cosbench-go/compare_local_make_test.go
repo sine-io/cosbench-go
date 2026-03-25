@@ -59,6 +59,7 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 		Meta struct {
 			Filter       string `json:"filter"`
 			FixtureCount int    `json:"fixture_count"`
+			GeneratedAt  string `json:"generated_at"`
 		} `json:"meta"`
 		Fixtures []struct {
 			Name     string `json:"name"`
@@ -81,6 +82,9 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	}
 	if payload.Meta.FixtureCount != 4 {
 		t.Fatalf("meta fixture_count = %d", payload.Meta.FixtureCount)
+	}
+	if payload.Meta.GeneratedAt == "" {
+		t.Fatal("missing meta generated_at")
 	}
 	for _, fixture := range payload.Fixtures {
 		if fixture.Stages == 0 {
@@ -158,6 +162,7 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 		Meta struct {
 			Filter       string `json:"filter"`
 			FixtureCount int    `json:"fixture_count"`
+			GeneratedAt  string `json:"generated_at"`
 		} `json:"meta"`
 		Fixtures []struct {
 			Name string `json:"name"`
@@ -174,6 +179,9 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 	}
 	if payload.Meta.FixtureCount != 1 {
 		t.Fatalf("meta fixture_count = %d", payload.Meta.FixtureCount)
+	}
+	if payload.Meta.GeneratedAt == "" {
+		t.Fatal("missing meta generated_at")
 	}
 }
 

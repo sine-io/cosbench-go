@@ -39,6 +39,8 @@ jobs:
               "",
               f"Fixture count: {payload.get('meta', {}).get('fixture_count', 0)}",
               "",
+              f"Generated at: `{payload.get('meta', {}).get('generated_at', '')}`",
+              "",
               "| Fixture | Workload | Stages | Works | Samples | Errors | Summary |",
               "| --- | --- | --- | --- | --- | --- | --- |",
           ]

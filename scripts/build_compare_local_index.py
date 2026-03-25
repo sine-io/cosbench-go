@@ -2,6 +2,7 @@
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -39,6 +40,7 @@ def main() -> int:
         "meta": {
             "filter": selected,
             "fixture_count": len(fixtures),
+            "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         },
         "fixtures": fixtures,
     }
