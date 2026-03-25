@@ -408,6 +408,28 @@ func TestWorktreeAuditTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditTargetSupportsBaseRefOverride(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit", "WORKTREE_AUDIT_BASE_REF=HEAD")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if !strings.Contains(text, "PATH\tBRANCH\tSTATE\tDETAILS") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if strings.Contains(text, "origin/main") {
+		t.Fatalf("unexpected default base ref output: %s", text)
+	}
+}
+
 func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
