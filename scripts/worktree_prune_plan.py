@@ -2,9 +2,11 @@
 
 import json
 import subprocess
+import sys
 
 
 def main():
+    json_mode = "--json" in sys.argv[1:]
     proc = subprocess.run(
         ["python3", "./scripts/worktree_audit.py", "--json", "--merged-only", "origin/main"],
         check=True,
@@ -12,20 +14,36 @@ def main():
         capture_output=True,
     )
     payload = json.loads(proc.stdout)
-    rows = payload.get("rows", payload)
+    source_rows = payload.get("rows", payload)
 
-    print("# Suggested cleanup commands")
-    printed = False
-    for row in rows:
+    rows = []
+    for row in source_rows:
         branch = row.get("branch", "")
         path = row.get("path", "")
         if branch in ("main", "master") or not path:
             continue
-        print(f"git worktree remove '{path}'")
-        print(f"git branch -D {branch}")
-        printed = True
-    if not printed:
+        rows.append(
+            {
+                "path": path,
+                "branch": branch,
+                "commands": [
+                    f"git worktree remove '{path}'",
+                    f"git branch -D {branch}",
+                ],
+            }
+        )
+
+    if json_mode:
+        print(json.dumps(rows, indent=2))
+        return
+
+    print("# Suggested cleanup commands")
+    if not rows:
         print("# no merged worktrees to prune")
+        return
+    for row in rows:
+        for command in row["commands"]:
+            print(command)
 
 
 if __name__ == "__main__":
