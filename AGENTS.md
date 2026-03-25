@@ -36,6 +36,7 @@ Use `-summary-file` when you want the CLI to persist the summary JSON to a stabl
 `make compare-local` refreshes the contents of `.artifacts/compare-local/`, refreshes its `*.json` files, and the manual workflow uploads that directory.
 The curated fixture set behind `make compare-local` is defined in `testdata/workloads/compare-local-fixtures.txt`.
 The top-level artifact entrypoint is `.artifacts/compare-local/index.json`, which now carries the key per-fixture metrics as well.
+Set `COMPARE_LOCAL_FILTER=<fixture-name>` when you want to run only one curated fixture.
 If you override `COMPARE_LOCAL_OUTPUT_DIR`, keep its basename as `compare-local`.
 
 ## Coding Style & Naming Conventions
