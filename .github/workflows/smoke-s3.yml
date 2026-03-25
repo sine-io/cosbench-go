@@ -44,6 +44,19 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Validate smoke secrets
+        run: |
+          missing=0
+          for name in COSBENCH_SMOKE_ENDPOINT COSBENCH_SMOKE_ACCESS_KEY COSBENCH_SMOKE_SECRET_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "missing required secret: $name" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Run opt-in smoke suite
         run: GO=go make smoke-s3
 
