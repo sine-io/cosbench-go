@@ -35,6 +35,10 @@ jobs:
               "",
               "Artifact directory: `.artifacts/compare-local/`",
               "",
+              f"Filter: `{payload.get('meta', {}).get('filter', '')}`",
+              "",
+              f"Fixture count: {payload.get('meta', {}).get('fixture_count', 0)}",
+              "",
               "| Fixture | Workload | Stages | Works | Samples | Errors | Summary |",
               "| --- | --- | --- | --- | --- | --- | --- |",
           ]
