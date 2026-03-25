@@ -69,6 +69,8 @@ def main():
     stale_only = "--stale-only" in sys.argv[1:]
     args = [arg for arg in sys.argv[1:] if arg not in ("--json", "--merged-only", "--stale-only")]
     base_ref = args[0] if args else "origin/main"
+    current_proc = run("git", "rev-parse", "--show-toplevel")
+    current_worktree = current_proc.stdout.strip() if current_proc.returncode == 0 else ""
 
     rows = []
     for entry in worktree_entries():
@@ -86,6 +88,7 @@ def main():
                 "details": details,
                 "ahead": ahead,
                 "behind": behind,
+                "current": entry["worktree"] == current_worktree,
             }
         )
 

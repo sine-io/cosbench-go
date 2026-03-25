@@ -459,6 +459,9 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	if payload.Rows[0]["path"] == "" || payload.Rows[0]["branch"] == "" || payload.Rows[0]["state"] == "" {
 		t.Fatalf("unexpected payload: %#v", payload.Rows[0])
 	}
+	if _, ok := payload.Rows[0]["current"]; !ok {
+		t.Fatalf("missing current: %#v", payload.Rows[0])
+	}
 	if _, ok := payload.Rows[0]["ahead"]; !ok {
 		t.Fatalf("missing ahead: %#v", payload.Rows[0])
 	}
@@ -472,6 +475,19 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	behind, ok := payload.Rows[0]["behind"].(float64)
 	if !ok || behind < 0 {
 		t.Fatalf("unexpected payload: %#v", payload.Rows[0])
+	}
+	foundCurrent := false
+	for _, row := range payload.Rows {
+		current, ok := row["current"].(bool)
+		if !ok {
+			t.Fatalf("unexpected row: %#v", row)
+		}
+		if current {
+			foundCurrent = true
+		}
+	}
+	if !foundCurrent {
+		t.Fatalf("expected one current row: %#v", payload.Rows)
 	}
 }
 
