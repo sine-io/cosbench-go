@@ -33,6 +33,7 @@ That smoke workflow now uses an explicit backend choice and writes a small GitHu
 That summary also shows whether the required endpoint and credential secrets were present.
 The workflow fails fast when any required smoke secret is missing.
 The workflow also uploads the raw `make smoke-s3` output as an artifact.
+The smoke summary step runs with `if: always()` so failed preflight runs still show the secret-status summary.
 `make compare-local-list` prints the valid curated fixture names for `COMPARE_LOCAL_FILTER`.
 `make compare-local-list-json` prints the curated fixture names and workload paths as JSON.
 Those listing targets also respect `COMPARE_LOCAL_FILTER`.

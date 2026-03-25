@@ -61,6 +61,7 @@ jobs:
         run: GO=go make smoke-s3 | tee smoke-s3-output.txt
 
       - name: Write smoke summary
+        if: always()
         run: |
           {
             echo "## Smoke S3"

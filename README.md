@@ -51,6 +51,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The smoke job summary now also reports whether the required endpoint and credential secrets were present
 - The smoke workflow now fails fast if any required smoke secret is missing, instead of silently relying on test-level skips
 - The smoke workflow also uploads the raw `make smoke-s3` output as an artifact
+- The smoke summary step now runs even when preflight fails, so the secret-status summary is still visible on failed runs
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`
 
