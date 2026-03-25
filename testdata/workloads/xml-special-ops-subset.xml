@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-special-ops-subset" description="special-op fixture">
+  <storage type="sio" config="endpoint=http://127.0.0.1:9000;accesskey=test;secretkey=test;path_style_access=true" />
+  <workflow>
+    <workstage name="special-stage">
+      <work type="delay" workers="9" />
+      <work type="cleanup" workers="2" config="cprefix=sio;containers=c(1);objects=r(1,2)" />
+      <work name="local-files" workers="1" totalOps="1">
+        <operation type="localwrite" ratio="100" config="containers=c(1);objects=c(1);files=/tmp/input.bin" />
+      </work>
+      <work name="multipart-files" workers="1" totalOps="1">
+        <operation type="mfilewrite" ratio="100" config="containers=c(1);objects=c(2);files=/tmp/input.bin;part_size=5242880" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

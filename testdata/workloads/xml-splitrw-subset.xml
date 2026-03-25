@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-splitrw-subset" description="split read write targets">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="init">
+      <work type="init" workers="1" config="cprefix=split;containers=r(1,4)" />
+    </workstage>
+    <workstage name="prepare">
+      <work type="prepare" workers="1" config="cprefix=split;containers=r(1,4);objects=r(1,2);sizes=c(1)KB" />
+    </workstage>
+    <workstage name="main">
+      <work name="main" workers="2" totalOps="4">
+        <operation type="read" ratio="70" config="cprefix=split;containers=u(1,2);objects=u(1,2)" />
+        <operation type="write" ratio="30" config="cprefix=split;containers=u(3,4);objects=u(3,4);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="cleanup">
+      <work type="cleanup" workers="1" config="cprefix=split;containers=r(1,4);objects=r(1,4)" />
+    </workstage>
+    <workstage name="dispose">
+      <work type="dispose" workers="1" config="cprefix=split;containers=r(1,4)" />
+    </workstage>
+  </workflow>
+</workload>

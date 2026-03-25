@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="s3-active-subset" description="representative active subset">
+  <storage type="s3" config="accesskey=test;secretkey=test;endpoint=http://127.0.0.1:9000;region=us-east-1" />
+  <workflow>
+    <workstage name="init">
+      <work type="init" workers="1" config="cprefix=bench;containers=r(1,1)" />
+    </workstage>
+    <workstage name="main" config="cprefix=bench;containers=u(1,1)">
+      <work name="rw" workers="2" runtime="1">
+        <operation type="read" ratio="70" config="objects=u(1,10)" />
+        <operation type="write" ratio="30" config="objects=u(11,20);sizes=c(4)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-attribute-subset" description="attribute-heavy fixture" trigger="nightly">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="attr-stage" closuredelay="7" trigger="after-upload" config="cprefix=attr;containers=c(1)">
+      <work name="attr-work" workers="2" runtime="3" interval="9" division="object" rampup="4" rampdown="5" driver="driver-a">
+        <operation type="write" ratio="100" division="object" id="write-1" config="objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-sample" description="sample benchmark for sio">
+  <workflow>
+    <workstage name="mprepare example">
+      <storage type="sio" config="accesskey=&lt;accesskey&gt;;secretkey=&lt;scretkey&gt;;proxyhost=&lt;proxyhost&gt;;proxyport=&lt;proxyport&gt;;endpoint=&lt;endpoint&gt;;path_style_access=true" />
+      <work type="mprepare" workers="1" config="cprefix=s3testqwer;containers=r(1,2);objects=r(1,10);sizes=c(64)KB" />
+    </workstage>
+    <workstage name="mwrite example">
+      <work name="mwrite test" workers="8" runtime="30">
+        <storage type="sio" config="accesskey=&lt;accesskey&gt;;secretkey=&lt;scretkey&gt;;proxyhost=&lt;proxyhost&gt;;proxyport=&lt;proxyport&gt;;endpoint=&lt;endpoint&gt;;path_style_access=true;part_size=5242880" />
+        <operation type="mwrite" ratio="100" config="cprefix=s3testqwer;containers=u(1,2);objects=u(11,20);sizes=c(64)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

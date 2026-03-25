@@ -1,0 +1,23 @@
+{{define "history.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Job History</h1>
+  {{if .Jobs}}
+  <table>
+    <thead><tr><th>Name</th><th>Status</th><th>Created</th><th>Ops</th><th>Errors</th><th>Failure</th></tr></thead>
+    <tbody>
+    {{range .Jobs}}
+    <tr>
+      <td><a href="/jobs/{{.ID}}">{{.Name}}</a></td>
+      <td><span class="status {{.Status}}">{{.Status}}</span></td>
+      <td>{{.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
+      <td>{{.Metrics.OperationCount}}</td>
+      <td>{{.Metrics.ErrorCount}}</td>
+      <td>{{if .ErrorMessage}}{{.ErrorMessage}}{{else}}-{{end}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="empty">No completed or created jobs yet.</p>{{end}}
+</section>
+{{end}}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="mock-reusedata-subset" description="reuse prepared data across main stages">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="init">
+      <work type="init" workers="1" config="cprefix=reuse;containers=c(1)" />
+    </workstage>
+    <workstage name="prepare">
+      <work type="prepare" workers="1" config="cprefix=reuse;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+    </workstage>
+    <workstage name="main-read">
+      <work name="main-read" workers="1" totalOps="2">
+        <operation type="read" ratio="100" config="cprefix=reuse;containers=c(1);objects=s(1,2)" />
+      </work>
+    </workstage>
+    <workstage name="main-list">
+      <work name="main-list" workers="1" totalOps="1">
+        <operation type="list" ratio="100" config="cprefix=reuse;containers=c(1)" />
+      </work>
+    </workstage>
+    <workstage name="cleanup">
+      <work type="cleanup" workers="1" config="cprefix=reuse;containers=c(1);objects=s(1,2)" />
+    </workstage>
+    <workstage name="dispose">
+      <work type="dispose" workers="1" config="cprefix=reuse;containers=c(1)" />
+    </workstage>
+  </workflow>
+</workload>

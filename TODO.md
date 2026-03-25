@@ -1,23 +1,187 @@
-# TODO (Phase 0)
+# COSBench-Go Migration Board
 
-## Environment
-- [x] Go toolchain available via `/snap/bin/go` (note: `go` may not be on PATH in this runtime)
+Last updated: 2026-03-24
+Owner: Ross
+Status: In Progress
 
-## Bootstrap
-- [ ] Initialize go.mod: module `github.com/sine-io/cosbench-go`
-- [ ] Add base dependencies: cobra, viper, gin, zerolog
-- [ ] Add lint/test baseline (go test ./...)
+## Legend
+- [ ] Not started
+- [~] In progress
+- [x] Done
+- [-] Deferred
 
-## Domain & Parsing (TDD)
-- [ ] Unit test: parse `s3-config-sample.xml` workload basics
-- [ ] Unit test: parse `sio-config-sample.xml` workload basics + SIO params
-- [ ] Implement XML -> domain mapping
-- [ ] Parse storage config string `k=v;k2=v2` with escaping rules (define)
+---
 
-## Execution engine
-- [ ] Define operation scheduler and ratio selection
-- [ ] Metrics model and aggregation
+## 0. Project visibility
+- [x] Create a persistent migration checklist / board
+- [x] Track completed phases in-repo so sine can inspect progress anytime
+- [~] Keep this board updated at each meaningful milestone
 
-## Controller/Driver protocol
-- [ ] Decide transport: HTTP/JSON first (gin)
-- [ ] Define endpoints and DTOs
+---
+
+## 1. Foundation / bootstrap
+- [x] Confirm Go toolchain availability in runtime
+- [x] Initialize module `github.com/sine-io/cosbench-go`
+- [x] Establish baseline verification (`go vet`, `go test ./...`)
+- [x] Add CI-friendly Make targets for validate / test / build
+- [x] Add repository-local CI automation for `make validate`
+
+---
+
+## 2. Migration boundary
+- [x] Inspect legacy `cosbench-sineio` module boundaries
+- [x] Define migration strategy: behavior-compatible Go rewrite, not line-by-line translation
+- [x] Define local-only v1 scope (XML + S3/SIO + execution + reporting + web control plane)
+- [x] Write migration spec document (`docs/migration-spec-v1.md`)
+- [x] Align all migration-facing docs to the same local-only boundary
+
+---
+
+## 3. Workload domain model
+- [x] Define workload domain model
+- [x] Define workflow / stage / work / operation / storage structs
+- [x] Implement config inheritance chain
+- [x] Implement special work normalization:
+  - [x] `init`
+  - [x] `prepare`
+  - [x] `mprepare`
+  - [x] `cleanup`
+  - [x] `dispose`
+  - [x] `delay`
+- [x] Implement validation rules:
+  - [x] required names / workers / storage
+  - [x] runtime / totalOps / totalBytes limit validation
+  - [x] op ratio sum = 100
+  - [x] `workers <= totalOps` when `totalOps` is set
+  - [x] SIO-only operation restrictions
+
+---
+
+## 4. Parsing layer
+- [x] Implement XML -> domain mapping
+- [x] Implement workload file parser
+- [x] Implement storage KV parser (`k=v;k2=v2`)
+- [x] Add legacy sample testdata for S3
+- [x] Add legacy sample testdata for SIO
+- [x] Add parser unit test for S3 sample
+- [x] Add parser unit test for SIO sample
+- [ ] Define and implement escaping rules beyond legacy baseline if truly needed
+- [-] Model explicit XML `<auth>` nodes in the local-only closure
+
+---
+
+## 5. Storage abstraction
+- [x] Define `StorageAdapter` port
+- [x] Define storage metadata DTOs (`ObjectMeta`, `ObjectEntry`)
+- [x] Implement adapter factory by storage type
+- [x] Implement real AWS SDK v2 client wiring for S3
+- [x] Implement real AWS SDK v2 client wiring for SIO
+- [x] Support endpoint override, path-style access, proxy, `no_verify_ssl`, `aws_region`, `storage_class`, `restore_days`, and multipart `part_size`
+
+---
+
+## 6. Execution engine
+- [x] Create driver execution engine skeleton
+- [x] Add worker-pool concurrency structure
+- [x] Add runtime-based stop condition
+- [x] Add totalOps-based stop condition
+- [x] Add sample collection
+- [x] Implement weighted operation picker matching legacy ratio behavior
+- [x] Implement config expression parsing for container / object / size patterns
+- [x] Implement bucket / object naming generators
+- [x] Implement `executeOp()` dispatch to storage adapter
+- [x] Implement basic metrics aggregation
+- [x] Honor storage-level `part_size` / `restore_days` as execution defaults with op-level override
+- [x] Preserve stage-aware `mock` state across one local run/job
+- [x] Implement real `mfilewrite` and `delay` semantics
+- [x] Implement sequential scanning for cleanup / list flows
+- [x] Implement cancel / abort path
+
+---
+
+## 7. Operation support
+### Core COSBench ops
+- [x] `init`
+- [x] `prepare`
+- [x] `write`
+- [x] `read`
+- [x] `delete`
+- [x] `cleanup`
+- [x] `dispose`
+- [x] `list`
+- [x] `delay`
+
+### SineIO-specific ops
+- [x] `mprepare`
+- [x] `mwrite`
+- [x] `mfilewrite`
+- [x] `localwrite`
+- [x] `head`
+- [x] `restore`
+
+---
+
+## 8. Runnable entrypoints
+- [x] Add CLI entrypoint (`cmd/cosbench-go`)
+- [x] Print normalized workload summary before run
+- [x] Run single-process / single-driver benchmark locally
+- [x] Output JSON result summary
+- [x] Output human-readable console summary
+- [x] Improve local CLI ergonomics (`-f`, positional workload path, pure JSON stdout)
+- [x] Add `make compare-local` for repeatable mock-backed comparison runs
+
+---
+
+## 9. Local control plane and reporting
+- [x] Implement control-plane lifecycle and snapshots
+- [x] Implement dashboard, history, endpoint, upload, and job detail pages
+- [x] Define benchmark report model
+- [x] Stage-level summary
+- [x] Throughput / bandwidth metrics
+- [x] Success / failure ratios
+- [x] JSON export
+- [x] CSV export
+- [x] Work-level summary
+- [x] Start-time preflight validation
+- [x] Polish restart recovery for `cancelling` vs `interrupted` jobs
+
+---
+
+## 10. Deferred remote split
+- [-] Define controller / worker HTTP transport
+- [-] Define mission / workload / sample DTOs
+- [-] Implement controller skeleton
+- [-] Implement driver skeleton
+- [-] Implement driver registration / heartbeat
+- [-] Implement mission assignment
+- [-] Implement sample upload / final report upload
+- [-] Support multi-driver execution
+
+---
+
+## 11. Validation / compatibility
+- [x] `go vet` clean on current code
+- [x] Current parser tests passing
+- [x] Add operation-picker tests
+- [x] Add expression parser tests
+- [x] Add local mock-storage integration tests
+- [x] Add normalization-focused unit tests
+- [x] Add high-value XML fixture coverage for inheritance, attributes, and special-op shapes
+- [x] Add representative edge XML fixtures for delay-stage, splitrw, and reuse-data shapes
+- [x] Add parser-facing coverage for deferred compatibility storage aliases and range/prefetch config shapes
+- [x] Add parser-tolerated coverage for deferred auth-bearing XML shapes
+- [x] Add storage adapter tests
+- [x] Add real S3/SIO smoke-test workflow
+- [~] Compare benchmark behavior against legacy workloads (matrix seeded; local `compare-local` evidence collected; live-run checklist documented; live environment still pending)
+- [x] Add storage-driver comparison notes from legacy Java code review
+
+---
+
+## 12. Current closure slice
+- [x] Write migration-closure design spec
+- [x] Write migration-closure implementation plan
+- [x] Converge migration docs
+- [x] Implement work-level result visibility
+- [x] Implement `mfilewrite` semantics
+- [x] Implement real `delay` semantics
+- [x] Add preflight validation

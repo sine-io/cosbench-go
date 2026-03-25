@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-delay-stage-subset" description="delay stage shape" trigger="nightly">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="init">
+      <work type="init" workers="1" config="cprefix=delay;containers=c(1)" />
+    </workstage>
+    <workstage name="delay-a" closuredelay="3">
+      <work type="delay" workers="9" />
+    </workstage>
+    <workstage name="prepare" closuredelay="2">
+      <work type="prepare" workers="1" config="cprefix=delay;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+    </workstage>
+    <workstage name="delay-b" closuredelay="4">
+      <work type="delay" />
+    </workstage>
+    <workstage name="cleanup">
+      <work type="cleanup" workers="1" config="cprefix=delay;containers=c(1);objects=s(1,2)" />
+    </workstage>
+    <workstage name="dispose">
+      <work type="dispose" workers="1" config="cprefix=delay;containers=c(1)" />
+    </workstage>
+  </workflow>
+</workload>

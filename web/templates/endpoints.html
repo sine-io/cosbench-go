@@ -1,0 +1,40 @@
+{{define "endpoints.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="grid two">
+  <div class="card">
+    <h1>Endpoint Config</h1>
+    <form action="/endpoints" method="post" class="form-grid">
+      <label><span>Name</span><input name="name" required></label>
+      <label>
+        <span>Type</span>
+        <select name="type">
+          <option value="mock">mock</option>
+          <option value="s3">s3</option>
+          <option value="sio">sio</option>
+        </select>
+      </label>
+      <label><span>Endpoint</span><input name="endpoint" placeholder="http://localhost:9000"></label>
+      <label><span>Region</span><input name="region" placeholder="us-east-1"></label>
+      <label><span>Access Key</span><input name="access_key"></label>
+      <label><span>Secret Key</span><input name="secret_key" type="password"></label>
+      <label class="checkbox"><input type="checkbox" name="path_style"> <span>Path-style access</span></label>
+      <label><span>Extra Config</span><textarea name="extra_config" rows="4" placeholder="part_size=5242880"></textarea></label>
+      <button class="button primary" type="submit">Save Endpoint</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Saved Endpoints</h2>
+    {{if .Endpoints}}
+    <ul class="stack-list">
+      {{range .Endpoints}}
+      <li>
+        <strong>{{.Name}}</strong>
+        <span>{{.Type}}</span>
+        <code>{{.Endpoint}}</code>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}<p class="empty">No endpoints saved.</p>{{end}}
+  </div>
+</section>
+{{end}}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-compat-storage-subset" description="compatibility storage aliases">
+  <workflow>
+    <workstage name="siov1-stage">
+      <storage type="siov1" config="endpoint=http://127.0.0.1:9000;accesskey=test;secretkey=test;path_style_access=true;part_size=5242880" />
+      <work type="mprepare" workers="1" config="cprefix=compat;containers=c(1);objects=s(1,2);sizes=c(64)KB" />
+    </workstage>
+    <workstage name="gdas-stage">
+      <storage type="gdas" config="endpoint=http://127.0.0.1:9000;accesskey=test;secretkey=test;path_style_access=true;restore_days=2;aws_region=us-east-1" />
+      <work name="restore-main" workers="1" totalOps="1">
+        <operation type="restore" ratio="100" config="cprefix=compat;containers=c(1);objects=c(1)" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>
