@@ -607,6 +607,10 @@ func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 	}
 
 	rootDir := filepath.Clean("../..")
+	repoRoot, err := filepath.Abs(rootDir)
+	if err != nil {
+		t.Fatalf("abs root dir: %v", err)
+	}
 	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-prune-plan")
 	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
@@ -620,7 +624,7 @@ func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 	if !strings.Contains(text, "git worktree remove") && !strings.Contains(text, "# no merged worktrees to prune") {
 		t.Fatalf("unexpected output: %s", text)
 	}
-	if strings.Contains(text, "worktree-prune-safety") {
+	if strings.Contains(text, "git worktree remove '"+repoRoot+"'") {
 		t.Fatalf("unexpected self-removal plan: %s", text)
 	}
 }
@@ -632,6 +636,10 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 	}
 
 	rootDir := filepath.Clean("../..")
+	repoRoot, err := filepath.Abs(rootDir)
+	if err != nil {
+		t.Fatalf("abs root dir: %v", err)
+	}
 	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-prune-plan-json")
 	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
@@ -653,6 +661,9 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 		}
 		if len(row.Commands) == 0 {
 			t.Fatalf("unexpected row: %#v", row)
+		}
+		if row.Path == repoRoot {
+			t.Fatalf("unexpected self-removal row: %#v", row)
 		}
 	}
 }
