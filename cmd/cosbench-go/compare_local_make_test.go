@@ -403,8 +403,11 @@ func TestWorktreeAuditTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
 	}
 	text := string(output)
-	if !strings.Contains(text, "PATH\tBRANCH\tSTATE\tDETAILS") {
+	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected audit output: %s", text)
+	}
+	if !strings.Contains(text, "\tyes\t") {
+		t.Fatalf("expected current row marker: %s", text)
 	}
 }
 
@@ -422,7 +425,7 @@ func TestWorktreeAuditTargetSupportsBaseRefOverride(t *testing.T) {
 		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
 	}
 	text := string(output)
-	if !strings.Contains(text, "PATH\tBRANCH\tSTATE\tDETAILS") {
+	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected output: %s", text)
 	}
 	if strings.Contains(text, "origin/main") {
@@ -527,7 +530,7 @@ func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-merged failed: %v\n%s", err, output)
 	}
 	text := string(output)
-	if !strings.Contains(text, "PATH\tBRANCH\tSTATE\tDETAILS") {
+	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected audit output: %s", text)
 	}
 	if strings.Contains(text, "\tactive\t") {
@@ -549,7 +552,7 @@ func TestWorktreeAuditStaleTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-stale failed: %v\n%s", err, output)
 	}
 	text := string(output)
-	if !strings.Contains(text, "PATH\tBRANCH\tSTATE\tDETAILS") {
+	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected output: %s", text)
 	}
 	if strings.Contains(text, "\tmerged\t") {

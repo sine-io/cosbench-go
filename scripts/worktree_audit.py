@@ -105,9 +105,10 @@ def main():
         print(json.dumps({"summary": summary, "rows": rows}, indent=2))
         return
 
-    print("PATH\tBRANCH\tSTATE\tDETAILS")
+    print("PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS")
     for row in rows:
-        print(f"{row['path']}\t{row['branch']}\t{row['state']}\t{row['details']}")
+        current = "yes" if row["current"] else "no"
+        print(f"{row['path']}\t{row['branch']}\t{current}\t{row['state']}\t{row['details']}")
 
 
 if __name__ == "__main__":
