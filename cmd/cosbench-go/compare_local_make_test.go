@@ -106,3 +106,52 @@ func TestCompareLocalRejectsUnsafeOutputDir(t *testing.T) {
 		t.Fatalf("expected compare-local to reject unsafe output dir %s\n%s", unsafeDir, output)
 	}
 }
+
+func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("look path go: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	outputDir := filepath.Join(t.TempDir(), "compare-local")
+	cmd := exec.Command(
+		makeBin,
+		"compare-local",
+		"GO="+goBin,
+		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
+		"COMPARE_LOCAL_FILTER=mock-stage-aware",
+	)
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make compare-local failed: %v\n%s", err, output)
+	}
+
+	if _, err := os.Stat(filepath.Join(outputDir, "mock-stage-aware.json")); err != nil {
+		t.Fatalf("expected filtered output: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "s3-active-subset.json")); err == nil {
+		t.Fatal("unexpected unfiltered output")
+	}
+
+	indexData, err := os.ReadFile(filepath.Join(outputDir, "index.json"))
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+	var payload struct {
+		Fixtures []struct {
+			Name string `json:"name"`
+		} `json:"fixtures"`
+	}
+	if err := json.Unmarshal(indexData, &payload); err != nil {
+		t.Fatalf("unmarshal index: %v", err)
+	}
+	if len(payload.Fixtures) != 1 || payload.Fixtures[0].Name != "mock-stage-aware" {
+		t.Fatalf("fixtures = %#v", payload.Fixtures)
+	}
+}

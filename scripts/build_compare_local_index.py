@@ -6,11 +6,12 @@ from pathlib import Path
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir>")
+    if len(sys.argv) not in (3, 4):
+        raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
 
     manifest_path = Path(sys.argv[1])
     output_dir = Path(sys.argv[2])
+    selected = sys.argv[3] if len(sys.argv) == 4 else ""
     fixtures = []
 
     for raw_line in manifest_path.read_text().splitlines():
@@ -18,6 +19,8 @@ def main() -> int:
         if not line or line.startswith("#"):
             continue
         name, workload = line.split()
+        if selected and name != selected:
+            continue
         summary_name = f"{name}.json"
         summary = json.loads((output_dir / summary_name).read_text())
         fixtures.append(

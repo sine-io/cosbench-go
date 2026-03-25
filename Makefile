@@ -1,6 +1,7 @@
 GO ?= /snap/bin/go
 COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
+COMPARE_LOCAL_FILTER ?=
 
 .PHONY: build compare-local fmt smoke-s3 test tidy validate vet
 
@@ -21,10 +22,13 @@ compare-local:
 		if [ -z "$$name" ] || [ "$${name#\#}" != "$$name" ]; then \
 			continue; \
 		fi; \
+		if [ -n "$(COMPARE_LOCAL_FILTER)" ] && [ "$$name" != "$(COMPARE_LOCAL_FILTER)" ]; then \
+			continue; \
+		fi; \
 		echo "== $$name =="; \
 		$(GO) run ./cmd/cosbench-go "$$fixture" -backend mock -json -quiet -summary-file "$(COMPARE_LOCAL_OUTPUT_DIR)/$$name.json"; \
 	done < $(COMPARE_LOCAL_MANIFEST)
-	@python3 ./scripts/build_compare_local_index.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_OUTPUT_DIR)"
+	@python3 ./scripts/build_compare_local_index.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_OUTPUT_DIR)" "$(COMPARE_LOCAL_FILTER)"
 
 smoke-s3:
 	$(GO) test ./internal/driver/s3 -run Smoke -v

@@ -34,6 +34,7 @@ Status: In Progress
 - [x] Add a top-level `index.json` for compare-local artifact discovery
 - [x] Add a GitHub job summary for the manual compare-local workflow
 - [x] Include per-fixture metrics in the compare-local index and workflow summary
+- [x] Add a single-fixture filter for local and manual compare-local runs
 
 ---
 

@@ -78,6 +78,7 @@ GO=$(which go || echo /snap/bin/go) make compare-local
 This is the fastest way to refresh the safe mock-backed fixture set in one pass.
 It recreates `.artifacts/compare-local/` and refreshes per-fixture JSON summaries there.
 Use `.artifacts/compare-local/index.json` as the stable top-level entrypoint for those results and their key per-fixture metrics.
+Set `COMPARE_LOCAL_FILTER=<fixture-name>` when you want to refresh just one curated row.
 It currently covers:
 
 - `s3-active-subset.xml`
