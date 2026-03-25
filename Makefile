@@ -3,6 +3,7 @@ COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
 COMPARE_LOCAL_FILTER ?=
 WORKTREE_AUDIT_BASE_REF ?= origin/main
+WORKTREE_CLEANUP_REPORT_PATH ?= .artifacts/worktree-cleanup-report.md
 
 .PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale worktree-cleanup-report
 
@@ -31,7 +32,8 @@ worktree-prune-plan-json:
 	@python3 ./scripts/worktree_prune_plan.py --json "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-cleanup-report:
-	@python3 ./scripts/worktree_cleanup_report.py "$(WORKTREE_AUDIT_BASE_REF)"
+	@mkdir -p "$$(dirname "$(WORKTREE_CLEANUP_REPORT_PATH)")"
+	@python3 ./scripts/worktree_cleanup_report.py "$(WORKTREE_AUDIT_BASE_REF)" "$(WORKTREE_CLEANUP_REPORT_PATH)"
 
 compare-local-list:
 	@python3 ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" --names "$(COMPARE_LOCAL_FILTER)"

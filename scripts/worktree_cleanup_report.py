@@ -12,6 +12,7 @@ def run(*args):
 
 def main():
     base_ref = sys.argv[1] if len(sys.argv) > 1 else "origin/main"
+    output_path = sys.argv[2] if len(sys.argv) > 2 else ""
     audit = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", base_ref))
     merged = run("python3", "./scripts/worktree_audit.py", "--merged-only", base_ref).rstrip()
     stale = run("python3", "./scripts/worktree_audit.py", "--stale-only", base_ref).rstrip()
@@ -48,7 +49,11 @@ def main():
         prune,
         "```",
     ]
-    print("\n".join(lines))
+    report = "\n".join(lines) + "\n"
+    if output_path:
+        with open(output_path, "w", encoding="utf-8") as fh:
+            fh.write(report)
+    print(report, end="")
 
 
 if __name__ == "__main__":

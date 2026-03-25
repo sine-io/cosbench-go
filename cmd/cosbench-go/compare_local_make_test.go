@@ -658,7 +658,8 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	}
 
 	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report")
+	reportPath := filepath.Join(t.TempDir(), "worktree-cleanup-report.md")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_CLEANUP_REPORT_PATH="+reportPath)
 	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -670,6 +671,13 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	}
 	if !strings.Contains(text, "## Prune Plan") {
 		t.Fatalf("unexpected output: %s", text)
+	}
+	reportData, err := os.ReadFile(reportPath)
+	if err != nil {
+		t.Fatalf("read report: %v", err)
+	}
+	if !strings.Contains(string(reportData), "# Worktree Cleanup Report") {
+		t.Fatalf("unexpected report file: %s", reportData)
 	}
 }
 
