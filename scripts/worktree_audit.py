@@ -42,6 +42,14 @@ def classify(branch, base_ref):
     merged = run("git", "merge-base", "--is-ancestor", branch, base_ref)
     if merged.returncode == 0:
         return "merged", base_ref, 0, 0
+    cherry = run("git", "cherry", base_ref, branch)
+    cherry_lines = [line for line in cherry.stdout.splitlines() if line.strip()]
+    if cherry.returncode == 0 and cherry_lines and all(line.startswith("- ") for line in cherry_lines):
+        ahead_behind = run("git", "rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
+        if ahead_behind.returncode == 0:
+            behind, ahead = ahead_behind.stdout.strip().split()
+            return "integrated", f"patch-equivalent to {base_ref}", int(ahead), int(behind)
+        return "integrated", f"patch-equivalent to {base_ref}", 0, 0
     ahead_behind = run("git", "rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
     if ahead_behind.returncode != 0:
         return "unknown", ahead_behind.stderr.strip() or ahead_behind.stdout.strip(), 0, 0
@@ -52,9 +60,10 @@ def classify(branch, base_ref):
 def sort_key(row):
     state_rank = {
         "merged": 0,
-        "active": 1,
-        "detached": 2,
-        "unknown": 3,
+        "integrated": 1,
+        "active": 2,
+        "detached": 3,
+        "unknown": 4,
     }
     return (
         state_rank.get(row["state"], 9),
@@ -99,6 +108,7 @@ def main():
             "base_ref": base_ref,
             "total": len(rows),
             "merged": sum(1 for row in rows if row["state"] == "merged"),
+            "integrated": sum(1 for row in rows if row["state"] == "integrated"),
             "active": sum(1 for row in rows if row["state"] == "active"),
             "detached": sum(1 for row in rows if row["state"] == "detached"),
             "unknown": sum(1 for row in rows if row["state"] == "unknown"),
@@ -106,7 +116,7 @@ def main():
             "prune_candidates": sum(
                 1
                 for row in rows
-                if row["state"] == "merged"
+                if row["state"] in ("merged", "integrated")
                 and row["branch"] not in ("main", "master")
                 and not row["current"]
             ),

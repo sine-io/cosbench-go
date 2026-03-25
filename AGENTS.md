@@ -44,6 +44,7 @@ That JSON output now includes structured `ahead` / `behind` counts for each row.
 That JSON output also includes a top-level `summary` block with total and per-state counts.
 That summary also includes `stale` and `prune_candidates` counts.
 That JSON output also includes a `current` flag for the current worktree row.
+Branches whose patches are already present in the base ref via squash merge are classified as `integrated`.
 The audit outputs sort merged rows first and then active rows by descending `behind` count.
 Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to compare against a different base.
 `make --no-print-directory worktree-audit-merged` narrows that view to worktrees already merged into `origin/main`.
