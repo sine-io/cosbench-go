@@ -8,6 +8,7 @@ build:
 	$(GO) build ./...
 
 compare-local:
+	@rm -rf "$(COMPARE_LOCAL_OUTPUT_DIR)"
 	@mkdir -p $(COMPARE_LOCAL_OUTPUT_DIR)
 	@echo "== compare-local results =="
 	@echo "$(COMPARE_LOCAL_OUTPUT_DIR)"

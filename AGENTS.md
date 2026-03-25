@@ -32,7 +32,7 @@ A manual GitHub Actions workflow also exists for `make compare-local`; use it wh
 That manual workflow now uploads the compare output as a downloadable artifact.
 Use `-quiet` when you want the CLI to suppress progress output entirely.
 Use `-summary-file` when you want the CLI to persist the summary JSON to a stable path.
-`make compare-local` refreshes `.artifacts/compare-local/*.json`, and the manual workflow uploads that directory.
+`make compare-local` recreates `.artifacts/compare-local/`, refreshes its `*.json` files, and the manual workflow uploads that directory.
 The curated fixture set behind `make compare-local` is defined in `testdata/workloads/compare-local-fixtures.txt`.
 
 ## Coding Style & Naming Conventions

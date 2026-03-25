@@ -9,6 +9,7 @@ Owner: Ross
 - Release/branch hygiene once the current migration slice is stable
 - Structured compare-local result outputs for local and manual workflow reuse
 - Compare-local fixture manifest cleanup
+- Compare-local output pruning cleanup
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -61,6 +62,7 @@ Owner: Ross
 - Compare-local workflow artifact upload landed
 - Structured compare-local JSON output directory landed
 - Compare-local fixture manifest landed
+- Compare-local output pruning landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

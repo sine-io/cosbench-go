@@ -54,7 +54,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Live endpoint prerequisites and execution order live in `docs/legacy-live-run-checklist.md`
 - Use it to track which representative fixtures are parser-only, runnable now, runnable with live endpoint setup, or still unverified against `cosbench-sineio`
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local` to refresh the safe mock-backed local comparison set
-- That command now refreshes `.artifacts/compare-local/*.json` for the curated fixture set
+- That command recreates `.artifacts/compare-local/` and refreshes its `*.json` results for the curated fixture set
 - The curated fixture list for that command lives in `testdata/workloads/compare-local-fixtures.txt`
 
 ## References
