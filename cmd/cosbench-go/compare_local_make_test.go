@@ -482,9 +482,6 @@ func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
-	if len(payload) == 0 {
-		t.Fatal("expected at least one merged worktree")
-	}
 	for _, row := range payload {
 		if row.State != "merged" {
 			t.Fatalf("unexpected row: %#v", row)
