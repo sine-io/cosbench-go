@@ -59,7 +59,7 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read summary: %v", err)
 	}
-	if !strings.Contains(string(summaryData), "## Compare Local") || !strings.Contains(string(summaryData), "| Fixture | Workload |") {
+	if !strings.Contains(string(summaryData), "## Compare Local") || !strings.Contains(string(summaryData), "| Fixture | Workload |") || !strings.Contains(string(summaryData), "Filter: `all`") {
 		t.Fatalf("unexpected summary: %s", summaryData)
 	}
 	var payload struct {
@@ -84,7 +84,7 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	if len(payload.Fixtures) != 4 {
 		t.Fatalf("fixtures = %#v", payload.Fixtures)
 	}
-	if payload.Meta.Filter != "" {
+	if payload.Meta.Filter != "all" {
 		t.Fatalf("meta filter = %q", payload.Meta.Filter)
 	}
 	if payload.Meta.FixtureCount != 4 {
