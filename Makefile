@@ -3,10 +3,13 @@ COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
 COMPARE_LOCAL_FILTER ?=
 
-.PHONY: build compare-local fmt smoke-s3 test tidy validate vet
+.PHONY: build compare-local compare-local-list fmt smoke-s3 test tidy validate vet
 
 build:
 	$(GO) build ./...
+
+compare-local-list:
+	@awk 'NF && $$1 !~ /^#/ { print $$1 }' "$(COMPARE_LOCAL_MANIFEST)"
 
 compare-local:
 	@dir_base="$$(basename -- "$(COMPARE_LOCAL_OUTPUT_DIR)")"; \

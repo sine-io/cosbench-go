@@ -80,6 +80,7 @@ It recreates `.artifacts/compare-local/` and refreshes per-fixture JSON summarie
 Use `.artifacts/compare-local/index.json` as the stable top-level entrypoint for those results and their key per-fixture metrics.
 Set `COMPARE_LOCAL_FILTER=<fixture-name>` when you want to refresh just one curated row.
 Unknown filter names now fail fast instead of silently producing an empty result set.
+Run `make compare-local-list` when you want to see the valid curated names first.
 It currently covers:
 
 - `s3-active-subset.xml`

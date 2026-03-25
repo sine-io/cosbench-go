@@ -185,3 +185,34 @@ func TestCompareLocalFilterRejectsUnknownFixture(t *testing.T) {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
+
+func TestCompareLocalListShowsFixtureNames(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make compare-local-list failed: %v\n%s", err, output)
+	}
+
+	lines := strings.Fields(strings.TrimSpace(string(output)))
+	want := []string{
+		"s3-active-subset",
+		"mock-stage-aware",
+		"mock-reusedata-subset",
+		"xml-splitrw-subset",
+	}
+	if len(lines) != len(want) {
+		t.Fatalf("lines = %#v", lines)
+	}
+	for i, name := range want {
+		if lines[i] != name {
+			t.Fatalf("lines = %#v", lines)
+		}
+	}
+}
