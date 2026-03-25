@@ -3,13 +3,16 @@ COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
 COMPARE_LOCAL_FILTER ?=
 
-.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json
+.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged
 
 build:
 	$(GO) build ./...
 
 worktree-audit:
 	@python3 ./scripts/worktree_audit.py origin/main
+
+worktree-audit-merged:
+	@python3 ./scripts/worktree_audit.py --merged-only origin/main
 
 worktree-audit-json:
 	@python3 ./scripts/worktree_audit.py --json origin/main
