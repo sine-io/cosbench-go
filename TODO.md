@@ -31,6 +31,7 @@ Status: In Progress
 - [x] Define a single manifest for the curated `compare-local` fixture set
 - [x] Recreate the `compare-local` output directory before regenerating results
 - [x] Guard `COMPARE_LOCAL_OUTPUT_DIR` so compare-local only refreshes dedicated directories
+- [x] Add a top-level `index.json` for compare-local artifact discovery
 
 ---
 
