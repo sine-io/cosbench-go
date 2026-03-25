@@ -55,6 +55,13 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read index: %v", err)
 	}
+	summaryData, err := os.ReadFile(filepath.Join(outputDir, "summary.md"))
+	if err != nil {
+		t.Fatalf("read summary: %v", err)
+	}
+	if !strings.Contains(string(summaryData), "## Compare Local") || !strings.Contains(string(summaryData), "| Fixture | Workload |") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
 	var payload struct {
 		Meta struct {
 			Filter       string `json:"filter"`

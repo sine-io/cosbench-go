@@ -63,6 +63,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - That command refreshes `.artifacts/compare-local/` in place and rewrites its `*.json` results for the curated fixture set
 - The curated fixture list for that command lives in `testdata/workloads/compare-local-fixtures.txt`
 - `.artifacts/compare-local/index.json` is the top-level artifact index for those per-fixture summaries and their key metrics
+- `.artifacts/compare-local/summary.md` is the local human-readable summary, and the manual workflow reuses that same file
 - Filtered runs only accept fixture names from `testdata/workloads/compare-local-fixtures.txt`
 - If you override `COMPARE_LOCAL_OUTPUT_DIR`, keep the basename as `compare-local`
 

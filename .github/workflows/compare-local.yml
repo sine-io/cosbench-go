@@ -24,33 +24,7 @@ jobs:
         run: COMPARE_LOCAL_FILTER='${{ inputs.fixture }}' GO=go make compare-local
 
       - name: Write compare-local summary
-        run: |
-          python3 - <<'PY' > compare-local-summary.md
-          import json
-          from pathlib import Path
-          index_path = Path(".artifacts/compare-local/index.json")
-          payload = json.loads(index_path.read_text())
-          lines = [
-              "## Compare Local",
-              "",
-              "Artifact directory: `.artifacts/compare-local/`",
-              "",
-              f"Filter: `{payload.get('meta', {}).get('filter', '')}`",
-              "",
-              f"Fixture count: {payload.get('meta', {}).get('fixture_count', 0)}",
-              "",
-              f"Generated at: `{payload.get('meta', {}).get('generated_at', '')}`",
-              "",
-              "| Fixture | Workload | Stages | Works | Samples | Errors | Summary |",
-              "| --- | --- | --- | --- | --- | --- | --- |",
-          ]
-          for fixture in payload.get("fixtures", []):
-              lines.append(
-                  f"| `{fixture['name']}` | `{fixture['workload']}` | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | `{fixture['summary']}` |"
-              )
-          print("\n".join(lines))
-          PY
-          cat compare-local-summary.md >> "$GITHUB_STEP_SUMMARY"
+        run: cat .artifacts/compare-local/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload compare-local artifact
         uses: actions/upload-artifact@v4
