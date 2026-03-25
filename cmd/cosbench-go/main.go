@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/sine-io/cosbench-go/internal/domain/execution"
 	storagefactory "github.com/sine-io/cosbench-go/internal/infrastructure/storage"
@@ -22,22 +23,23 @@ type cliSummary struct {
 }
 
 func main() {
-	path, backend, jsonOut, quiet, err := parseCLIArgs(os.Args[1:])
+	path, backend, jsonOut, quiet, summaryFile, err := parseCLIArgs(os.Args[1:])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "usage: cosbench-go [-workload <path> | -f <path> | <path>] [-backend mock|s3|sio] [-json] [-quiet]")
+		fmt.Fprintln(os.Stderr, "usage: cosbench-go [-workload <path> | -f <path> | <path>] [-backend mock|s3|sio] [-json] [-quiet] [-summary-file <path>]")
 		os.Exit(2)
 	}
-	if err := runCLI(path, backend, jsonOut, quiet, os.Stdout, os.Stderr); err != nil {
+	if err := runCLI(path, backend, jsonOut, quiet, summaryFile, os.Stdout, os.Stderr); err != nil {
 		os.Exit(1)
 	}
 }
 
-func parseCLIArgs(args []string) (string, string, bool, bool, error) {
+func parseCLIArgs(args []string) (string, string, bool, bool, string, error) {
 	var workloadPath string
 	var shortWorkloadPath string
 	var backend string
 	var jsonOut bool
 	var quiet bool
+	var summaryFile string
 	var positional []string
 
 	for i := 0; i < len(args); i++ {
@@ -46,28 +48,34 @@ func parseCLIArgs(args []string) (string, string, bool, bool, error) {
 		case "-workload", "--workload":
 			i++
 			if i >= len(args) {
-				return "", "", false, false, errors.New("missing value for -workload")
+				return "", "", false, false, "", errors.New("missing value for -workload")
 			}
 			workloadPath = args[i]
 		case "-f":
 			i++
 			if i >= len(args) {
-				return "", "", false, false, errors.New("missing value for -f")
+				return "", "", false, false, "", errors.New("missing value for -f")
 			}
 			shortWorkloadPath = args[i]
 		case "-backend":
 			i++
 			if i >= len(args) {
-				return "", "", false, false, errors.New("missing value for -backend")
+				return "", "", false, false, "", errors.New("missing value for -backend")
 			}
 			backend = args[i]
 		case "-json":
 			jsonOut = true
 		case "-quiet":
 			quiet = true
+		case "-summary-file":
+			i++
+			if i >= len(args) {
+				return "", "", false, false, "", errors.New("missing value for -summary-file")
+			}
+			summaryFile = args[i]
 		default:
 			if len(arg) > 0 && arg[0] == '-' {
-				return "", "", false, false, fmt.Errorf("unknown flag: %s", arg)
+				return "", "", false, false, "", fmt.Errorf("unknown flag: %s", arg)
 			}
 			positional = append(positional, arg)
 		}
@@ -75,12 +83,12 @@ func parseCLIArgs(args []string) (string, string, bool, bool, error) {
 
 	path, err := resolveWorkloadPath(workloadPath, shortWorkloadPath, positional)
 	if err != nil {
-		return "", "", false, false, err
+		return "", "", false, false, "", err
 	}
-	return path, backend, jsonOut, quiet, nil
+	return path, backend, jsonOut, quiet, summaryFile, nil
 }
 
-func runCLI(workloadPath, backend string, jsonOut bool, quiet bool, stdout, stderr io.Writer) error {
+func runCLI(workloadPath, backend string, jsonOut bool, quiet bool, summaryFile string, stdout, stderr io.Writer) error {
 	wl, err := xmlparser.ParseWorkloadFile(workloadPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "parse workload: %v\n", err)
@@ -139,13 +147,45 @@ func runCLI(workloadPath, backend string, jsonOut bool, quiet bool, stdout, stde
 	}
 
 	summary := cliSummary{Workload: wl.Name, Stages: len(wl.Workflow.Stages), Works: totalWorks, Samples: totalSamples, Errors: totalErrors}
+	if summaryFile != "" {
+		if err := writeSummaryFile(summaryFile, summary); err != nil {
+			fmt.Fprintf(stderr, "write summary file: %v\n", err)
+			return err
+		}
+	}
 	if jsonOut {
-		enc := json.NewEncoder(stdout)
-		enc.SetIndent("", "  ")
-		_ = enc.Encode(summary)
-		return nil
+		return writeSummaryJSON(stdout, summary)
 	}
 	fmt.Fprintf(stdout, "summary: workload=%s works=%d samples=%d errors=%d\n", summary.Workload, summary.Works, summary.Samples, summary.Errors)
+	return nil
+}
+
+func writeSummaryFile(path string, summary cliSummary) error {
+	dir := filepath.Dir(path)
+	if dir != "." && dir != "" {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create summary dir: %w", err)
+		}
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create summary file: %w", err)
+	}
+	defer file.Close()
+
+	if err := writeSummaryJSON(file, summary); err != nil {
+		return fmt.Errorf("encode summary file: %w", err)
+	}
+	return nil
+}
+
+func writeSummaryJSON(w io.Writer, summary cliSummary) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(summary); err != nil {
+		return fmt.Errorf("encode summary json: %w", err)
+	}
 	return nil
 }
 

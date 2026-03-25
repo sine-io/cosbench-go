@@ -18,6 +18,7 @@ For local runs, use the package entrypoints directly:
 
 - `go run ./cmd/server -data-dir ./data -view-dir ./web/templates`
 - `go run ./cmd/cosbench-go -workload testdata/workloads/s3-active-subset.xml -backend mock -json`
+- `go run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock -json -quiet -summary-file .artifacts/compare-local/s3-active-subset.json`
 - `go run ./cmd/cosbench-go -f testdata/workloads/s3-active-subset.xml -backend mock`
 - `go run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock`
 - `go build ./...` to catch compile errors across both binaries
@@ -30,6 +31,8 @@ In `-json` mode, stdout is reserved for machine-readable JSON.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
 Use `-quiet` when you want the CLI to suppress progress output entirely.
+Use `-summary-file` when you want the CLI to persist the summary JSON to a stable path.
+`make compare-local` refreshes `.artifacts/compare-local/*.json`, and the manual workflow uploads that directory.
 
 ## Coding Style & Naming Conventions
 This is a Go repository; follow `gofmt` output exactly and keep package names lowercase. Exported types and functions use `CamelCase`; unexported helpers use `camelCase`. Keep packages focused on one layer or boundary, and prefer small adapters over cross-layer shortcuts. When wrapping errors, preserve context with `%w`, as in `fmt.Errorf("snapshot store: %w", err)`.

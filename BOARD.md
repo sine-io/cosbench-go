@@ -7,6 +7,7 @@ Owner: Ross
 - Live-endpoint behavior comparison against legacy workloads
 - Storage-driver comparison notes against legacy Java behavior
 - Release/branch hygiene once the current migration slice is stable
+- Structured compare-local result outputs for local and manual workflow reuse
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
@@ -57,6 +58,7 @@ Owner: Ross
 - Minimal CI workflow landed for `make validate`
 - Manual compare-local workflow landed
 - Compare-local workflow artifact upload landed
+- Structured compare-local JSON output directory landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

@@ -21,6 +21,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
   - `go run ./cmd/cosbench-go testdata/workloads/s3-active-subset.xml -backend mock`
 - `-json` now emits machine-readable JSON to stdout without progress text mixed in
 - `-quiet` suppresses progress output entirely; `make compare-local` now uses it
+- `-summary-file <path>` writes the same summary JSON to a file for later reuse
 
 ## Technical Direction
 - Go-native rewrite, not line-by-line Java translation
@@ -45,7 +46,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Repository CI runs `make validate` on `push` and `pull_request`
 - The default CI path does not run `make smoke-s3`; live endpoint checks remain opt-in
 - A manual GitHub Actions workflow can run `make compare-local` on demand
-- The manual `compare-local` workflow uploads its output as a downloadable artifact
+- The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 
 ## Legacy Comparison
 - The current comparison checklist and runbook live in `docs/legacy-comparison-matrix.md`
@@ -53,6 +54,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Live endpoint prerequisites and execution order live in `docs/legacy-live-run-checklist.md`
 - Use it to track which representative fixtures are parser-only, runnable now, runnable with live endpoint setup, or still unverified against `cosbench-sineio`
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local` to refresh the safe mock-backed local comparison set
+- That command now refreshes `.artifacts/compare-local/*.json` for the curated fixture set
 
 ## References
 - Legacy project reference: `../cosbench-sineio`

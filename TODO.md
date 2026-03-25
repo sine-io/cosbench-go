@@ -1,6 +1,6 @@
 # COSBench-Go Migration Board
 
-Last updated: 2026-03-24
+Last updated: 2026-03-25
 Owner: Ross
 Status: In Progress
 
@@ -27,6 +27,7 @@ Status: In Progress
 - [x] Add repository-local CI automation for `make validate`
 - [x] Add manual workflow automation for `make compare-local`
 - [x] Upload `compare-local` workflow output as an artifact
+- [x] Add structured per-fixture JSON outputs for `make compare-local`
 
 ---
 
@@ -131,6 +132,7 @@ Status: In Progress
 - [x] Output human-readable console summary
 - [x] Improve local CLI ergonomics (`-f`, positional workload path, pure JSON stdout)
 - [x] Add `make compare-local` for repeatable mock-backed comparison runs
+- [x] Add CLI `-summary-file` support for reusable local comparison artifacts
 
 ---
 
