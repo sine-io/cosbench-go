@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -23,19 +22,59 @@ type cliSummary struct {
 }
 
 func main() {
-	workloadPath := flag.String("workload", "", "path to workload xml")
-	shortWorkloadPath := flag.String("f", "", "path to workload xml")
-	backend := flag.String("backend", "", "override storage backend: mock|s3|sio")
-	jsonOut := flag.Bool("json", false, "print JSON summary")
-	flag.Parse()
-	path, err := resolveWorkloadPath(*workloadPath, *shortWorkloadPath, flag.Args())
+	path, backend, jsonOut, err := parseCLIArgs(os.Args[1:])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "usage: cosbench-go [-workload <path> | -f <path> | <path>] [-backend mock|s3|sio] [-json]")
 		os.Exit(2)
 	}
-	if err := runCLI(path, *backend, *jsonOut, os.Stdout, os.Stderr); err != nil {
+	if err := runCLI(path, backend, jsonOut, os.Stdout, os.Stderr); err != nil {
 		os.Exit(1)
 	}
+}
+
+func parseCLIArgs(args []string) (string, string, bool, error) {
+	var workloadPath string
+	var shortWorkloadPath string
+	var backend string
+	var jsonOut bool
+	var positional []string
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "-workload", "--workload":
+			i++
+			if i >= len(args) {
+				return "", "", false, errors.New("missing value for -workload")
+			}
+			workloadPath = args[i]
+		case "-f":
+			i++
+			if i >= len(args) {
+				return "", "", false, errors.New("missing value for -f")
+			}
+			shortWorkloadPath = args[i]
+		case "-backend":
+			i++
+			if i >= len(args) {
+				return "", "", false, errors.New("missing value for -backend")
+			}
+			backend = args[i]
+		case "-json":
+			jsonOut = true
+		default:
+			if len(arg) > 0 && arg[0] == '-' {
+				return "", "", false, fmt.Errorf("unknown flag: %s", arg)
+			}
+			positional = append(positional, arg)
+		}
+	}
+
+	path, err := resolveWorkloadPath(workloadPath, shortWorkloadPath, positional)
+	if err != nil {
+		return "", "", false, err
+	}
+	return path, backend, jsonOut, nil
 }
 
 func runCLI(workloadPath, backend string, jsonOut bool, stdout, stderr io.Writer) error {

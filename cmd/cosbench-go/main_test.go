@@ -66,3 +66,19 @@ func TestResolveWorkloadPathRequiresInput(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestParseCLIArgsSupportsPositionalPathWithTrailingFlags(t *testing.T) {
+	workload, backend, jsonOut, err := parseCLIArgs([]string{"testdata/workloads/mock-stage-aware.xml", "-backend", "mock", "-json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if workload != "testdata/workloads/mock-stage-aware.xml" {
+		t.Fatalf("workload = %q", workload)
+	}
+	if backend != "mock" {
+		t.Fatalf("backend = %q", backend)
+	}
+	if !jsonOut {
+		t.Fatal("expected json mode")
+	}
+}
