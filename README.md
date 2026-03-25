@@ -48,6 +48,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - A manual GitHub Actions workflow can run `make compare-local` on demand
 - A separate manual GitHub Actions workflow can run `make smoke-s3` with `COSBENCH_SMOKE_*` secrets and optional workflow inputs
 - That smoke workflow uses an explicit `s3` / `sio` backend choice and writes a small GitHub job summary with the selected inputs
+- The `path_style` workflow input is also constrained to explicit choices (`""`, `true`, `false`)
 - The smoke job summary now also reports whether the required endpoint and credential secrets were present
 - The smoke workflow now fails fast if any required smoke secret is missing, instead of silently relying on test-level skips
 - The smoke workflow also uploads the raw `make smoke-s3` output as an artifact
