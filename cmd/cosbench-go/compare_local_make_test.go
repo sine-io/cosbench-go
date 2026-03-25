@@ -422,18 +422,28 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-json failed: %v\n%s", err, output)
 	}
 
-	var payload []struct {
-		Path   string `json:"path"`
-		Branch string `json:"branch"`
-		State  string `json:"state"`
-	}
+	var payload []map[string]any
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
 	if len(payload) == 0 {
 		t.Fatal("expected at least one worktree entry")
 	}
-	if payload[0].Path == "" || payload[0].Branch == "" || payload[0].State == "" {
+	if payload[0]["path"] == "" || payload[0]["branch"] == "" || payload[0]["state"] == "" {
+		t.Fatalf("unexpected payload: %#v", payload[0])
+	}
+	if _, ok := payload[0]["ahead"]; !ok {
+		t.Fatalf("missing ahead: %#v", payload[0])
+	}
+	if _, ok := payload[0]["behind"]; !ok {
+		t.Fatalf("missing behind: %#v", payload[0])
+	}
+	ahead, ok := payload[0]["ahead"].(float64)
+	if !ok || ahead < 0 {
+		t.Fatalf("unexpected payload: %#v", payload[0])
+	}
+	behind, ok := payload[0]["behind"].(float64)
+	if !ok || behind < 0 {
 		t.Fatalf("unexpected payload: %#v", payload[0])
 	}
 }

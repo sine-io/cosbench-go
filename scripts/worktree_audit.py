@@ -38,15 +38,15 @@ def branch_name(entry):
 
 def classify(branch, base_ref):
     if branch == "(detached)":
-        return "detached", ""
+        return "detached", "", 0, 0
     merged = run("git", "merge-base", "--is-ancestor", branch, base_ref)
     if merged.returncode == 0:
-        return "merged", base_ref
+        return "merged", base_ref, 0, 0
     ahead_behind = run("git", "rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
     if ahead_behind.returncode != 0:
-        return "unknown", ahead_behind.stderr.strip() or ahead_behind.stdout.strip()
+        return "unknown", ahead_behind.stderr.strip() or ahead_behind.stdout.strip(), 0, 0
     behind, ahead = ahead_behind.stdout.strip().split()
-    return "active", f"ahead={ahead} behind={behind}"
+    return "active", f"ahead={ahead} behind={behind}", int(ahead), int(behind)
 
 
 def main():
@@ -58,7 +58,7 @@ def main():
     rows = []
     for entry in worktree_entries():
         branch = branch_name(entry)
-        state, details = classify(branch, base_ref)
+        state, details, ahead, behind = classify(branch, base_ref)
         if merged_only and state != "merged":
             continue
         rows.append(
@@ -67,6 +67,8 @@ def main():
                 "branch": branch,
                 "state": state,
                 "details": details,
+                "ahead": ahead,
+                "behind": behind,
             }
         )
 
