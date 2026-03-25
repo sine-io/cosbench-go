@@ -30,6 +30,7 @@ In `-json` mode, stdout is reserved for machine-readable JSON.
 `make compare-local` is the fastest way to refresh local comparison evidence without live credentials.
 There is also a manual GitHub Actions workflow for `make smoke-s3`; it reads `COSBENCH_SMOKE_*` from repository secrets and optional workflow inputs.
 That smoke workflow now uses an explicit backend choice and writes a small GitHub job summary with the selected inputs.
+The `path_style` workflow input is also constrained to explicit choices.
 That summary also shows whether the required endpoint and credential secrets were present.
 The workflow fails fast when any required smoke secret is missing.
 The workflow also uploads the raw `make smoke-s3` output as an artifact.

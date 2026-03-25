@@ -22,6 +22,7 @@ Owner: Ross
 - Compare-local multi-fixture filter
 - Compare-local local summary artifact
 - Manual smoke-s3 workflow
+- Smoke workflow path-style choice
 - Smoke workflow summary and backend choice
 - Smoke workflow secret presence summary
 - Smoke workflow secret preflight
@@ -92,6 +93,7 @@ Owner: Ross
 - Compare-local multi-fixture filter landed
 - Compare-local local summary artifact landed
 - Manual smoke-s3 workflow landed
+- Smoke workflow path-style choice landed
 - Smoke workflow summary and backend choice landed
 - Smoke workflow secret presence summary landed
 - Smoke workflow secret preflight landed

@@ -28,6 +28,7 @@ Status: In Progress
 - [x] Add manual workflow automation for `make compare-local`
 - [x] Add manual workflow automation for `make smoke-s3`
 - [x] Add a GitHub job summary and explicit backend choice for the manual smoke workflow
+- [x] Constrain the smoke workflow `path_style` input to explicit choices
 - [x] Show required smoke secret presence in the manual smoke workflow summary
 - [x] Fail the manual smoke workflow early when required secrets are missing
 - [x] Upload the raw smoke workflow output as an artifact
