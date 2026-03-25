@@ -4,9 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       backend:
-        description: Optional backend override (s3 or sio)
+        description: Backend to use for the smoke run
         required: false
-        default: ""
+        default: s3
+        type: choice
+        options:
+          - s3
+          - sio
       region:
         description: Optional region override
         required: false
@@ -42,3 +46,17 @@ jobs:
 
       - name: Run opt-in smoke suite
         run: GO=go make smoke-s3
+
+      - name: Write smoke summary
+        run: |
+          {
+            echo "## Smoke S3"
+            echo
+            echo "Backend: \`${COSBENCH_SMOKE_BACKEND:-s3}\`"
+            echo
+            echo "Region: \`${COSBENCH_SMOKE_REGION:-}\`"
+            echo
+            echo "Path style: \`${COSBENCH_SMOKE_PATH_STYLE:-}\`"
+            echo
+            echo "Bucket prefix: \`${COSBENCH_SMOKE_BUCKET_PREFIX:-}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
