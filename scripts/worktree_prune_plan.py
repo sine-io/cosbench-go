@@ -7,6 +7,13 @@ import sys
 
 def main():
     json_mode = "--json" in sys.argv[1:]
+    cwd_proc = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    current_worktree = cwd_proc.stdout.strip()
     proc = subprocess.run(
         ["python3", "./scripts/worktree_audit.py", "--json", "--merged-only", "origin/main"],
         check=True,
@@ -20,7 +27,7 @@ def main():
     for row in source_rows:
         branch = row.get("branch", "")
         path = row.get("path", "")
-        if branch in ("main", "master") or not path:
+        if branch in ("main", "master") or not path or path == current_worktree:
             continue
         rows.append(
             {

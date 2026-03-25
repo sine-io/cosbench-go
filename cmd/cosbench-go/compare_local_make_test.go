@@ -570,6 +570,9 @@ func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 	if !strings.Contains(text, "git worktree remove") && !strings.Contains(text, "# no merged worktrees to prune") {
 		t.Fatalf("unexpected output: %s", text)
 	}
+	if strings.Contains(text, "worktree-prune-safety") {
+		t.Fatalf("unexpected self-removal plan: %s", text)
+	}
 }
 
 func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
