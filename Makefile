@@ -2,6 +2,7 @@ GO ?= /snap/bin/go
 COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
 COMPARE_LOCAL_FILTER ?=
+WORKTREE_AUDIT_BASE_REF ?= origin/main
 
 .PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale
 
@@ -9,25 +10,25 @@ build:
 	$(GO) build ./...
 
 worktree-audit:
-	@python3 ./scripts/worktree_audit.py origin/main
+	@python3 ./scripts/worktree_audit.py "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-merged:
-	@python3 ./scripts/worktree_audit.py --merged-only origin/main
+	@python3 ./scripts/worktree_audit.py --merged-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-json:
-	@python3 ./scripts/worktree_audit.py --json origin/main
+	@python3 ./scripts/worktree_audit.py --json "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-merged-json:
-	@python3 ./scripts/worktree_audit.py --json --merged-only origin/main
+	@python3 ./scripts/worktree_audit.py --json --merged-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-stale:
-	@python3 ./scripts/worktree_audit.py --stale-only origin/main
+	@python3 ./scripts/worktree_audit.py --stale-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-prune-plan:
-	@python3 ./scripts/worktree_prune_plan.py
+	@python3 ./scripts/worktree_prune_plan.py "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-prune-plan-json:
-	@python3 ./scripts/worktree_prune_plan.py --json
+	@python3 ./scripts/worktree_prune_plan.py --json "$(WORKTREE_AUDIT_BASE_REF)"
 
 compare-local-list:
 	@python3 ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" --names "$(COMPARE_LOCAL_FILTER)"

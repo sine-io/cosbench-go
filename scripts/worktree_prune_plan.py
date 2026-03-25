@@ -7,6 +7,8 @@ import sys
 
 def main():
     json_mode = "--json" in sys.argv[1:]
+    args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    base_ref = args[0] if args else "origin/main"
     cwd_proc = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
         check=True,
@@ -15,7 +17,7 @@ def main():
     )
     current_worktree = cwd_proc.stdout.strip()
     proc = subprocess.run(
-        ["python3", "./scripts/worktree_audit.py", "--json", "--merged-only", "origin/main"],
+        ["python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref],
         check=True,
         text=True,
         capture_output=True,

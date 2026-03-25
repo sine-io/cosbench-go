@@ -48,6 +48,7 @@ Status: In Progress
 - [x] Add structured `ahead` / `behind` fields to the JSON worktree audit output
 - [x] Add top-level summary counts to the JSON worktree audit output
 - [x] Add an explicit current-worktree marker to the JSON audit output
+- [x] Add a configurable `WORKTREE_AUDIT_BASE_REF` override for audit and prune helpers
 - [x] Sort worktree audit outputs by usefulness
 - [x] Add a merged-only `worktree-audit-merged` helper
 - [x] Add a machine-readable `worktree-audit-merged-json` helper
