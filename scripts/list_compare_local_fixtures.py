@@ -63,7 +63,7 @@ def main() -> int:
             print(f"{fixture['name']} {fixture['workload']}")
         return 0
 
-    print(json.dumps(fixtures, indent=2))
+    print(json.dumps(fixtures, indent=2, ensure_ascii=False))
     return 0
 
 
