@@ -86,8 +86,11 @@ def main():
     report = "\n".join(lines) + "\n"
     if output_path:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as fh:
-            fh.write(report)
+        try:
+            with open(output_path, "w", encoding="utf-8") as fh:
+                fh.write(report)
+        except OSError as err:
+            raise SystemExit(f"unable to write worktree cleanup report {output_path}: {err}")
     print(report, end="")
 
 

@@ -319,6 +319,22 @@ func TestWorktreeCleanupReportCreatesMissingParentDir(t *testing.T) {
 	}
 }
 
+func TestWorktreeCleanupReportRejectsDirectoryOutputPathGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	outputDir := t.TempDir()
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_cleanup_report.py", "main", outputDir)
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to write worktree cleanup report") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, outputDir) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func runCmd(t *testing.T, dir, bin string, args ...string) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
