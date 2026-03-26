@@ -29,6 +29,20 @@ def format_os_error(err: OSError) -> str:
     return " ".join(parts) or err.__class__.__name__
 
 
+def markdown_code(value: str) -> str:
+    longest_run = 0
+    current_run = 0
+    for ch in value:
+        if ch == "`":
+            current_run += 1
+            if current_run > longest_run:
+                longest_run = current_run
+        else:
+            current_run = 0
+    fence = "`" * (longest_run + 1)
+    return f"{fence}{value}{fence}"
+
+
 def main():
     configure_utf8_stdout()
     flags, args = parse_known_flags(sys.argv[1:], ("--json",))
@@ -81,9 +95,9 @@ def main():
         "",
         "## Summary",
         "",
-        f"- Generated at: `{report_generated_at}`",
-        f"- Base ref: `{summary['base_ref']}`",
-        f"- Current worktree: `{current_worktree}`",
+        f"- Generated at: {markdown_code(report_generated_at)}",
+        f"- Base ref: {markdown_code(summary['base_ref'])}",
+        f"- Current worktree: {markdown_code(current_worktree)}",
         f"- Total worktrees: {summary['total']}",
         f"- Merged: {summary['merged']}",
         f"- Integrated: {summary['integrated']}",

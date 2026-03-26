@@ -118,6 +118,41 @@ func setupUnicodePatchEquivalentRepo(t *testing.T) (repoDir string, gitBin strin
 	return repoDir, gitBin, pythonBin
 }
 
+func setupBacktickActiveRepoWithFeatureWorktree(t *testing.T) (repoDir, featureDir, gitBin, pythonBin, baseBranch string) {
+	t.Helper()
+
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("look path git: %v", err)
+	}
+	pythonBin, err = exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("look path python3: %v", err)
+	}
+
+	baseBranch = "tick`main"
+	repoDir = t.TempDir()
+	runCmd(t, repoDir, gitBin, "init", "-b", baseBranch)
+	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
+	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
+
+	filePath := filepath.Join(repoDir, "note.txt")
+	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
+		t.Fatalf("write base file: %v", err)
+	}
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
+
+	featureDir = filepath.Join(t.TempDir(), "tick`tree")
+	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "tick`feature")
+
+	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
+	runCmd(t, featureDir, gitBin, "add", "note.txt")
+	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
+
+	return repoDir, featureDir, gitBin, pythonBin, baseBranch
+}
+
 func setupActiveTrunkRepo(t *testing.T) (repoDir string, gitBin string, pythonBin string) {
 	t.Helper()
 
@@ -1274,6 +1309,18 @@ func TestWorktreeCleanupReportWritesTextWithExplicitUTF8Stdout(t *testing.T) {
 		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, "工作树") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportEscapesBackticksInMarkdownSummary(t *testing.T) {
+	_, featureDir, _, pythonBin, baseBranch := setupBacktickActiveRepoWithFeatureWorktree(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py", baseBranch)
+	if !strings.Contains(output, "Base ref: ``"+baseBranch+"``") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "Current worktree: ``"+featureDir+"``") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
