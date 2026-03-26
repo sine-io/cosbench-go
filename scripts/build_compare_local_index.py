@@ -44,6 +44,8 @@ def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str)
         summary = json.loads(summary_path.read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         raise SystemExit(f"missing compare-local summary for fixture {fixture_name}: {summary_path}")
+    except UnicodeEncodeError as err:
+        raise SystemExit(f"unable to access compare-local summary path for fixture {fixture_name}: {summary_path}: {err}")
     except UnicodeDecodeError as err:
         raise SystemExit(f"unable to decode compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
     except OSError as err:
