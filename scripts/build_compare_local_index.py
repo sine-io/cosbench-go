@@ -46,6 +46,10 @@ def markdown_code(value: str) -> str:
     return f"{fence}{value}{fence}"
 
 
+def markdown_table_code(value: str) -> str:
+    return markdown_code(value.replace("|", "\\|"))
+
+
 def build_summary(payload, output_dir: Path):
     meta = payload["meta"]
     lines = [
@@ -64,7 +68,7 @@ def build_summary(payload, output_dir: Path):
     ]
     for fixture in payload.get("fixtures", []):
         lines.append(
-            f"| {markdown_code(fixture['name'])} | {markdown_code(fixture['workload'])} | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | {markdown_code(fixture['summary'])} |"
+            f"| {markdown_table_code(fixture['name'])} | {markdown_table_code(fixture['workload'])} | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | {markdown_table_code(fixture['summary'])} |"
         )
     return "\n".join(lines) + "\n"
 
