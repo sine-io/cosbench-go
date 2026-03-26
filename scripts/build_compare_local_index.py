@@ -74,7 +74,9 @@ def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str)
     except UnicodeDecodeError as err:
         raise SystemExit(f"unable to decode compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
     except OSError as err:
-        raise SystemExit(f"unable to read compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
+        raise SystemExit(
+            f"unable to read compare-local summary for fixture {fixture_name}: {summary_display}: {format_os_error(err)}"
+        )
     except json.JSONDecodeError as err:
         raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
     if not isinstance(summary, dict):
