@@ -48,9 +48,9 @@ def main():
     flags, args = parse_known_flags(sys.argv[1:], ("--json",))
     json_mode = flags["--json"]
     if json_mode and len(args) > 1:
-        raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
+        raise SystemExit(f"expected at most one base_ref argument in --json mode, got: {' '.join(args)}")
     if not json_mode and len(args) > 2:
-        raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
+        raise SystemExit(f"expected at most base_ref and output_path arguments, got: {' '.join(args)}")
     base_ref = resolve_base_ref(args[0] if args else "")
     output_path = args[1] if len(args) > 1 else ""
     audit = load_json_script("worktree_audit.py", "--json", base_ref)

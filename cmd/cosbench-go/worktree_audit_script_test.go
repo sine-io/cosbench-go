@@ -1546,6 +1546,18 @@ func TestWorktreeAuditRejectsUnknownOptionGracefully(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditRejectsExtraBaseRefArgsGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_audit.py", "main", "extra")
+	if strings.Contains(output, "usage: git rev-list") || strings.Contains(output, "usage: worktree_audit.py") {
+		t.Fatalf("unexpected usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "expected at most one base_ref argument, got: main extra") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreeAuditRejectsDuplicateOptionGracefully(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
@@ -1590,6 +1602,18 @@ func TestWorktreePrunePlanRejectsUnknownOptionGracefully(t *testing.T) {
 		t.Fatalf("unexpected git usage leakage: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanRejectsExtraBaseRefArgsGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_prune_plan.py", "main", "extra")
+	if strings.Contains(output, "usage: git rev-list") || strings.Contains(output, "usage: worktree_prune_plan.py") {
+		t.Fatalf("unexpected usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "expected at most one base_ref argument, got: main extra") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
@@ -1652,6 +1676,30 @@ func TestWorktreeCleanupReportRejectsDirectoryOutputPathGracefully(t *testing.T)
 		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, outputDir) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportRejectsExtraArgsGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_cleanup_report.py", "main", "report.md", "extra")
+	if strings.Contains(output, "usage: git rev-list") || strings.Contains(output, "usage: worktree_cleanup_report.py") {
+		t.Fatalf("unexpected usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "expected at most base_ref and output_path arguments, got: main report.md extra") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportRejectsExtraJSONArgsGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_cleanup_report.py", "--json", "main", "report.md")
+	if strings.Contains(output, "usage: git rev-list") || strings.Contains(output, "usage: worktree_cleanup_report.py") {
+		t.Fatalf("unexpected usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "expected at most one base_ref argument in --json mode, got: main report.md") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }

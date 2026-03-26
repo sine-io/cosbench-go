@@ -40,7 +40,7 @@ def main():
         ("--json", "--merged-only", "--integrated-only", "--prune-only", "--stale-only"),
     )
     if len(args) > 1:
-        raise SystemExit("usage: worktree_audit.py [--json] [--merged-only|--integrated-only|--prune-only|--stale-only] [base_ref]")
+        raise SystemExit(f"expected at most one base_ref argument, got: {' '.join(args)}")
     json_mode = flags["--json"]
     merged_only = flags["--merged-only"]
     integrated_only = flags["--integrated-only"]
