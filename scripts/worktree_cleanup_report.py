@@ -15,7 +15,7 @@ from worktree_output import (
     markdown_text_section,
     parse_known_flags,
     run_script,
-    validate_base_ref,
+    resolve_base_ref,
 )
 
 def format_os_error(err: OSError) -> str:
@@ -37,8 +37,7 @@ def main():
         raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
     if not json_mode and len(args) > 2:
         raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
-    base_ref = args[0] if args else "origin/main"
-    validate_base_ref(base_ref)
+    base_ref = resolve_base_ref(args[0] if args else "")
     output_path = args[1] if len(args) > 1 else ""
     audit = load_json_script("worktree_audit.py", "--json", base_ref)
     prune_plan = load_json_script("worktree_prune_plan.py", "--json", base_ref)

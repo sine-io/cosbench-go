@@ -13,7 +13,7 @@ from worktree_output import (
     load_json_script,
     parse_known_flags,
     print_text_header,
-    validate_base_ref,
+    resolve_base_ref,
 )
 
 
@@ -23,8 +23,7 @@ def main():
     if len(args) > 1:
         raise SystemExit("usage: worktree_prune_plan.py [--json] [base_ref]")
     json_mode = flags["--json"]
-    base_ref = args[0] if args else "origin/main"
-    validate_base_ref(base_ref)
+    base_ref = resolve_base_ref(args[0] if args else "")
     current_worktree_path = current_worktree()
     payload = load_json_script("worktree_audit.py", "--json", base_ref)
     source_rows = payload.get("rows", payload)
