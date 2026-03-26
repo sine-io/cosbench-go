@@ -20,6 +20,8 @@ def read_manifest(manifest_path: str):
         lines = Path(manifest_path).read_text().splitlines()
     except FileNotFoundError:
         raise ManifestReadError(f"compare-local manifest not found: {manifest_path}")
+    except UnicodeDecodeError as err:
+        raise ManifestReadError(f"unable to decode compare-local manifest {manifest_path}: {err}")
     except OSError as err:
         raise ManifestReadError(f"unable to read compare-local manifest {manifest_path}: {err}")
 
