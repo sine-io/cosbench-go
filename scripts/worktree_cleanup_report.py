@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import sys
 
 from worktree_output import build_meta, generated_at, load_json_script, run_script
