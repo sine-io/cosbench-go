@@ -49,6 +49,15 @@ def require_summary_field(summary, field: str, fixture_name: str, summary_path: 
     return summary[field]
 
 
+def require_summary_int(summary, field: str, fixture_name: str, summary_path: Path):
+    value = require_summary_field(summary, field, fixture_name, summary_path)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise SystemExit(
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: field {field} must be an integer"
+        )
+    return value
+
+
 def main() -> int:
     if len(sys.argv) not in (3, 4):
         raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
@@ -74,10 +83,10 @@ def main() -> int:
                 "name": name,
                 "workload": workload,
                 "summary": summary_name,
-                "stages": require_summary_field(summary, "stages", name, summary_path),
-                "works": require_summary_field(summary, "works", name, summary_path),
-                "samples": require_summary_field(summary, "samples", name, summary_path),
-                "errors": require_summary_field(summary, "errors", name, summary_path),
+                "stages": require_summary_int(summary, "stages", name, summary_path),
+                "works": require_summary_int(summary, "works", name, summary_path),
+                "samples": require_summary_int(summary, "samples", name, summary_path),
+                "errors": require_summary_int(summary, "errors", name, summary_path),
             }
         )
 
