@@ -2,7 +2,7 @@
 
 import sys
 
-from compare_local_manifest import ManifestFormatError, read_manifest, validate_filter
+from compare_local_manifest import ManifestError, read_manifest, validate_filter
 
 
 def main() -> int:
@@ -13,7 +13,7 @@ def main() -> int:
     raw_filter = sys.argv[2]
     try:
         fixtures = read_manifest(manifest_path)
-    except ManifestFormatError as err:
+    except ManifestError as err:
         raise SystemExit(str(err))
     try:
         validate_filter(fixtures, raw_filter)

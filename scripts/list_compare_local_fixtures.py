@@ -3,7 +3,7 @@
 import json
 import sys
 
-from compare_local_manifest import ManifestFormatError, read_manifest, select_fixtures, validate_filter
+from compare_local_manifest import ManifestError, read_manifest, select_fixtures, validate_filter
 
 
 def main() -> int:
@@ -12,7 +12,7 @@ def main() -> int:
 
     try:
         fixtures = read_manifest(sys.argv[1])
-    except ManifestFormatError as err:
+    except ManifestError as err:
         raise SystemExit(str(err))
     names_only = False
     pairs_only = False
