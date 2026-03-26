@@ -41,13 +41,18 @@ def write_output_file(path: Path, content: str):
 def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str):
     summary_path = output_dir / summary_name
     try:
-        return json.loads(summary_path.read_text())
+        summary = json.loads(summary_path.read_text())
     except FileNotFoundError:
         raise SystemExit(f"missing compare-local summary for fixture {fixture_name}: {summary_path}")
     except OSError as err:
         raise SystemExit(f"unable to read compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
     except json.JSONDecodeError as err:
         raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
+    if not isinstance(summary, dict):
+        raise SystemExit(
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: summary payload must be a JSON object"
+        )
+    return summary
 
 
 def require_summary_field(summary, field: str, fixture_name: str, summary_path: Path):
