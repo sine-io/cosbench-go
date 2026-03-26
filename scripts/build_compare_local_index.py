@@ -165,7 +165,7 @@ def main() -> int:
         output_dir.mkdir(parents=True, exist_ok=True)
     except OSError as err:
         raise SystemExit(f"unable to prepare compare-local output dir {display_text(str(output_dir))}: {format_os_error(err)}")
-    write_output_file(output_dir / "index.json", json.dumps(payload, indent=2) + "\n")
+    write_output_file(output_dir / "index.json", json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     write_output_file(output_dir / "summary.md", build_summary(payload, output_dir))
     return 0
 

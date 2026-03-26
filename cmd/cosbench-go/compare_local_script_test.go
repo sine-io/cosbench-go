@@ -266,6 +266,38 @@ func TestListCompareLocalFixturesWritesNamesAndPairsWithExplicitUTF8Stdout(t *te
 	}
 }
 
+func TestListCompareLocalFixturesWritesJSONWithExplicitUTF8Characters(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	if err := os.WriteFile(manifestPath, []byte("样例 "+workloadPath+"\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	cmd.Env = append(
+		os.Environ(),
+		"LC_ALL=C",
+		"LANG=C",
+		"PYTHONCOERCECLOCALE=0",
+		"PYTHONUTF8=0",
+	)
+	output := string(runCommandSuccess(t, cmd))
+
+	if !strings.Contains(output, "样例") || !strings.Contains(output, "测试.xml") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if strings.Contains(output, "\\u6837\\u4f8b") || strings.Contains(output, "\\u6d4b\\u8bd5") {
+		t.Fatalf("unexpected escaped unicode: %q", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsUnknownOptionGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -628,6 +660,50 @@ func TestBuildCompareLocalIndexWritesArtifactsWithExplicitUTF8Encoding(t *testin
 	summaryData := mustReadFile(t, filepath.Join(outputDir, "summary.md"))
 	if !strings.Contains(string(summaryData), "测试.xml") {
 		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
+func TestBuildCompareLocalIndexWritesJSONArtifactsWithExplicitUTF8Characters(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("fixture "+workloadPath+"\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "fixture.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	cmd.Env = append(
+		os.Environ(),
+		"LC_ALL=C",
+		"LANG=C",
+		"PYTHONCOERCECLOCALE=0",
+		"PYTHONUTF8=0",
+	)
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected stdout: %s", output)
+	}
+
+	indexData := string(mustReadFile(t, filepath.Join(outputDir, "index.json")))
+	if !strings.Contains(indexData, "fixture") || !strings.Contains(indexData, "测试.xml") {
+		t.Fatalf("unexpected index.json: %s", indexData)
+	}
+	if strings.Contains(indexData, "\\u6d4b\\u8bd5") {
+		t.Fatalf("unexpected escaped unicode: %s", indexData)
 	}
 }
 
