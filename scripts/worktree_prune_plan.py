@@ -1,27 +1,17 @@
 #!/usr/bin/env python3
 
 import json
-import subprocess
 import sys
-from pathlib import Path
 
-from worktree_output import build_meta, current_worktree, generated_at, print_text_header
+from worktree_output import build_single_view_payload, current_worktree, generated_at, load_json_script, print_text_header
 
 
 def main():
     json_mode = "--json" in sys.argv[1:]
     args = [arg for arg in sys.argv[1:] if arg != "--json"]
     base_ref = args[0] if args else "origin/main"
-    script_dir = Path(__file__).resolve().parent
-    audit_script = str(script_dir / "worktree_audit.py")
     current_worktree_path = current_worktree()
-    proc = subprocess.run(
-        ["python3", audit_script, "--json", base_ref],
-        check=True,
-        text=True,
-        capture_output=True,
-    )
-    payload = json.loads(proc.stdout)
+    payload = load_json_script("worktree_audit.py", "--json", base_ref)
     source_rows = payload.get("rows", payload)
 
     rows = []
@@ -61,17 +51,9 @@ def main():
             "merged": sum(1 for row in rows if row["state"] == "merged"),
             "integrated": sum(1 for row in rows if row["state"] == "integrated"),
         }
-        view = {"summary": summary, "rows": rows}
-        meta = build_meta(plan_generated_at, base_ref, current_worktree_path)
         print(
             json.dumps(
-                {
-                    "generated_at": plan_generated_at,
-                    "meta": meta,
-                    "views": {"prune_plan": view},
-                    "summary": summary,
-                    "rows": rows,
-                },
+                build_single_view_payload(plan_generated_at, base_ref, current_worktree_path, "prune_plan", summary, rows),
                 indent=2,
             )
         )

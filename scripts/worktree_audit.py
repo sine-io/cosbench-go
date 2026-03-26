@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 
 import json
-import subprocess
 import sys
 
-from worktree_output import build_meta, current_worktree, generated_at, print_text_header
-
-
-def run(*args):
-    return subprocess.run(args, check=False, text=True, capture_output=True)
+from worktree_output import build_single_view_payload, current_worktree, generated_at, print_text_header, run_git
 
 
 def worktree_entries():
-    proc = run("git", "worktree", "list", "--porcelain")
+    proc = run_git("worktree", "list", "--porcelain")
     if proc.returncode != 0:
         raise SystemExit(proc.stderr or proc.stdout)
     entry = {}
@@ -41,18 +36,18 @@ def branch_name(entry):
 def classify(branch, base_ref):
     if branch == "(detached)":
         return "detached", "", 0, 0
-    merged = run("git", "merge-base", "--is-ancestor", branch, base_ref)
+    merged = run_git("merge-base", "--is-ancestor", branch, base_ref)
     if merged.returncode == 0:
         return "merged", base_ref, 0, 0
-    cherry = run("git", "cherry", base_ref, branch)
+    cherry = run_git("cherry", base_ref, branch)
     cherry_lines = [line for line in cherry.stdout.splitlines() if line.strip()]
     if cherry.returncode == 0 and cherry_lines and all(line.startswith("- ") for line in cherry_lines):
-        ahead_behind = run("git", "rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
+        ahead_behind = run_git("rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
         if ahead_behind.returncode == 0:
             behind, ahead = ahead_behind.stdout.strip().split()
             return "integrated", f"patch-equivalent to {base_ref}", int(ahead), int(behind)
         return "integrated", f"patch-equivalent to {base_ref}", 0, 0
-    ahead_behind = run("git", "rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
+    ahead_behind = run_git("rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
     if ahead_behind.returncode != 0:
         return "unknown", ahead_behind.stderr.strip() or ahead_behind.stdout.strip(), 0, 0
     behind, ahead = ahead_behind.stdout.strip().split()
@@ -136,20 +131,7 @@ def main():
                 and not row["current"]
             ),
         }
-        view = {"summary": summary, "rows": rows}
-        meta = build_meta(generated_at(), base_ref, current_worktree_path)
-        print(
-            json.dumps(
-                {
-                    "generated_at": meta["generated_at"],
-                    "meta": meta,
-                    "views": {"audit": view},
-                    "summary": summary,
-                    "rows": rows,
-                },
-                indent=2,
-            )
-        )
+        print(json.dumps(build_single_view_payload(generated_at(), base_ref, current_worktree_path, "audit", summary, rows), indent=2))
         return
 
     print_text_header(audit_generated_at, base_ref, current_worktree_path)
