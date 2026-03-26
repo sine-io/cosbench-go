@@ -79,13 +79,17 @@ def require_summary_int(summary, field: str, fixture_name: str, summary_path: Pa
 
 
 def main() -> int:
-    if len(sys.argv) not in (3, 4):
+    if len(sys.argv) < 3:
         raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
 
     output_dir = Path(sys.argv[2])
-    selected = sys.argv[3] if len(sys.argv) == 4 else ""
-    if selected.startswith("--"):
-        raise SystemExit(f"unknown option: {selected}")
+    filter_args = sys.argv[3:]
+    for arg in filter_args:
+        if arg.startswith("--"):
+            raise SystemExit(f"unknown option: {arg}")
+    if len(filter_args) > 1:
+        raise SystemExit(f"expected at most one filter argument, got: {' '.join(filter_args)}")
+    selected = filter_args[0] if filter_args else ""
     filter_label = normalize_filter(selected)
     fixtures = []
 
