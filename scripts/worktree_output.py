@@ -64,6 +64,11 @@ def current_branch():
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
+def remote_head_branch():
+    proc = run_git("symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD")
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
 def validate_base_ref(base_ref):
     proc = run_git("rev-parse", "--verify", "--quiet", f"{base_ref}^{{commit}}")
     if proc.returncode != 0:
@@ -75,7 +80,8 @@ def resolve_base_ref(base_ref: str, default_ref: str = "origin/main"):
         validate_base_ref(base_ref)
         return base_ref
     branch = current_branch()
-    candidates = [default_ref, "origin/master", "origin/trunk", "main", "master", "trunk"]
+    remote_head = remote_head_branch()
+    candidates = [default_ref, remote_head, "origin/master", "origin/trunk", "main", "master", "trunk"]
     if branch and branch not in candidates:
         candidates.append(branch)
     candidates.append("HEAD")
