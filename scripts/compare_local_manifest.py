@@ -1,4 +1,4 @@
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import sys
 
 
@@ -67,16 +67,25 @@ def validate_fixture_name(name: str):
 
 
 def validate_workload_path(workload: str):
-    path = PurePosixPath(workload)
+    posix_path = PurePosixPath(workload)
+    windows_path = PureWindowsPath(workload)
     if workload.startswith("-"):
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must not start with -"
         )
-    if path.is_absolute():
+    if "\\" in workload:
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: must use forward slashes instead of backslashes"
+        )
+    if posix_path.is_absolute() or windows_path.is_absolute():
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must not be absolute"
         )
-    if any(part == ".." for part in path.parts):
+    if windows_path.drive:
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: must not include a Windows drive prefix"
+        )
+    if any(part == ".." for part in posix_path.parts) or any(part == ".." for part in windows_path.parts):
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must be repo-relative without '..' segments"
         )
