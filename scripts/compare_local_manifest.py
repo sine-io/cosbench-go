@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 
 class ManifestError(ValueError):
@@ -25,17 +26,28 @@ class UnknownFixtureError(FilterError):
     pass
 
 
+def display_text(value: str):
+    return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
+
+
+def configure_utf8_stdio():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
+
 def read_manifest(manifest_path: str):
     fixtures = []
     seen_names = {}
+    manifest_display = display_text(manifest_path)
     try:
         lines = Path(manifest_path).read_text(encoding="utf-8-sig").splitlines()
     except FileNotFoundError:
-        raise ManifestReadError(f"compare-local manifest not found: {manifest_path}")
+        raise ManifestReadError(f"compare-local manifest not found: {manifest_display}")
     except UnicodeDecodeError as err:
-        raise ManifestReadError(f"unable to decode compare-local manifest {manifest_path}: {err}")
+        raise ManifestReadError(f"unable to decode compare-local manifest {manifest_display}: {err}")
     except OSError as err:
-        raise ManifestReadError(f"unable to read compare-local manifest {manifest_path}: {err}")
+        raise ManifestReadError(f"unable to read compare-local manifest {manifest_display}: {err}")
 
     for line_no, raw_line in enumerate(lines, start=1):
         line = raw_line.strip()
@@ -44,12 +56,12 @@ def read_manifest(manifest_path: str):
         fields = line.split()
         if len(fields) != 2:
             raise ManifestFormatError(
-                f"invalid compare-local manifest line {line_no} in {manifest_path}: {line!r}"
+                f"invalid compare-local manifest line {line_no} in {manifest_display}: {line!r}"
             )
         name, workload = fields
         if name in seen_names:
             raise ManifestFormatError(
-                f"duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_path}; first seen on line {seen_names[name]}"
+                f"duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_display}; first seen on line {seen_names[name]}"
             )
         seen_names[name] = line_no
         fixtures.append({"name": name, "workload": workload})

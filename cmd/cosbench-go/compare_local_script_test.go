@@ -58,6 +58,40 @@ func TestListCompareLocalFixturesRejectsMissingManifestGracefully(t *testing.T) 
 	}
 }
 
+func TestListCompareLocalFixturesRendersNonASCIIManifestPathGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "清单.txt")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	cmd.Env = append(
+		os.Environ(),
+		"LC_ALL=C",
+		"LANG=C",
+		"PYTHONCOERCECLOCALE=0",
+		"PYTHONUTF8=0",
+	)
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if strings.Contains(output, "\\udc") {
+		t.Fatalf("unexpected surrogate escapes: %s", output)
+	}
+	if !strings.Contains(output, "compare-local manifest not found") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "清单.txt") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsUnreadableManifestGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestPath := t.TempDir()

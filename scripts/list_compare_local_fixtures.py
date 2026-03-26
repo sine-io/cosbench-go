@@ -3,16 +3,19 @@
 import json
 import sys
 
-from compare_local_manifest import FilterError, ManifestError, format_filter_error, read_manifest, select_fixtures, validate_filter
-
-
-def configure_utf8_stdout():
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+from compare_local_manifest import (
+    FilterError,
+    ManifestError,
+    configure_utf8_stdio,
+    format_filter_error,
+    read_manifest,
+    select_fixtures,
+    validate_filter,
+)
 
 
 def main() -> int:
-    configure_utf8_stdout()
+    configure_utf8_stdio()
     if len(sys.argv) not in (2, 3, 4):
         raise SystemExit("usage: list_compare_local_fixtures.py <manifest> [--names|--pairs] [filter]")
 
