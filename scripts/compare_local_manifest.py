@@ -1,3 +1,5 @@
+import os
+import stat as statmod
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import sys
 
@@ -45,6 +47,11 @@ def configure_utf8_stdio():
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
+
+
+def stat_workload_path(workload: str):
+    path_arg = workload if os.name == "nt" else workload.encode("utf-8")
+    return os.stat(path_arg)
 
 
 def validate_fixture_name(name: str):
@@ -106,6 +113,24 @@ def validate_workload_path(workload: str):
     if any(part == ".." for part in posix_path.parts) or any(part == ".." for part in windows_path.parts):
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must be repo-relative without '..' segments"
+        )
+    try:
+        stat_result = stat_workload_path(workload)
+    except FileNotFoundError:
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: does not exist"
+        )
+    except NotADirectoryError:
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: does not exist"
+        )
+    except OSError as err:
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: {format_os_error(err)}"
+        )
+    if not statmod.S_ISREG(stat_result.st_mode):
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: must refer to a file"
         )
 
 

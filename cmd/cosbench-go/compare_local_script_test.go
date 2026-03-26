@@ -8,6 +8,30 @@ import (
 	"testing"
 )
 
+func createRepoRelativeTempWorkload(t *testing.T, filename, contents string) string {
+	t.Helper()
+
+	replacer := strings.NewReplacer("/", "_", "\\", "_", ":", "_", " ", "_")
+	dir := filepath.Join(repoRootDir(), ".artifacts", "compare-local-test", replacer.Replace(t.Name()))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir artifact dir: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.RemoveAll(dir)
+	})
+
+	path := filepath.Join(dir, filename)
+	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+		t.Fatalf("write workload: %v", err)
+	}
+
+	relativePath, err := filepath.Rel(repoRootDir(), path)
+	if err != nil {
+		t.Fatalf("relative path: %v", err)
+	}
+	return filepath.ToSlash(relativePath)
+}
+
 func TestListCompareLocalFixturesRejectsMalformedManifestGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -202,12 +226,14 @@ func TestListCompareLocalFixturesAcceptsUTF8BOMManifest(t *testing.T) {
 }
 
 func TestListCompareLocalFixturesWritesNamesAndPairsWithExplicitUTF8Stdout(t *testing.T) {
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
+
 	for _, mode := range []string{"--names", "--pairs"} {
 		t.Run(mode, func(t *testing.T) {
 			pythonBin := mustLookPath(t, "python3")
 			manifestDir := t.TempDir()
 			manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
-			if err := os.WriteFile(manifestPath, []byte("样例 testdata/workloads/测试.xml\n"), 0o644); err != nil {
+			if err := os.WriteFile(manifestPath, []byte("样例 "+workloadPath+"\n"), 0o644); err != nil {
 				t.Fatalf("write manifest: %v", err)
 			}
 
@@ -562,10 +588,11 @@ func TestBuildCompareLocalIndexAcceptsUTF8BOMFixtureSummary(t *testing.T) {
 
 func TestBuildCompareLocalIndexWritesArtifactsWithExplicitUTF8Encoding(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
 	manifestDir := t.TempDir()
 	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
 	outputDir := filepath.Join(manifestDir, "out")
-	if err := os.WriteFile(manifestPath, []byte("fixture testdata/workloads/测试.xml\n"), 0o644); err != nil {
+	if err := os.WriteFile(manifestPath, []byte("fixture "+workloadPath+"\n"), 0o644); err != nil {
 		t.Fatalf("write manifest: %v", err)
 	}
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
@@ -1195,11 +1222,50 @@ func TestListCompareLocalFixturesRejectsNonXMLWorkloadPathsGracefully(t *testing
 	}
 }
 
-func TestListCompareLocalFixturesAcceptsUppercaseXMLWorkloadPaths(t *testing.T) {
+func TestListCompareLocalFixturesRejectsMissingWorkloadPathsGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
 	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
-	data := "fixture fixture/WORKLOAD.XML\n"
+	data := "fixture testdata/workloads/does-not-exist.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local workload path 'testdata/workloads/does-not-exist.xml'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "does not exist") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesAcceptsUppercaseXMLWorkloadPaths(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	artifactDir := filepath.Join(repoRootDir(), ".artifacts", "compare-local-test")
+	if err := os.MkdirAll(artifactDir, 0o755); err != nil {
+		t.Fatalf("mkdir artifact dir: %v", err)
+	}
+	workloadPath := filepath.Join(artifactDir, "WORKLOAD.XML")
+	t.Cleanup(func() {
+		_ = os.Remove(workloadPath)
+	})
+	if err := os.WriteFile(workloadPath, []byte("<workload name=\"fixture\"></workload>\n"), 0o644); err != nil {
+		t.Fatalf("write workload: %v", err)
+	}
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "fixture .artifacts/compare-local-test/WORKLOAD.XML\n"
 	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
 		t.Fatalf("write manifest: %v", err)
 	}
@@ -1212,7 +1278,7 @@ func TestListCompareLocalFixturesAcceptsUppercaseXMLWorkloadPaths(t *testing.T) 
 	cmd.Dir = repoRootDir()
 	output := string(runCommandSuccess(t, cmd))
 
-	if !strings.Contains(output, "\"workload\": \"fixture/WORKLOAD.XML\"") {
+	if !strings.Contains(output, "\"workload\": \".artifacts/compare-local-test/WORKLOAD.XML\"") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
