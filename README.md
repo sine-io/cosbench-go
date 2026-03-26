@@ -64,8 +64,8 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local` to refresh the safe mock-backed local comparison set
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local-list` to print the valid curated fixture names
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local-list-json` to print the curated fixture names and workload paths as JSON
-- Run `make --no-print-directory worktree-audit` to list local worktrees and their status relative to `origin/main`
-- Run `make --no-print-directory worktree-audit-json` to get the same worktree audit data as JSON
+- Run `make --no-print-directory worktree-audit` to list local worktrees and their status relative to `origin/main`, with generation-time, base-ref, and current-worktree header metadata
+- Run `make --no-print-directory worktree-audit-json` to get the same worktree audit data as JSON, including a consistent top-level `meta` object and a `views.audit` envelope
 - The JSON audit output now includes structured `ahead` / `behind` counts for each row
 - The JSON audit output now also includes a top-level `summary` section with total and per-state counts
 - That summary also includes `stale` and `prune_candidates` counts

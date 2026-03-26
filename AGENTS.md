@@ -47,6 +47,8 @@ That JSON output also includes a `current` flag for the current worktree row.
 Branches whose patches are already present in the base ref via squash merge are classified as `integrated`.
 The audit outputs sort merged rows first and then active rows by descending `behind` count.
 Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to compare against a different base.
+`make --no-print-directory worktree-audit` lists local worktrees and their status relative to `origin/main`, and now includes generation-time, base-ref, and current-worktree header metadata.
+`make --no-print-directory worktree-audit-json` gives the full audit view in machine-readable form with a consistent top-level `meta` object and a `views.audit` envelope.
 `make --no-print-directory worktree-audit-merged` narrows that view to worktrees already merged into `origin/main`, and now includes generation-time, base-ref, and current-worktree header metadata.
 `make --no-print-directory worktree-audit-merged-json` gives the merged-only view in machine-readable form with a consistent top-level `meta` object and a `views.audit` envelope.
 `make --no-print-directory worktree-audit-integrated` narrows the view to worktrees whose patches are already present in the base ref via squash merge or equivalent history, and now includes generation-time, base-ref, and current-worktree header metadata.
