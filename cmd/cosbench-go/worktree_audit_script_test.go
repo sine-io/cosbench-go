@@ -195,6 +195,16 @@ func setupDetachedTrunkRepo(t *testing.T) (repoDir string, gitBin string, python
 	return repoDir, gitBin, pythonBin
 }
 
+func setupRemoteTrunkOnlyFeatureRepo(t *testing.T) (repoDir, featureDir, gitBin, pythonBin string) {
+	t.Helper()
+
+	repoDir, featureDir, gitBin, pythonBin = setupActiveTrunkRepoWithFeatureWorktree(t)
+	runCmd(t, repoDir, gitBin, "update-ref", "refs/remotes/origin/trunk", "HEAD")
+	runCmd(t, repoDir, gitBin, "checkout", "--detach", "HEAD")
+	runCmd(t, repoDir, gitBin, "branch", "-D", "trunk")
+	return repoDir, featureDir, gitBin, pythonBin
+}
+
 func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, target any) {
 	t.Helper()
 
@@ -574,6 +584,33 @@ func TestWorktreeCleanupReportPrefersTrunkOverCurrentBranchWhenRunFromFeatureWor
 
 	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
 	if !strings.Contains(output, "- Base ref: `trunk`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditPrefersOriginTrunkOverCurrentBranchWhenOnlyRemoteTrunkExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupRemoteTrunkOnlyFeatureRepo(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: origin/trunk") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanPrefersOriginTrunkOverCurrentBranchWhenOnlyRemoteTrunkExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupRemoteTrunkOnlyFeatureRepo(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: origin/trunk") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportPrefersOriginTrunkOverCurrentBranchWhenOnlyRemoteTrunkExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupRemoteTrunkOnlyFeatureRepo(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
+	if !strings.Contains(output, "- Base ref: `origin/trunk`") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
