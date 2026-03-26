@@ -78,6 +78,7 @@ def resolve_base_ref(base_ref: str, default_ref: str = "origin/main"):
     candidates = [default_ref, "main", "master"]
     if branch and branch not in candidates:
         candidates.append(branch)
+    candidates.append("HEAD")
     for candidate in candidates:
         proc = run_git("rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}")
         if proc.returncode == 0:
