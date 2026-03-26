@@ -180,11 +180,12 @@ def parse_filter(raw_filter: str):
     seen = set()
     for raw_item in raw_filter.split(","):
         item = raw_item.strip()
-        if not item or item in seen:
+        folded = item.casefold()
+        if not item or folded in seen:
             continue
-        seen.add(item)
+        seen.add(folded)
         items.append(item)
-    if items == ["all"]:
+    if len(items) == 1 and items[0].casefold() == "all":
         return []
     return items
 
@@ -215,7 +216,7 @@ def validate_filter(fixtures, raw_filter: str):
     selected = parse_filter(raw_filter)
     if not selected:
         stripped = raw_filter.strip()
-        non_empty_tokens = [item.strip() for item in raw_filter.split(",") if item.strip()]
+        non_empty_tokens = [item.strip().casefold() for item in raw_filter.split(",") if item.strip()]
         if stripped == "" or non_empty_tokens == ["all"]:
             return
         raise InvalidFilterError("filter did not include any fixture names")
