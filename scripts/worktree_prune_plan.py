@@ -60,6 +60,8 @@ def main():
             }
         )
 
+    plan_generated_at = generated_at()
+
     if json_mode:
         summary = {
             "base_ref": base_ref,
@@ -68,10 +70,13 @@ def main():
             "merged": sum(1 for row in rows if row["state"] == "merged"),
             "integrated": sum(1 for row in rows if row["state"] == "integrated"),
         }
-        print(json.dumps({"generated_at": generated_at(), "summary": summary, "rows": rows}, indent=2))
+        print(json.dumps({"generated_at": plan_generated_at, "summary": summary, "rows": rows}, indent=2))
         return
 
     print("# Suggested cleanup commands")
+    print(f"# Generated at: {plan_generated_at}")
+    print(f"# Base ref: {base_ref}")
+    print(f"# Current worktree: {current_worktree}")
     if not rows:
         print("# no merged worktrees to prune")
         return

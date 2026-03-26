@@ -738,6 +738,15 @@ func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 	if !strings.Contains(text, "# Suggested cleanup commands") {
 		t.Fatalf("unexpected output: %s", text)
 	}
+	for _, expected := range []string{
+		"# Generated at:",
+		"# Base ref:",
+		"# Current worktree:",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in output: %s", expected, text)
+		}
+	}
 	if !strings.Contains(text, "git worktree remove") && !strings.Contains(text, "# no merged worktrees to prune") {
 		t.Fatalf("unexpected output: %s", text)
 	}

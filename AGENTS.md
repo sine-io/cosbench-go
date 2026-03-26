@@ -54,7 +54,7 @@ Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to
 `make --no-print-directory worktree-audit-prune` narrows the view to the worktrees that current cleanup rules would treat as prune candidates.
 `make --no-print-directory worktree-audit-prune-json` gives the prune-candidates view in machine-readable form with top-level `generated_at` metadata.
 `make --no-print-directory worktree-audit-stale` narrows the view to active worktrees that are behind `origin/main`.
-`make --no-print-directory worktree-prune-plan` prints suggested cleanup commands without actually deleting anything.
+`make --no-print-directory worktree-prune-plan` prints suggested cleanup commands without actually deleting anything, and now includes generation-time, base-ref, and current-worktree header metadata.
 `make --no-print-directory worktree-prune-plan-json` exposes the same non-destructive cleanup plan as a structured JSON object with top-level `generated_at`, plus `summary` and `rows`.
 `make --no-print-directory worktree-cleanup-report` combines the main audit, integrated view, stale view, prune-candidates view, and prune plan into a single Markdown report, and its summary now includes generation time, current-worktree context, and integrated/stale/prune-candidate counts.
 `make --no-print-directory worktree-cleanup-report-json` exposes the same combined cleanup report in machine-readable form with top-level `generated_at` metadata.
