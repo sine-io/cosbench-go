@@ -152,6 +152,14 @@ func setupActiveTrunkRepo(t *testing.T) (repoDir string, gitBin string, pythonBi
 	return repoDir, gitBin, pythonBin
 }
 
+func setupDetachedTrunkRepo(t *testing.T) (repoDir string, gitBin string, pythonBin string) {
+	t.Helper()
+
+	repoDir, gitBin, pythonBin = setupActiveTrunkRepo(t)
+	runCmd(t, repoDir, gitBin, "checkout", "--detach", "HEAD")
+	return repoDir, gitBin, pythonBin
+}
+
 func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, target any) {
 	t.Helper()
 
@@ -491,6 +499,33 @@ func TestWorktreeCleanupReportDefaultsToCurrentBranchWhenNoStandardBaseRefExists
 		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, "- Base ref: `trunk`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditDefaultsToHEADWhenDetachedAndNoStandardBaseRefExists(t *testing.T) {
+	repoDir, _, pythonBin := setupDetachedTrunkRepo(t)
+
+	output := runRepoScriptText(t, repoDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: HEAD") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanDefaultsToHEADWhenDetachedAndNoStandardBaseRefExists(t *testing.T) {
+	repoDir, _, pythonBin := setupDetachedTrunkRepo(t)
+
+	output := runRepoScriptText(t, repoDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: HEAD") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportDefaultsToHEADWhenDetachedAndNoStandardBaseRefExists(t *testing.T) {
+	repoDir, _, pythonBin := setupDetachedTrunkRepo(t)
+
+	output := runRepoScriptText(t, repoDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
+	if !strings.Contains(output, "- Base ref: `HEAD`") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
