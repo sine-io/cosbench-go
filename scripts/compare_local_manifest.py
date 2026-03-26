@@ -30,6 +30,17 @@ def display_text(value: str):
     return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
 
 
+def format_os_error(err: OSError):
+    parts = []
+    if getattr(err, "errno", None) is not None:
+        parts.append(f"[Errno {err.errno}]")
+    if getattr(err, "strerror", None):
+        parts.append(display_text(str(err.strerror)))
+    elif str(err):
+        parts.append(display_text(str(err)))
+    return " ".join(parts) or err.__class__.__name__
+
+
 def configure_utf8_stdio():
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
@@ -47,7 +58,7 @@ def read_manifest(manifest_path: str):
     except UnicodeDecodeError as err:
         raise ManifestReadError(f"unable to decode compare-local manifest {manifest_display}: {err}")
     except OSError as err:
-        raise ManifestReadError(f"unable to read compare-local manifest {manifest_display}: {err}")
+        raise ManifestReadError(f"unable to read compare-local manifest {manifest_display}: {format_os_error(err)}")
 
     for line_no, raw_line in enumerate(lines, start=1):
         line = raw_line.strip()
