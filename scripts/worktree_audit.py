@@ -43,6 +43,9 @@ def main():
     integrated_only = flags["--integrated-only"]
     prune_only = flags["--prune-only"]
     stale_only = flags["--stale-only"]
+    selected_views = sum(1 for enabled in (merged_only, integrated_only, prune_only, stale_only) if enabled)
+    if selected_views > 1:
+        raise SystemExit("choose at most one of --merged-only, --integrated-only, --prune-only, or --stale-only")
     base_ref = args[0] if args else "origin/main"
     current_worktree_path = current_worktree()
 
