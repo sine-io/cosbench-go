@@ -98,6 +98,7 @@ def validate_workload_path(workload: str):
 def read_manifest(manifest_path: str):
     fixtures = []
     seen_names = {}
+    seen_names_folded = {}
     manifest_display = display_text(manifest_path)
     try:
         lines = Path(manifest_path).read_text(encoding="utf-8-sig").splitlines()
@@ -124,7 +125,13 @@ def read_manifest(manifest_path: str):
             raise ManifestFormatError(
                 f"duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_display}; first seen on line {seen_names[name]}"
             )
+        folded_name = name.casefold()
+        if folded_name in seen_names_folded:
+            raise ManifestFormatError(
+                f"case-insensitive duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_display}; first seen as {seen_names_folded[folded_name]!r}"
+            )
         seen_names[name] = line_no
+        seen_names_folded[folded_name] = name
         fixtures.append({"name": name, "workload": workload})
     return fixtures
 
