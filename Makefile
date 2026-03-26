@@ -1,4 +1,6 @@
 GO ?= /snap/bin/go
+PYTHON ?= python3
+PYTHON_ENV ?= PYTHONDONTWRITEBYTECODE=1
 COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
 COMPARE_LOCAL_FILTER ?=
@@ -11,50 +13,50 @@ build:
 	$(GO) build ./...
 
 worktree-audit:
-	@python3 ./scripts/worktree_audit.py "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-merged:
-	@python3 ./scripts/worktree_audit.py --merged-only "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --merged-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-json:
-	@python3 ./scripts/worktree_audit.py --json "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --json "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-merged-json:
-	@python3 ./scripts/worktree_audit.py --json --merged-only "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --json --merged-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-integrated:
-	@python3 ./scripts/worktree_audit.py --integrated-only "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --integrated-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-integrated-json:
-	@python3 ./scripts/worktree_audit.py --json --integrated-only "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --json --integrated-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-prune:
-	@python3 ./scripts/worktree_audit.py --prune-only "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --prune-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-prune-json:
-	@python3 ./scripts/worktree_audit.py --json --prune-only "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --json --prune-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-stale:
-	@python3 ./scripts/worktree_audit.py --stale-only "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_audit.py --stale-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-prune-plan:
-	@python3 ./scripts/worktree_prune_plan.py "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_prune_plan.py "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-prune-plan-json:
-	@python3 ./scripts/worktree_prune_plan.py --json "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_prune_plan.py --json "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-cleanup-report:
 	@mkdir -p "$$(dirname "$(WORKTREE_CLEANUP_REPORT_PATH)")"
-	@python3 ./scripts/worktree_cleanup_report.py "$(WORKTREE_AUDIT_BASE_REF)" "$(WORKTREE_CLEANUP_REPORT_PATH)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_cleanup_report.py "$(WORKTREE_AUDIT_BASE_REF)" "$(WORKTREE_CLEANUP_REPORT_PATH)"
 
 worktree-cleanup-report-json:
-	@python3 ./scripts/worktree_cleanup_report.py --json "$(WORKTREE_AUDIT_BASE_REF)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/worktree_cleanup_report.py --json "$(WORKTREE_AUDIT_BASE_REF)"
 
 compare-local-list:
-	@python3 ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" --names "$(COMPARE_LOCAL_FILTER)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" --names "$(COMPARE_LOCAL_FILTER)"
 
 compare-local-list-json:
-	@python3 ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_FILTER)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_FILTER)"
 
 compare-local:
 	@dir_base="$$(basename -- "$(COMPARE_LOCAL_OUTPUT_DIR)")"; \
@@ -63,7 +65,7 @@ compare-local:
 		exit 1; \
 	fi
 	@if [ -n "$(COMPARE_LOCAL_FILTER)" ]; then \
-		python3 ./scripts/validate_compare_local_filter.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_FILTER)"; \
+		$(PYTHON_ENV) $(PYTHON) ./scripts/validate_compare_local_filter.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_FILTER)"; \
 	fi
 	@mkdir -p $(COMPARE_LOCAL_OUTPUT_DIR)
 	@find "$(COMPARE_LOCAL_OUTPUT_DIR)" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
@@ -82,7 +84,7 @@ compare-local:
 		echo "== $$name =="; \
 		$(GO) run ./cmd/cosbench-go "$$fixture" -backend mock -json -quiet -summary-file "$(COMPARE_LOCAL_OUTPUT_DIR)/$$name.json"; \
 	done < $(COMPARE_LOCAL_MANIFEST)
-	@python3 ./scripts/build_compare_local_index.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_OUTPUT_DIR)" "$(COMPARE_LOCAL_FILTER)"
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/build_compare_local_index.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_OUTPUT_DIR)" "$(COMPARE_LOCAL_FILTER)"
 
 smoke-s3:
 	$(GO) test ./internal/driver/s3 -run Smoke -v
