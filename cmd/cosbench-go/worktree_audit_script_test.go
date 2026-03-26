@@ -389,6 +389,42 @@ func TestWorktreePrunePlanTextUsesPruneCandidateWordingWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditDefaultsToLocalMainWhenOriginMainMissing(t *testing.T) {
+	repoDir, _, pythonBin := setupActiveFeatureRepo(t)
+
+	output := runRepoScriptText(t, repoDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: main") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "\tfeature\t") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanDefaultsToLocalMainWhenOriginMainMissing(t *testing.T) {
+	repoDir, _, pythonBin := setupActiveFeatureRepo(t)
+
+	output := runRepoScriptText(t, repoDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: main") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "# no prune-candidate worktrees to prune") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportDefaultsToLocalMainWhenOriginMainMissing(t *testing.T) {
+	repoDir, _, pythonBin := setupActiveFeatureRepo(t)
+
+	output := runRepoScriptText(t, repoDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
+	if !strings.Contains(output, "# Worktree Cleanup Report") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "- Base ref: `main`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreeAuditWritesTextWithExplicitUTF8Stdout(t *testing.T) {
 	repoDir, _, pythonBin := setupUnicodePatchEquivalentRepo(t)
 

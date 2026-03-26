@@ -14,8 +14,8 @@ from worktree_output import (
     load_worktree_entries,
     parse_known_flags,
     print_text_header,
+    resolve_base_ref,
     should_include_audit_row,
-    validate_base_ref,
 )
 
 
@@ -49,8 +49,7 @@ def main():
     selected_views = sum(1 for enabled in (merged_only, integrated_only, prune_only, stale_only) if enabled)
     if selected_views > 1:
         raise SystemExit("choose at most one of --merged-only, --integrated-only, --prune-only, or --stale-only")
-    base_ref = args[0] if args else "origin/main"
-    validate_base_ref(base_ref)
+    base_ref = resolve_base_ref(args[0] if args else "")
     current_worktree_path = current_worktree()
 
     rows = []

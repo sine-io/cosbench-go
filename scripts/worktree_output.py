@@ -65,6 +65,17 @@ def validate_base_ref(base_ref):
         raise SystemExit(f"unknown base ref: {base_ref}")
 
 
+def resolve_base_ref(base_ref: str, default_ref: str = "origin/main"):
+    if base_ref:
+        validate_base_ref(base_ref)
+        return base_ref
+    for candidate in (default_ref, "main", "master"):
+        proc = run_git("rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}")
+        if proc.returncode == 0:
+            return candidate
+    raise SystemExit(f"unknown base ref: {default_ref}")
+
+
 def load_worktree_entries():
     proc = run_git("worktree", "list", "--porcelain")
     if proc.returncode != 0:
