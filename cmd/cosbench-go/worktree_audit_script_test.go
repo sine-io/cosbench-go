@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
+}
+
 func setupPatchEquivalentRepo(t *testing.T) (repoDir string, gitBin string, pythonBin string) {
 	t.Helper()
 
@@ -116,6 +120,45 @@ func setupUnicodePatchEquivalentRepo(t *testing.T) (repoDir string, gitBin strin
 	runCmd(t, repoDir, gitBin, "commit", "-m", "squash-equivalent")
 
 	return repoDir, gitBin, pythonBin
+}
+
+func setupQuotedPruneCandidateRepo(t *testing.T) (repoDir, featureDir, gitBin, pythonBin, baseBranch string) {
+	t.Helper()
+
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("look path git: %v", err)
+	}
+	pythonBin, err = exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("look path python3: %v", err)
+	}
+
+	repoParent := t.TempDir()
+	repoDir = filepath.Join(repoParent, "tick'root")
+	if err := os.MkdirAll(repoDir, 0o755); err != nil {
+		t.Fatalf("mkdir repo dir: %v", err)
+	}
+	baseBranch = "tick`main"
+	runCmd(t, repoDir, gitBin, "init", "-b", baseBranch)
+	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
+	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
+
+	filePath := filepath.Join(repoDir, "note.txt")
+	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
+		t.Fatalf("write base file: %v", err)
+	}
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
+
+	featureDir = filepath.Join(t.TempDir(), "feature")
+	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "feature")
+
+	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
+	runCmd(t, featureDir, gitBin, "add", "note.txt")
+	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
+
+	return repoDir, featureDir, gitBin, pythonBin, baseBranch
 }
 
 func setupBacktickActiveRepoWithFeatureWorktree(t *testing.T) (repoDir, featureDir, gitBin, pythonBin, baseBranch string) {
@@ -857,6 +900,44 @@ func TestWorktreePrunePlanJSONIncludesBranchContext(t *testing.T) {
 	}
 	if len(payload.Rows[0].Commands) != 2 {
 		t.Fatalf("row = %#v", payload.Rows[0])
+	}
+}
+
+func TestWorktreePrunePlanCommandsShellQuoteSpecialCharacters(t *testing.T) {
+	repoDir, featureDir, _, pythonBin, baseBranch := setupQuotedPruneCandidateRepo(t)
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_prune_plan.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "--json", baseBranch)
+	cmd.Dir = featureDir
+	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")
+	output := runCommandSuccess(t, cmd)
+
+	var payload struct {
+		Rows []struct {
+			Path     string   `json:"path"`
+			Branch   string   `json:"branch"`
+			Commands []string `json:"commands"`
+		} `json:"rows"`
+	}
+	mustUnmarshalJSON(t, output, &payload)
+	if len(payload.Rows) != 1 {
+		t.Fatalf("payload = %#v", payload)
+	}
+	row := payload.Rows[0]
+	if row.Path != repoDir || row.Branch != baseBranch {
+		t.Fatalf("row = %#v", row)
+	}
+	if len(row.Commands) != 2 {
+		t.Fatalf("row = %#v", row)
+	}
+	if row.Commands[0] != "git worktree remove "+shellQuote(repoDir) {
+		t.Fatalf("row = %#v", row)
+	}
+	if row.Commands[1] != "git branch -D "+shellQuote(baseBranch) {
+		t.Fatalf("row = %#v", row)
 	}
 }
 

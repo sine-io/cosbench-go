@@ -225,8 +225,8 @@ def build_prune_plan_row(path, branch, state, details, ahead, behind):
         "ahead": ahead,
         "behind": behind,
         "commands": [
-            f"git worktree remove '{path}'",
-            f"git branch -D {branch}",
+            f"git worktree remove {shlex.quote(path)}",
+            f"git branch -D {shlex.quote(branch)}",
         ],
     }
 
