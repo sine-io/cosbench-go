@@ -32,25 +32,39 @@ def format_os_error(err: OSError) -> str:
     return " ".join(parts) or err.__class__.__name__
 
 
+def markdown_code(value: str) -> str:
+    longest_run = 0
+    current_run = 0
+    for ch in value:
+        if ch == "`":
+            current_run += 1
+            if current_run > longest_run:
+                longest_run = current_run
+        else:
+            current_run = 0
+    fence = "`" * (longest_run + 1)
+    return f"{fence}{value}{fence}"
+
+
 def build_summary(payload, output_dir: Path):
     meta = payload["meta"]
     lines = [
         "## Compare Local",
         "",
-        f"Artifact directory: `{display_text(str(output_dir))}`",
+        f"Artifact directory: {markdown_code(display_text(str(output_dir)))}",
         "",
-        f"Filter: `{meta.get('filter', 'all')}`",
+        f"Filter: {markdown_code(meta.get('filter', 'all'))}",
         "",
         f"Fixture count: {meta.get('fixture_count', 0)}",
         "",
-        f"Generated at: `{meta.get('generated_at', '')}`",
+        f"Generated at: {markdown_code(meta.get('generated_at', ''))}",
         "",
         "| Fixture | Workload | Stages | Works | Samples | Errors | Summary |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for fixture in payload.get("fixtures", []):
         lines.append(
-            f"| `{fixture['name']}` | `{fixture['workload']}` | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | `{fixture['summary']}` |"
+            f"| {markdown_code(fixture['name'])} | {markdown_code(fixture['workload'])} | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | {markdown_code(fixture['summary'])} |"
         )
     return "\n".join(lines) + "\n"
 
