@@ -47,6 +47,13 @@ def configure_utf8_stdio():
             stream.reconfigure(encoding="utf-8")
 
 
+def validate_fixture_name(name: str):
+    if name in (".", "..") or "/" in name or "\\" in name:
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: must not contain path separators or dot-path segments"
+        )
+
+
 def read_manifest(manifest_path: str):
     fixtures = []
     seen_names = {}
@@ -70,6 +77,7 @@ def read_manifest(manifest_path: str):
                 f"invalid compare-local manifest line {line_no} in {manifest_display}: {line!r}"
             )
         name, workload = fields
+        validate_fixture_name(name)
         if name in seen_names:
             raise ManifestFormatError(
                 f"duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_display}; first seen on line {seen_names[name]}"
