@@ -218,6 +218,40 @@ func TestBuildCompareLocalIndexRejectsUnreadableFixtureSummaryGracefully(t *test
 	}
 }
 
+func TestBuildCompareLocalIndexRejectsInvalidFixtureSummaryEncodingGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("mock-stage-aware testdata/workloads/mock-stage-aware.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "mock-stage-aware.json"), []byte{0xff, 0xfe, 0x00, 'b', 'a', 'd', '\n'}, 0o644); err != nil {
+		t.Fatalf("write malformed summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to decode compare-local summary for fixture mock-stage-aware") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, filepath.Join(outputDir, "mock-stage-aware.json")) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsUnknownFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
