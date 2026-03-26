@@ -31,6 +31,16 @@ def build_summary(payload, output_dir: Path):
     return "\n".join(lines) + "\n"
 
 
+def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str):
+    summary_path = output_dir / summary_name
+    try:
+        return json.loads(summary_path.read_text())
+    except FileNotFoundError:
+        raise SystemExit(f"missing compare-local summary for fixture {fixture_name}: {summary_path}")
+    except json.JSONDecodeError as err:
+        raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
+
+
 def main() -> int:
     if len(sys.argv) not in (3, 4):
         raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
@@ -49,7 +59,7 @@ def main() -> int:
         name = fixture["name"]
         workload = fixture["workload"]
         summary_name = f"{name}.json"
-        summary = json.loads((output_dir / summary_name).read_text())
+        summary = load_fixture_summary(output_dir, summary_name, name)
         fixtures.append(
             {
                 "name": name,
