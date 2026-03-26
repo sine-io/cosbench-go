@@ -73,7 +73,7 @@ def validate_workload_path(workload: str):
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must not start with -"
         )
-    if not workload.endswith(".xml"):
+    if not workload.lower().endswith(".xml"):
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must end with .xml"
         )
