@@ -85,7 +85,7 @@ def validate_fixture_name(name: str):
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain commas"
         )
-    if name == "all":
+    if name.casefold() == "all":
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: reserved for the all-fixtures selector"
         )
