@@ -80,6 +80,44 @@ func setupActiveFeatureRepo(t *testing.T) (repoDir string, gitBin string, python
 	return repoDir, gitBin, pythonBin
 }
 
+func setupUnicodePatchEquivalentRepo(t *testing.T) (repoDir string, gitBin string, pythonBin string) {
+	t.Helper()
+
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("look path git: %v", err)
+	}
+	pythonBin, err = exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("look path python3: %v", err)
+	}
+
+	repoDir = t.TempDir()
+	runCmd(t, repoDir, gitBin, "init", "-b", "main")
+	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
+	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
+
+	filePath := filepath.Join(repoDir, "note.txt")
+	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
+		t.Fatalf("write base file: %v", err)
+	}
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
+
+	featureDir := filepath.Join(t.TempDir(), "工作树")
+	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "特性")
+
+	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
+	runCmd(t, featureDir, gitBin, "add", "note.txt")
+	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
+
+	appendLine(t, filepath.Join(repoDir, "note.txt"), "feature\n")
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "squash-equivalent")
+
+	return repoDir, gitBin, pythonBin
+}
+
 func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, target any) {
 	t.Helper()
 
@@ -92,6 +130,19 @@ func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, targe
 	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")
 	output := runCommandSuccess(t, cmd)
 	mustUnmarshalJSON(t, output, target)
+}
+
+func runRepoScriptTextWithEnv(t *testing.T, repoDir, pythonBin, scriptRel string, env []string, args ...string) string {
+	t.Helper()
+
+	scriptPath, err := filepath.Abs(filepath.Clean(scriptRel))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, append([]string{scriptPath}, args...)...)
+	cmd.Dir = repoDir
+	cmd.Env = append(append([]string{}, os.Environ()...), env...)
+	return string(runCommandSuccess(t, cmd))
 }
 
 func runRepoScriptText(t *testing.T, repoDir, pythonBin, scriptRel string, args ...string) string {
@@ -291,6 +342,59 @@ func TestWorktreePrunePlanTextUsesPruneCandidateWordingWhenEmpty(t *testing.T) {
 		t.Fatalf("unexpected merged-only wording: %s", output)
 	}
 	if !strings.Contains(output, "# no prune-candidate worktrees to prune") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditWritesTextWithExplicitUTF8Stdout(t *testing.T) {
+	repoDir, _, pythonBin := setupUnicodePatchEquivalentRepo(t)
+
+	output := runRepoScriptTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_audit.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+		},
+		"main",
+	)
+	if !strings.Contains(output, "特性") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "工作树") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportWritesTextWithExplicitUTF8Stdout(t *testing.T) {
+	repoDir, _, pythonBin := setupUnicodePatchEquivalentRepo(t)
+
+	output := runRepoScriptTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_cleanup_report.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+		},
+		"main",
+	)
+	if !strings.Contains(output, "# Worktree Cleanup Report") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "特性") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "工作树") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }

@@ -6,6 +6,7 @@ import sys
 
 from worktree_output import (
     build_meta,
+    configure_utf8_stdout,
     generated_at,
     load_json_script,
     load_worktree_audit_text,
@@ -17,6 +18,7 @@ from worktree_output import (
 )
 
 def main():
+    configure_utf8_stdout()
     flags, args = parse_known_flags(sys.argv[1:], ("--json",))
     json_mode = flags["--json"]
     if json_mode and len(args) > 1:

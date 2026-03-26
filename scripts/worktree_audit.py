@@ -8,6 +8,7 @@ from worktree_output import (
     build_single_view_payload,
     build_audit_row,
     build_audit_summary,
+    configure_utf8_stdout,
     current_worktree,
     generated_at,
     load_worktree_entries,
@@ -33,6 +34,7 @@ def sort_key(row):
     )
 
 def main():
+    configure_utf8_stdout()
     flags, args = parse_known_flags(
         sys.argv[1:],
         ("--json", "--merged-only", "--integrated-only", "--prune-only", "--stale-only"),
