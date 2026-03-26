@@ -94,8 +94,12 @@ def format_filter_error(fixtures, err: FilterError):
 
 def validate_filter(fixtures, raw_filter: str):
     selected = parse_filter(raw_filter)
-    if not selected and raw_filter in ("", "all"):
-        return
+    if not selected:
+        stripped = raw_filter.strip()
+        non_empty_tokens = [item.strip() for item in raw_filter.split(",") if item.strip()]
+        if stripped == "" or non_empty_tokens == ["all"]:
+            return
+        raise InvalidFilterError("filter did not include any fixture names")
     if "all" in selected and len(selected) > 1:
         raise InvalidFilterError("'all' cannot be combined with specific fixtures")
     known = {fixture["name"] for fixture in fixtures}

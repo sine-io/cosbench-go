@@ -516,6 +516,28 @@ func TestValidateCompareLocalFilterRejectsExtraFilterArgsGracefully(t *testing.T
 	}
 }
 
+func TestValidateCompareLocalFilterRejectsSeparatorOnlyFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", ",")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "filter did not include any fixture names") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsUnknownOptionGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -578,6 +600,37 @@ func TestBuildCompareLocalIndexRejectsExtraFilterArgsGracefully(t *testing.T) {
 		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, "mock-stage-aware xml-splitrw-subset") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestBuildCompareLocalIndexRejectsSeparatorOnlyFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("# comment only\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir, ",")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "filter did not include any fixture names") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
