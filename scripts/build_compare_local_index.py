@@ -119,7 +119,10 @@ def main() -> int:
         },
         "fixtures": fixtures,
     }
-    output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as err:
+        raise SystemExit(f"unable to prepare compare-local output dir {output_dir}: {err}")
     write_output_file(output_dir / "index.json", json.dumps(payload, indent=2) + "\n")
     write_output_file(output_dir / "summary.md", build_summary(payload, output_dir))
     return 0
