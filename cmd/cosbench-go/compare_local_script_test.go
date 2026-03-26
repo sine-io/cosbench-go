@@ -338,6 +338,37 @@ func TestBuildCompareLocalIndexCreatesMissingOutputDirForEmptyManifest(t *testin
 	}
 }
 
+func TestBuildCompareLocalIndexRejectsUnwritableIndexOutputGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("# comment only\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(outputDir, "index.json"), 0o755); err != nil {
+		t.Fatalf("mkdir index dir: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to write compare-local artifact") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, filepath.Join(outputDir, "index.json")) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsMalformedFixtureSummaryGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
