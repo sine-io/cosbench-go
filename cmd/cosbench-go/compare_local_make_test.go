@@ -829,7 +829,7 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 	if pruneView.Summary.CurrentWorktree == "" {
 		t.Fatalf("missing prune_plan view summary: %#v", pruneView)
 	}
-	if len(pruneView.Rows) == 0 {
+	if pruneView.Rows == nil {
 		t.Fatalf("missing prune_plan view rows: %#v", pruneView)
 	}
 	if payload.Summary.Total < 0 {
