@@ -137,6 +137,35 @@ func TestWorktreePrunePlanUsesConfiguredPythonForNestedScripts(t *testing.T) {
 	}
 }
 
+func TestWorktreePrunePlanSupportsMultiTokenConfiguredPython(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_prune_plan.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "--json", "main")
+	cmd.Dir = repoDir
+	cmd.Env = append(os.Environ(),
+		"PYTHONDONTWRITEBYTECODE=1",
+		"PYTHON="+pythonBin+" -B",
+	)
+	output := runCommandSuccess(t, cmd)
+
+	var payload struct {
+		Summary struct {
+			Total int `json:"total"`
+		} `json:"summary"`
+		Rows []struct {
+			Branch string `json:"branch"`
+		} `json:"rows"`
+	}
+	mustUnmarshalJSON(t, output, &payload)
+	if payload.Summary.Total != 1 || len(payload.Rows) != 1 || payload.Rows[0].Branch != "feature" {
+		t.Fatalf("unexpected payload: %#v", payload)
+	}
+}
+
 func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
