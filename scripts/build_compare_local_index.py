@@ -69,6 +69,10 @@ def require_summary_int(summary, field: str, fixture_name: str, summary_path: Pa
         raise SystemExit(
             f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: field {field} must be an integer"
         )
+    if value < 0:
+        raise SystemExit(
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: field {field} must be a non-negative integer"
+        )
     return value
 
 
