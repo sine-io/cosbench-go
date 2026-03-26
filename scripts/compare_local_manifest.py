@@ -20,6 +20,8 @@ def read_manifest(manifest_path: str):
         lines = Path(manifest_path).read_text().splitlines()
     except FileNotFoundError:
         raise ManifestReadError(f"compare-local manifest not found: {manifest_path}")
+    except OSError as err:
+        raise ManifestReadError(f"unable to read compare-local manifest {manifest_path}: {err}")
 
     for line_no, raw_line in enumerate(lines, start=1):
         line = raw_line.strip()

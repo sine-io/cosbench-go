@@ -58,6 +58,29 @@ func TestListCompareLocalFixturesRejectsMissingManifestGracefully(t *testing.T) 
 	}
 }
 
+func TestListCompareLocalFixturesRejectsUnreadableManifestGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestPath := t.TempDir()
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to read compare-local manifest") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, manifestPath) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsUnknownOptionGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
