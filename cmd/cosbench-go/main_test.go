@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -11,6 +10,10 @@ import (
 
 func mockStageAwareFixture() string {
 	return filepath.Clean("../../testdata/workloads/mock-stage-aware.xml")
+}
+
+func mockStageAwareFixtureArg() string {
+	return "testdata/workloads/mock-stage-aware.xml"
 }
 
 func runCLITest(t *testing.T, jsonOut, quiet bool, summaryFile string) (string, string) {
@@ -76,11 +79,11 @@ func TestResolveWorkloadPathRequiresInput(t *testing.T) {
 }
 
 func TestParseCLIArgsSupportsPositionalPathWithTrailingFlags(t *testing.T) {
-	workload, backend, jsonOut, quiet, summaryFile, err := parseCLIArgs([]string{"testdata/workloads/mock-stage-aware.xml", "-backend", "mock", "-json", "-quiet"})
+	workload, backend, jsonOut, quiet, summaryFile, err := parseCLIArgs([]string{mockStageAwareFixtureArg(), "-backend", "mock", "-json", "-quiet"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if workload != "testdata/workloads/mock-stage-aware.xml" {
+	if workload != mockStageAwareFixtureArg() {
 		t.Fatalf("workload = %q", workload)
 	}
 	if backend != "mock" {
@@ -108,11 +111,11 @@ func TestRunCLIQuietSuppressesProgressOutput(t *testing.T) {
 }
 
 func TestParseCLIArgsSupportsSummaryFile(t *testing.T) {
-	workload, backend, jsonOut, quiet, summaryFile, err := parseCLIArgs([]string{"testdata/workloads/mock-stage-aware.xml", "-backend", "mock", "-quiet", "-summary-file", "out/summary.json"})
+	workload, backend, jsonOut, quiet, summaryFile, err := parseCLIArgs([]string{mockStageAwareFixtureArg(), "-backend", "mock", "-quiet", "-summary-file", "out/summary.json"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if workload != "testdata/workloads/mock-stage-aware.xml" {
+	if workload != mockStageAwareFixtureArg() {
 		t.Fatalf("workload = %q", workload)
 	}
 	if backend != "mock" {
@@ -130,24 +133,16 @@ func TestParseCLIArgsSupportsSummaryFile(t *testing.T) {
 }
 
 func TestCLIWritesSummaryFile(t *testing.T) {
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Fatalf("look path go: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
+	goBin := mustLookPath(t, "go")
 	summaryFile := filepath.Join(t.TempDir(), "summary.json")
-	cmd := exec.Command(goBin, "run", "./cmd/cosbench-go", "testdata/workloads/mock-stage-aware.xml", "-backend", "mock", "-quiet", "-summary-file", summaryFile)
-	cmd.Dir = rootDir
+	cmd := exec.Command(goBin, "run", "./cmd/cosbench-go", mockStageAwareFixtureArg(), "-backend", "mock", "-quiet", "-summary-file", summaryFile)
+	cmd.Dir = repoRootDir()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go run failed: %v\n%s", err, output)
 	}
 
-	data, err := os.ReadFile(summaryFile)
-	if err != nil {
-		t.Fatalf("read summary file: %v", err)
-	}
+	data := mustReadFile(t, summaryFile)
 	if !strings.Contains(string(data), `"workload": "mock-stage-aware"`) {
 		t.Fatalf("unexpected summary file: %s", data)
 	}
