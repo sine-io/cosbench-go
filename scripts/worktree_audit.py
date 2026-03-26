@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from datetime import datetime, timezone
 import json
 import subprocess
 import sys
@@ -72,6 +73,10 @@ def sort_key(row):
     )
 
 
+def generated_at():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
 def main():
     json_mode = "--json" in sys.argv[1:]
     merged_only = "--merged-only" in sys.argv[1:]
@@ -135,7 +140,7 @@ def main():
                 and not row["current"]
             ),
         }
-        print(json.dumps({"summary": summary, "rows": rows}, indent=2))
+        print(json.dumps({"generated_at": generated_at(), "summary": summary, "rows": rows}, indent=2))
         return
 
     print("PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS")

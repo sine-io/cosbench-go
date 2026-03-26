@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
+from datetime import datetime, timezone
 import json
 import subprocess
 import sys
 from pathlib import Path
+
+
+def generated_at():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def main():
@@ -63,7 +68,7 @@ def main():
             "merged": sum(1 for row in rows if row["state"] == "merged"),
             "integrated": sum(1 for row in rows if row["state"] == "integrated"),
         }
-        print(json.dumps({"summary": summary, "rows": rows}, indent=2))
+        print(json.dumps({"generated_at": generated_at(), "summary": summary, "rows": rows}, indent=2))
         return
 
     print("# Suggested cleanup commands")
