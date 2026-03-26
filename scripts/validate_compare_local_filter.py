@@ -2,10 +2,18 @@
 
 import sys
 
-from compare_local_manifest import FilterError, ManifestError, format_filter_error, read_manifest, validate_filter
+from compare_local_manifest import (
+    FilterError,
+    ManifestError,
+    configure_utf8_stdio,
+    format_filter_error,
+    read_manifest,
+    validate_filter,
+)
 
 
 def main() -> int:
+    configure_utf8_stdio()
     if len(sys.argv) < 3:
         raise SystemExit("usage: validate_compare_local_filter.py <manifest> <filter>")
 

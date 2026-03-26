@@ -5,7 +5,20 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from compare_local_manifest import FilterError, ManifestError, format_filter_error, normalize_filter, read_manifest, select_fixtures, validate_filter
+from compare_local_manifest import (
+    FilterError,
+    ManifestError,
+    configure_utf8_stdio,
+    format_filter_error,
+    normalize_filter,
+    read_manifest,
+    select_fixtures,
+    validate_filter,
+)
+
+
+def display_text(value: str) -> str:
+    return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
 
 
 def display_text(value: str) -> str:
@@ -88,6 +101,7 @@ def require_summary_int(summary, field: str, fixture_name: str, summary_path: Pa
 
 
 def main() -> int:
+    configure_utf8_stdio()
     if len(sys.argv) < 3:
         raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
 
