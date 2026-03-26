@@ -73,13 +73,13 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Branches whose patches are already present in the base ref via squash merge are now classified as `integrated`
 - Audit outputs now sort merged rows first, then active rows by descending `behind` count
 - Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to compare against something other than `origin/main`
-- Run `make --no-print-directory worktree-audit-merged` to list only worktrees already merged into `origin/main`
+- Run `make --no-print-directory worktree-audit-merged` to list only worktrees already merged into `origin/main`, with generation-time, base-ref, and current-worktree header metadata
 - Run `make --no-print-directory worktree-audit-merged-json` to get the merged-only worktree audit data as JSON, including a consistent top-level `meta` object and a `views.audit` envelope
-- Run `make --no-print-directory worktree-audit-integrated` to list only worktrees whose patches are already present in the base ref via squash merge or equivalent history
+- Run `make --no-print-directory worktree-audit-integrated` to list only worktrees whose patches are already present in the base ref via squash merge or equivalent history, with generation-time, base-ref, and current-worktree header metadata
 - Run `make --no-print-directory worktree-audit-integrated-json` to get the integrated-only worktree audit data as JSON, including a consistent top-level `meta` object and a `views.audit` envelope
-- Run `make --no-print-directory worktree-audit-prune` to list only worktrees that are prune candidates under the current cleanup rules
+- Run `make --no-print-directory worktree-audit-prune` to list only worktrees that are prune candidates under the current cleanup rules, with generation-time, base-ref, and current-worktree header metadata
 - Run `make --no-print-directory worktree-audit-prune-json` to get the prune-candidates view as JSON, including a consistent top-level `meta` object and a `views.audit` envelope
-- Run `make --no-print-directory worktree-audit-stale` to list only active worktrees that are behind `origin/main`
+- Run `make --no-print-directory worktree-audit-stale` to list only active worktrees that are behind `origin/main`, with generation-time, base-ref, and current-worktree header metadata
 - Run `make --no-print-directory worktree-prune-plan` to print suggested cleanup commands for merged worktrees without executing them, along with generation-time, base-ref, and current-worktree header metadata
 - Run `make --no-print-directory worktree-prune-plan-json` to get the same non-destructive cleanup plan as structured JSON with a consistent top-level `meta` object, plus `views.prune_plan`, `summary`, and `rows`
 - Run `make --no-print-directory worktree-cleanup-report` to generate a single Markdown report combining the audit, integrated view, stale view, prune-candidates view, and prune plan, with summary counts plus generation-time and current-worktree metadata
