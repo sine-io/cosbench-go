@@ -76,6 +76,12 @@ def remote_ref_sort_key(ref):
     return (1, remote, branch, ref)
 
 
+def remote_name_sort_key(remote):
+    if remote == "upstream":
+        return (0, remote)
+    return (1, remote)
+
+
 def remote_head_branches():
     heads = []
     origin_head = remote_head_branch()
@@ -95,6 +101,7 @@ def remote_head_branches():
 
 def remote_named_branches(*names):
     branches = []
+    discovered_by_remote = {}
     for name in names:
         origin_branch = f"origin/{name}"
         proc = run_git("rev-parse", "--verify", "--quiet", f"{origin_branch}^{{commit}}")
@@ -103,12 +110,19 @@ def remote_named_branches(*names):
         proc = run_git("for-each-ref", "--format=%(refname:short)", f"refs/remotes/*/{name}")
         if proc.returncode != 0:
             continue
-        discovered = []
         for line in proc.stdout.splitlines():
             branch = line.strip()
-            if branch and branch not in branches and branch not in discovered:
-                discovered.append(branch)
-        branches.extend(sorted(discovered, key=remote_ref_sort_key))
+            if not branch or branch in branches:
+                continue
+            remote, _, _ = branch.partition("/")
+            if remote == "origin":
+                continue
+            discovered_by_remote.setdefault(remote, set()).add(branch)
+    for remote in sorted(discovered_by_remote, key=remote_name_sort_key):
+        for name in names:
+            branch = f"{remote}/{name}"
+            if branch in discovered_by_remote[remote] and branch not in branches:
+                branches.append(branch)
     return branches
 
 
