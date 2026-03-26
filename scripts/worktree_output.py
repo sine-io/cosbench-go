@@ -156,12 +156,16 @@ def python_command():
 
 
 def run_script(name, *args):
-    proc = subprocess.run(
-        [*python_command(), script_path(name), *args],
-        text=True,
-        capture_output=True,
-        env={**os.environ, **python_env},
-    )
+    command = [*python_command(), script_path(name), *args]
+    try:
+        proc = subprocess.run(
+            command,
+            text=True,
+            capture_output=True,
+            env={**os.environ, **python_env},
+        )
+    except OSError as err:
+        raise SystemExit(f"unable to execute {name} via configured python command {' '.join(command[:-len(args)-1] if args else command[:-1])}: {err}")
     if proc.returncode != 0:
         message = proc.stderr.strip() or proc.stdout.strip() or f"{name} failed with exit code {proc.returncode}"
         raise SystemExit(message)

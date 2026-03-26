@@ -179,6 +179,28 @@ func TestWorktreePrunePlanSupportsMultiTokenConfiguredPython(t *testing.T) {
 	}
 }
 
+func TestWorktreePrunePlanRejectsMissingConfiguredPythonGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_prune_plan.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "--json", "main")
+	cmd.Dir = repoDir
+	cmd.Env = append(os.Environ(),
+		"PYTHONDONTWRITEBYTECODE=1",
+		"PYTHON=/definitely/missing/python3",
+	)
+	output := string(runCommandFailure(t, cmd))
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to execute worktree_audit.py via configured python command") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
