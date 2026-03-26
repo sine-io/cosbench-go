@@ -1482,6 +1482,38 @@ func TestListCompareLocalFixturesRejectsMissingWorkloadPathsGracefully(t *testin
 	}
 }
 
+func TestListCompareLocalFixturesResolvesWorkloadsRelativeToManifestDir(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	workloadDir := filepath.Join(manifestDir, "sub")
+	if err := os.MkdirAll(workloadDir, 0o755); err != nil {
+		t.Fatalf("mkdir workload dir: %v", err)
+	}
+	workloadPath := filepath.Join(workloadDir, "workload.xml")
+	if err := os.WriteFile(workloadPath, []byte("<workload name=\"fixture\"></workload>\n"), 0o644); err != nil {
+		t.Fatalf("write workload: %v", err)
+	}
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	if err := os.WriteFile(manifestPath, []byte("fixture sub/workload.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if !strings.Contains(output, "\"name\": \"fixture\"") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, filepath.ToSlash(workloadPath)) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesAcceptsUppercaseXMLWorkloadPaths(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	workloadPath := createRepoRelativeTempWorkload(t, "WORKLOAD.XML", "<workload name=\"fixture\"></workload>\n")
@@ -1502,6 +1534,49 @@ func TestListCompareLocalFixturesAcceptsUppercaseXMLWorkloadPaths(t *testing.T) 
 
 	if !strings.Contains(output, "\"workload\": \""+workloadPath+"\"") {
 		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestBuildCompareLocalIndexResolvesWorkloadsRelativeToManifestDir(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	workloadDir := filepath.Join(manifestDir, "sub")
+	if err := os.MkdirAll(workloadDir, 0o755); err != nil {
+		t.Fatalf("mkdir workload dir: %v", err)
+	}
+	workloadPath := filepath.Join(workloadDir, "workload.xml")
+	if err := os.WriteFile(workloadPath, []byte("<workload name=\"fixture\"></workload>\n"), 0o644); err != nil {
+		t.Fatalf("write workload: %v", err)
+	}
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	if err := os.WriteFile(manifestPath, []byte("fixture sub/workload.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "fixture.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	runCommandSuccess(t, cmd)
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	var payload struct {
+		Fixtures []struct {
+			Workload string `json:"workload"`
+		} `json:"fixtures"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if len(payload.Fixtures) != 1 || payload.Fixtures[0].Workload != filepath.ToSlash(workloadPath) {
+		t.Fatalf("unexpected payload: %#v", payload)
 	}
 }
 
