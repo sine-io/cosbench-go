@@ -41,6 +41,14 @@ def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str)
         raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
 
 
+def require_summary_field(summary, field: str, fixture_name: str, summary_path: Path):
+    if field not in summary:
+        raise SystemExit(
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: missing required field {field}"
+        )
+    return summary[field]
+
+
 def main() -> int:
     if len(sys.argv) not in (3, 4):
         raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
@@ -59,16 +67,17 @@ def main() -> int:
         name = fixture["name"]
         workload = fixture["workload"]
         summary_name = f"{name}.json"
+        summary_path = output_dir / summary_name
         summary = load_fixture_summary(output_dir, summary_name, name)
         fixtures.append(
             {
                 "name": name,
                 "workload": workload,
                 "summary": summary_name,
-                "stages": summary["stages"],
-                "works": summary["works"],
-                "samples": summary["samples"],
-                "errors": summary["errors"],
+                "stages": require_summary_field(summary, "stages", name, summary_path),
+                "works": require_summary_field(summary, "works", name, summary_path),
+                "samples": require_summary_field(summary, "samples", name, summary_path),
+                "errors": require_summary_field(summary, "errors", name, summary_path),
             }
         )
 
