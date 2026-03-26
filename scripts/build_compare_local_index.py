@@ -41,7 +41,7 @@ def write_output_file(path: Path, content: str):
 def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str):
     summary_path = output_dir / summary_name
     try:
-        summary = json.loads(summary_path.read_text())
+        summary = json.loads(summary_path.read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         raise SystemExit(f"missing compare-local summary for fixture {fixture_name}: {summary_path}")
     except UnicodeDecodeError as err:
