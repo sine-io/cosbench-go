@@ -141,9 +141,20 @@ def main():
             ),
         }
         view = {"summary": summary, "rows": rows}
+        meta = {
+            "generated_at": generated_at(),
+            "base_ref": base_ref,
+            "current_worktree": current_worktree,
+        }
         print(
             json.dumps(
-                {"generated_at": generated_at(), "views": {"audit": view}, "summary": summary, "rows": rows},
+                {
+                    "generated_at": meta["generated_at"],
+                    "meta": meta,
+                    "views": {"audit": view},
+                    "summary": summary,
+                    "rows": rows,
+                },
                 indent=2,
             )
         )

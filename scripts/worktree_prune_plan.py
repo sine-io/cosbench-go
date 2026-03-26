@@ -71,10 +71,16 @@ def main():
             "integrated": sum(1 for row in rows if row["state"] == "integrated"),
         }
         view = {"summary": summary, "rows": rows}
+        meta = {
+            "generated_at": plan_generated_at,
+            "base_ref": base_ref,
+            "current_worktree": current_worktree,
+        }
         print(
             json.dumps(
                 {
                     "generated_at": plan_generated_at,
+                    "meta": meta,
                     "views": {"prune_plan": view},
                     "summary": summary,
                     "rows": rows,

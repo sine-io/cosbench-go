@@ -449,6 +449,11 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 
 	var payload struct {
 		GeneratedAt string `json:"generated_at"`
+		Meta        struct {
+			GeneratedAt    string `json:"generated_at"`
+			BaseRef        string `json:"base_ref"`
+			CurrentWorktree string `json:"current_worktree"`
+		} `json:"meta"`
 		Summary     map[string]any   `json:"summary"`
 		Rows        []map[string]any `json:"rows"`
 		Views       map[string]struct {
@@ -461,6 +466,9 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	}
 	if payload.GeneratedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
+	}
+	if payload.Meta.GeneratedAt == "" || payload.Meta.BaseRef == "" || payload.Meta.CurrentWorktree == "" {
+		t.Fatalf("missing meta: %#v", payload.Meta)
 	}
 	auditView, ok := payload.Views["audit"]
 	if !ok {
@@ -789,6 +797,11 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 
 	var payload struct {
 		GeneratedAt string `json:"generated_at"`
+		Meta        struct {
+			GeneratedAt     string `json:"generated_at"`
+			BaseRef         string `json:"base_ref"`
+			CurrentWorktree string `json:"current_worktree"`
+		} `json:"meta"`
 		Summary struct {
 			BaseRef         string `json:"base_ref"`
 			CurrentWorktree string `json:"current_worktree"`
@@ -821,6 +834,9 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 	}
 	if payload.GeneratedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
+	}
+	if payload.Meta.GeneratedAt == "" || payload.Meta.BaseRef == "" || payload.Meta.CurrentWorktree == "" {
+		t.Fatalf("missing meta: %#v", payload.Meta)
 	}
 	pruneView, ok := payload.Views["prune_plan"]
 	if !ok {
@@ -935,6 +951,15 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 	}
 	if generatedAt, ok := payload["generated_at"].(string); !ok || generatedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
+	}
+	meta, ok := payload["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing meta: %#v", payload)
+	}
+	for _, key := range []string{"generated_at", "base_ref", "current_worktree"} {
+		if value, ok := meta[key].(string); !ok || value == "" {
+			t.Fatalf("missing meta[%s]: %#v", key, meta)
+		}
 	}
 	for _, key := range []string{"summary", "views", "merged", "integrated", "stale", "prune_candidates", "prune_plan"} {
 		if _, ok := payload[key]; !ok {
