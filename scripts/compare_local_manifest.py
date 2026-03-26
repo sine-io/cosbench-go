@@ -52,6 +52,10 @@ def validate_fixture_name(name: str):
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain path separators or dot-path segments"
         )
+    if any(ch in name for ch in '<>:"|?*'):
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: must not contain filesystem-special characters <>:\"|?*"
+        )
     if "," in name:
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain commas"
