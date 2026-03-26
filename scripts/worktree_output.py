@@ -75,7 +75,7 @@ def resolve_base_ref(base_ref: str, default_ref: str = "origin/main"):
         validate_base_ref(base_ref)
         return base_ref
     branch = current_branch()
-    candidates = [default_ref, "main", "master", "trunk"]
+    candidates = [default_ref, "origin/trunk", "main", "master", "trunk"]
     if branch and branch not in candidates:
         candidates.append(branch)
     candidates.append("HEAD")
