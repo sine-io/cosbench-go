@@ -33,7 +33,7 @@ def build_summary(payload, output_dir: Path):
 
 def write_output_file(path: Path, content: str):
     try:
-        path.write_text(content)
+        path.write_text(content, encoding="utf-8")
     except OSError as err:
         raise SystemExit(f"unable to write compare-local artifact {path}: {err}")
 
