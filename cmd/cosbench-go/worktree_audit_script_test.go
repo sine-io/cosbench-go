@@ -107,6 +107,36 @@ func runRepoScriptText(t *testing.T, repoDir, pythonBin, scriptRel string, args 
 	return string(runCommandSuccess(t, cmd))
 }
 
+func TestWorktreePrunePlanUsesConfiguredPythonForNestedScripts(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	logPath := filepath.Join(t.TempDir(), "python-wrapper.log")
+	wrapperPath := filepath.Join(t.TempDir(), "python-wrapper.sh")
+	wrapperScript := "#!/usr/bin/env bash\n" +
+		"echo \"$@\" >>\"" + logPath + "\"\n" +
+		"exec \"" + pythonBin + "\" \"$@\"\n"
+	if err := os.WriteFile(wrapperPath, []byte(wrapperScript), 0o755); err != nil {
+		t.Fatalf("write wrapper: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_prune_plan.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "--json", "main")
+	cmd.Dir = repoDir
+	cmd.Env = append(os.Environ(),
+		"PYTHONDONTWRITEBYTECODE=1",
+		"PYTHON="+wrapperPath,
+	)
+	runCommandSuccess(t, cmd)
+
+	logData := mustReadFile(t, logPath)
+	if !strings.Contains(string(logData), "worktree_audit.py") {
+		t.Fatalf("expected nested script to use configured python, got: %s", logData)
+	}
+}
+
 func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
