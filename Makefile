@@ -72,19 +72,16 @@ compare-local:
 	@find "$(COMPARE_LOCAL_OUTPUT_DIR)" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 	@echo "== compare-local results =="
 	@echo "$(COMPARE_LOCAL_OUTPUT_DIR)"
-	@while read -r name fixture; do \
+	@fixtures_file="$$(mktemp)"; \
+	trap 'rm -f "$$fixtures_file"' EXIT; \
+	$(PYTHON_ENV) $(PYTHON) ./scripts/list_compare_local_fixtures.py "$(COMPARE_LOCAL_MANIFEST)" --pairs "$(COMPARE_LOCAL_FILTER)" > "$$fixtures_file"; \
+	while read -r name fixture; do \
 		if [ -z "$$name" ] || [ "$${name#\#}" != "$$name" ]; then \
 			continue; \
 		fi; \
-		if [ -n "$(COMPARE_LOCAL_FILTER)" ] && [ "$(COMPARE_LOCAL_FILTER)" != "all" ]; then \
-			case ",$(COMPARE_LOCAL_FILTER)," in \
-				*,"$$name",*) ;; \
-				*) continue ;; \
-			esac; \
-		fi; \
 		echo "== $$name =="; \
 		$(GO) run ./cmd/cosbench-go "$$fixture" -backend mock -json -quiet -summary-file "$(COMPARE_LOCAL_OUTPUT_DIR)/$$name.json"; \
-	done < $(COMPARE_LOCAL_MANIFEST)
+	done < "$$fixtures_file"
 	@$(PYTHON_ENV) $(PYTHON) ./scripts/build_compare_local_index.py "$(COMPARE_LOCAL_MANIFEST)" "$(COMPARE_LOCAL_OUTPUT_DIR)" "$(COMPARE_LOCAL_FILTER)"
 
 smoke-s3:

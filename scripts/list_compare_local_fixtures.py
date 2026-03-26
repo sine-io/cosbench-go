@@ -3,24 +3,29 @@
 import json
 import sys
 
-from compare_local_manifest import ManifestFormatError, parse_filter, read_manifest, validate_filter
+from compare_local_manifest import ManifestFormatError, read_manifest, select_fixtures, validate_filter
 
 
 def main() -> int:
     if len(sys.argv) not in (2, 3, 4):
-        raise SystemExit("usage: list_compare_local_fixtures.py <manifest> [--names] [filter]")
+        raise SystemExit("usage: list_compare_local_fixtures.py <manifest> [--names|--pairs] [filter]")
 
     try:
         fixtures = read_manifest(sys.argv[1])
     except ManifestFormatError as err:
         raise SystemExit(str(err))
     names_only = False
+    pairs_only = False
     raw_filter = ""
     for arg in sys.argv[2:]:
         if arg == "--names":
             names_only = True
+        elif arg == "--pairs":
+            pairs_only = True
         else:
             raw_filter = arg
+    if names_only and pairs_only:
+        raise SystemExit("choose only one of --names or --pairs")
 
     try:
         validate_filter(fixtures, raw_filter)
@@ -28,13 +33,16 @@ def main() -> int:
         names = "".join(f"  - {fixture['name']}\n" for fixture in fixtures)
         raise SystemExit(f"unknown compare-local fixture: {err}\nknown fixtures:\n{names}")
 
-    selected = set(parse_filter(raw_filter))
-    if selected:
-        fixtures = [fixture for fixture in fixtures if fixture["name"] in selected]
+    fixtures = select_fixtures(fixtures, raw_filter)
 
     if names_only:
         for fixture in fixtures:
             print(fixture["name"])
+        return 0
+
+    if pairs_only:
+        for fixture in fixtures:
+            print(f"{fixture['name']} {fixture['workload']}")
         return 0
 
     print(json.dumps(fixtures, indent=2))

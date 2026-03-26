@@ -199,6 +199,49 @@ func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
 	}
 }
 
+func TestCompareLocalFilterTrimsWhitespaceAroundFixtureNames(t *testing.T) {
+	goBin := mustLookPath(t, "go")
+	outputDir := filepath.Join(t.TempDir(), "compare-local")
+	runMakeSuccess(
+		t,
+		"compare-local",
+		"GO="+goBin,
+		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
+		"COMPARE_LOCAL_FILTER=mock-stage-aware, xml-splitrw-subset",
+	)
+
+	if _, err := os.Stat(filepath.Join(outputDir, "mock-stage-aware.json")); err != nil {
+		t.Fatalf("expected subset output: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "xml-splitrw-subset.json")); err != nil {
+		t.Fatalf("expected subset output: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "s3-active-subset.json")); err == nil {
+		t.Fatal("unexpected unfiltered output")
+	}
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	var payload struct {
+		Meta struct {
+			Filter       string `json:"filter"`
+			FixtureCount int    `json:"fixture_count"`
+		} `json:"meta"`
+		Fixtures []struct {
+			Name string `json:"name"`
+		} `json:"fixtures"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if payload.Meta.Filter != "mock-stage-aware,xml-splitrw-subset" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if payload.Meta.FixtureCount != 2 {
+		t.Fatalf("meta fixture_count = %d", payload.Meta.FixtureCount)
+	}
+	if len(payload.Fixtures) != 2 {
+		t.Fatalf("fixtures = %#v", payload.Fixtures)
+	}
+}
+
 func TestCompareLocalFilterAcceptsAllAlias(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
@@ -767,6 +810,21 @@ func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
 
 func TestCompareLocalListRespectsFilter(t *testing.T) {
 	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
+
+	lines := strings.Fields(strings.TrimSpace(string(output)))
+	want := []string{"mock-stage-aware", "xml-splitrw-subset"}
+	if len(lines) != len(want) {
+		t.Fatalf("lines = %#v", lines)
+	}
+	for i, name := range want {
+		if lines[i] != name {
+			t.Fatalf("lines = %#v", lines)
+		}
+	}
+}
+
+func TestCompareLocalListTrimsFilterWhitespace(t *testing.T) {
+	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware, xml-splitrw-subset")
 
 	lines := strings.Fields(strings.TrimSpace(string(output)))
 	want := []string{"mock-stage-aware", "xml-splitrw-subset"}
