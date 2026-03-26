@@ -52,6 +52,10 @@ def validate_fixture_name(name: str):
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain path separators or dot-path segments"
         )
+    if "," in name:
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: must not contain commas"
+        )
     if name == "all":
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: reserved for the all-fixtures selector"
