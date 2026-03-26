@@ -68,6 +68,7 @@ Status: In Progress
 - [x] Add integrated / stale / prune-candidate counts to the Markdown cleanup report summary
 - [x] Add an integrated section to the cleanup report outputs
 - [x] Add a prune-candidates section to the cleanup report outputs
+- [x] Add generation-time and current-worktree metadata to the Markdown cleanup report summary
 - [x] Add `make compare-local-list` for fixture-name discovery
 - [x] Add a local `summary.md` artifact for compare-local outputs
 - [x] Allow comma-separated compare-local fixture subsets

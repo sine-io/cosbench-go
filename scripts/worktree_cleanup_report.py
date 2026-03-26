@@ -29,9 +29,11 @@ def main():
     prune_text = run("python3", "./scripts/worktree_prune_plan.py", base_ref).rstrip()
 
     summary = audit["summary"]
+    report_generated_at = generated_at()
+    current_worktree = prune_plan["summary"].get("current_worktree", "")
     if json_mode:
         payload = {
-            "generated_at": generated_at(),
+            "generated_at": report_generated_at,
             "summary": summary,
             "merged": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref)),
             "integrated": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref)),
@@ -47,7 +49,9 @@ def main():
         "",
         "## Summary",
         "",
+        f"- Generated at: `{report_generated_at}`",
         f"- Base ref: `{summary['base_ref']}`",
+        f"- Current worktree: `{current_worktree}`",
         f"- Total worktrees: {summary['total']}",
         f"- Merged: {summary['merged']}",
         f"- Integrated: {summary['integrated']}",
