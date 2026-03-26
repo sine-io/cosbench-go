@@ -76,6 +76,17 @@ def build_prune_plan_row(path, branch, state, details, ahead, behind):
     }
 
 
+def markdown_text_section(title, content):
+    return [
+        "",
+        f"## {title}",
+        "",
+        "```text",
+        content,
+        "```",
+    ]
+
+
 def script_path(name):
     return str(Path(__file__).resolve().parent / name)
 
@@ -92,3 +103,11 @@ def run_script(name, *args):
 
 def load_json_script(name, *args):
     return json.loads(run_script(name, *args))
+
+
+def load_worktree_audit_text(base_ref, *flags):
+    return run_script("worktree_audit.py", *flags, base_ref).rstrip()
+
+
+def load_worktree_audit_view(base_ref, *flags):
+    return load_json_script("worktree_audit.py", "--json", *flags, base_ref)
