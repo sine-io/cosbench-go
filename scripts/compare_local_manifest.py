@@ -7,6 +7,7 @@ class ManifestFormatError(ValueError):
 
 def read_manifest(manifest_path: str):
     fixtures = []
+    seen_names = {}
     for line_no, raw_line in enumerate(Path(manifest_path).read_text().splitlines(), start=1):
         line = raw_line.strip()
         if not line or line.startswith("#"):
@@ -17,6 +18,11 @@ def read_manifest(manifest_path: str):
                 f"invalid compare-local manifest line {line_no} in {manifest_path}: {line!r}"
             )
         name, workload = fields
+        if name in seen_names:
+            raise ManifestFormatError(
+                f"duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_path}; first seen on line {seen_names[name]}"
+            )
+        seen_names[name] = line_no
         fixtures.append({"name": name, "workload": workload})
     return fixtures
 
