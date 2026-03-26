@@ -11,14 +11,19 @@ from worktree_output import (
     load_worktree_audit_text,
     load_worktree_audit_view,
     markdown_text_section,
+    parse_known_flags,
     run_script,
 )
 
 def main():
-    json_mode = "--json" in sys.argv[1:]
-    args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    flags, args = parse_known_flags(sys.argv[1:], ("--json",))
+    json_mode = flags["--json"]
+    if json_mode and len(args) > 1:
+        raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
+    if not json_mode and len(args) > 2:
+        raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
     base_ref = args[0] if args else "origin/main"
-    output_path = sys.argv[2] if len(sys.argv) > 2 else ""
+    output_path = args[1] if len(args) > 1 else ""
     audit = load_json_script("worktree_audit.py", "--json", base_ref)
     prune_plan = load_json_script("worktree_prune_plan.py", "--json", base_ref)
     merged_text = load_worktree_audit_text(base_ref, "--merged-only")

@@ -107,6 +107,19 @@ func runRepoScriptText(t *testing.T, repoDir, pythonBin, scriptRel string, args 
 	return string(runCommandSuccess(t, cmd))
 }
 
+func runRepoScriptFailureText(t *testing.T, repoDir, pythonBin, scriptRel string, args ...string) string {
+	t.Helper()
+
+	scriptPath, err := filepath.Abs(filepath.Clean(scriptRel))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, append([]string{scriptPath}, args...)...)
+	cmd.Dir = repoDir
+	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")
+	return string(runCommandFailure(t, cmd))
+}
+
 func TestWorktreePrunePlanUsesConfiguredPythonForNestedScripts(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
@@ -256,6 +269,30 @@ func TestWorktreePrunePlanTextUsesPruneCandidateWordingWhenEmpty(t *testing.T) {
 		t.Fatalf("unexpected merged-only wording: %s", output)
 	}
 	if !strings.Contains(output, "# no prune-candidate worktrees to prune") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditRejectsUnknownOptionGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_audit.py", "--bogus")
+	if strings.Contains(output, "usage: git rev-list") {
+		t.Fatalf("unexpected git usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanRejectsUnknownOptionGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_prune_plan.py", "--bogus")
+	if strings.Contains(output, "usage: git rev-list") {
+		t.Fatalf("unexpected git usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "unknown option: --bogus") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
