@@ -403,6 +403,15 @@ func TestWorktreeAuditTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
 	}
 	text := string(output)
+	for _, expected := range []string{
+		"# Generated at:",
+		"# Base ref:",
+		"# Current worktree:",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in output: %s", expected, text)
+		}
+	}
 	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected audit output: %s", text)
 	}
@@ -565,6 +574,15 @@ func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-merged failed: %v\n%s", err, output)
 	}
 	text := string(output)
+	for _, expected := range []string{
+		"# Generated at:",
+		"# Base ref:",
+		"# Current worktree:",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in output: %s", expected, text)
+		}
+	}
 	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected audit output: %s", text)
 	}
@@ -587,6 +605,15 @@ func TestWorktreeAuditStaleTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-stale failed: %v\n%s", err, output)
 	}
 	text := string(output)
+	for _, expected := range []string{
+		"# Generated at:",
+		"# Base ref:",
+		"# Current worktree:",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in output: %s", expected, text)
+		}
+	}
 	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected output: %s", text)
 	}
@@ -609,6 +636,15 @@ func TestWorktreeAuditIntegratedTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-integrated failed: %v\n%s", err, output)
 	}
 	text := string(output)
+	for _, expected := range []string{
+		"# Generated at:",
+		"# Base ref:",
+		"# Current worktree:",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in output: %s", expected, text)
+		}
+	}
 	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected output: %s", text)
 	}
@@ -693,6 +729,15 @@ func TestWorktreeAuditPruneTargetRuns(t *testing.T) {
 		t.Fatalf("make worktree-audit-prune failed: %v\n%s", err, output)
 	}
 	text := string(output)
+	for _, expected := range []string{
+		"# Generated at:",
+		"# Base ref:",
+		"# Current worktree:",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in output: %s", expected, text)
+		}
+	}
 	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected output: %s", text)
 	}

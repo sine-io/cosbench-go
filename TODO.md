@@ -64,6 +64,7 @@ Status: In Progress
 - [x] Add top-level `generated_at` metadata to machine-readable worktree helpers
 - [x] Add additive `views` envelopes to machine-readable audit and prune helpers
 - [x] Add additive `meta` envelopes to machine-readable worktree helpers
+- [x] Add generation-time, base-ref, and current-worktree metadata to text worktree audit outputs
 - [x] Add a structured `summary + rows` JSON shape for `worktree-prune-plan-json`
 - [x] Add generation-time, base-ref, and current-worktree metadata to the text `worktree-prune-plan` output
 - [x] Add a Markdown `worktree-cleanup-report` helper

@@ -121,6 +121,7 @@ def main():
         )
 
     rows.sort(key=sort_key)
+    audit_generated_at = generated_at()
 
     if json_mode:
         summary = {
@@ -160,6 +161,9 @@ def main():
         )
         return
 
+    print(f"# Generated at: {audit_generated_at}")
+    print(f"# Base ref: {base_ref}")
+    print(f"# Current worktree: {current_worktree}")
     print("PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS")
     for row in rows:
         current = "yes" if row["current"] else "no"
