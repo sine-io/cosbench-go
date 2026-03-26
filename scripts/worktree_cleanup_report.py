@@ -19,6 +19,7 @@ def main():
     prune_plan = json.loads(run("python3", "./scripts/worktree_prune_plan.py", "--json", base_ref))
     merged_text = run("python3", "./scripts/worktree_audit.py", "--merged-only", base_ref).rstrip()
     integrated_text = run("python3", "./scripts/worktree_audit.py", "--integrated-only", base_ref).rstrip()
+    prune_candidates_text = run("python3", "./scripts/worktree_audit.py", "--prune-only", base_ref).rstrip()
     stale_text = run("python3", "./scripts/worktree_audit.py", "--stale-only", base_ref).rstrip()
     prune_text = run("python3", "./scripts/worktree_prune_plan.py", base_ref).rstrip()
 
@@ -29,6 +30,7 @@ def main():
             "merged": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref)),
             "integrated": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref)),
             "stale": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref)),
+            "prune_candidates": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--prune-only", base_ref)),
             "prune_plan": prune_plan,
         }
         print(json.dumps(payload, indent=2))
@@ -65,6 +67,12 @@ def main():
         "",
         "```text",
         stale_text,
+        "```",
+        "",
+        "## Prune Candidates",
+        "",
+        "```text",
+        prune_candidates_text,
         "```",
         "",
         "## Prune Plan",

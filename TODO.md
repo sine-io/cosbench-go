@@ -56,6 +56,8 @@ Status: In Progress
 - [x] Add a machine-readable `worktree-audit-merged-json` helper
 - [x] Add an integrated-only `worktree-audit-integrated` helper
 - [x] Add a machine-readable `worktree-audit-integrated-json` helper
+- [x] Add a prune-candidates `worktree-audit-prune` helper
+- [x] Add a machine-readable `worktree-audit-prune-json` helper
 - [x] Add a stale-only `worktree-audit-stale` helper
 - [x] Add a non-destructive `worktree-prune-plan` helper
 - [x] Add a machine-readable `worktree-prune-plan-json` helper
@@ -64,6 +66,7 @@ Status: In Progress
 - [x] Add a machine-readable `worktree-cleanup-report-json` helper
 - [x] Add integrated / stale / prune-candidate counts to the Markdown cleanup report summary
 - [x] Add an integrated section to the cleanup report outputs
+- [x] Add a prune-candidates section to the cleanup report outputs
 - [x] Add `make compare-local-list` for fixture-name discovery
 - [x] Add a local `summary.md` artifact for compare-local outputs
 - [x] Allow comma-separated compare-local fixture subsets
