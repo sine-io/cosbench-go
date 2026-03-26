@@ -5,7 +5,7 @@ COMPARE_LOCAL_FILTER ?=
 WORKTREE_AUDIT_BASE_REF ?= origin/main
 WORKTREE_CLEANUP_REPORT_PATH ?= .artifacts/worktree-cleanup-report.md
 
-.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale worktree-cleanup-report worktree-cleanup-report-json
+.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-audit-integrated worktree-audit-integrated-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale worktree-cleanup-report worktree-cleanup-report-json
 
 build:
 	$(GO) build ./...
@@ -21,6 +21,12 @@ worktree-audit-json:
 
 worktree-audit-merged-json:
 	@python3 ./scripts/worktree_audit.py --json --merged-only "$(WORKTREE_AUDIT_BASE_REF)"
+
+worktree-audit-integrated:
+	@python3 ./scripts/worktree_audit.py --integrated-only "$(WORKTREE_AUDIT_BASE_REF)"
+
+worktree-audit-integrated-json:
+	@python3 ./scripts/worktree_audit.py --json --integrated-only "$(WORKTREE_AUDIT_BASE_REF)"
 
 worktree-audit-stale:
 	@python3 ./scripts/worktree_audit.py --stale-only "$(WORKTREE_AUDIT_BASE_REF)"
