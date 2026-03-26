@@ -200,8 +200,8 @@ def select_fixtures(fixtures, raw_filter: str):
     selected = parse_filter(raw_filter)
     if not selected:
         return fixtures
-    fixture_map = {fixture["name"]: fixture for fixture in fixtures}
-    return [fixture_map[name] for name in selected if name in fixture_map]
+    fixture_map = {fixture["name"].casefold(): fixture for fixture in fixtures}
+    return [fixture_map[name.casefold()] for name in selected if name.casefold() in fixture_map]
 
 
 def format_filter_error(fixtures, err: FilterError):
@@ -221,7 +221,7 @@ def validate_filter(fixtures, raw_filter: str):
         raise InvalidFilterError("filter did not include any fixture names")
     if "all" in selected and len(selected) > 1:
         raise InvalidFilterError("'all' cannot be combined with specific fixtures")
-    known = {fixture["name"] for fixture in fixtures}
+    known = {fixture["name"].casefold() for fixture in fixtures}
     for name in selected:
-        if name not in known:
+        if name.casefold() not in known:
             raise UnknownFixtureError(name)
