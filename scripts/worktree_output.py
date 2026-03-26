@@ -69,6 +69,13 @@ def remote_head_branch():
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
+def remote_ref_sort_key(ref):
+    remote, _, branch = ref.partition("/")
+    if remote == "upstream":
+        return (0, branch, ref)
+    return (1, remote, branch, ref)
+
+
 def remote_head_branches():
     heads = []
     origin_head = remote_head_branch()
@@ -77,10 +84,12 @@ def remote_head_branches():
     proc = run_git("for-each-ref", "--format=%(symref:short)", "refs/remotes/*/HEAD")
     if proc.returncode != 0:
         return heads
+    discovered = []
     for line in proc.stdout.splitlines():
         target = line.strip()
-        if target and target not in heads:
-            heads.append(target)
+        if target and target not in heads and target not in discovered:
+            discovered.append(target)
+    heads.extend(sorted(discovered, key=remote_ref_sort_key))
     return heads
 
 
@@ -94,10 +103,12 @@ def remote_named_branches(*names):
         proc = run_git("for-each-ref", "--format=%(refname:short)", f"refs/remotes/*/{name}")
         if proc.returncode != 0:
             continue
+        discovered = []
         for line in proc.stdout.splitlines():
             branch = line.strip()
-            if branch and branch not in branches:
-                branches.append(branch)
+            if branch and branch not in branches and branch not in discovered:
+                discovered.append(branch)
+        branches.extend(sorted(discovered, key=remote_ref_sort_key))
     return branches
 
 
