@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 
@@ -127,12 +128,17 @@ def script_path(name):
 
 
 def python_command():
-    return os.environ.get("PYTHON") or sys.executable or "python3"
+    configured = os.environ.get("PYTHON")
+    if configured:
+        tokens = shlex.split(configured)
+        if tokens:
+            return tokens
+    return [sys.executable or "python3"]
 
 
 def run_script(name, *args):
     proc = subprocess.run(
-        [python_command(), script_path(name), *args],
+        [*python_command(), script_path(name), *args],
         check=True,
         text=True,
         capture_output=True,
