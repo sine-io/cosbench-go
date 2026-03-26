@@ -59,6 +59,11 @@ def current_worktree():
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
+def current_branch():
+    proc = run_git("symbolic-ref", "--quiet", "--short", "HEAD")
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
 def validate_base_ref(base_ref):
     proc = run_git("rev-parse", "--verify", "--quiet", f"{base_ref}^{{commit}}")
     if proc.returncode != 0:
@@ -69,7 +74,11 @@ def resolve_base_ref(base_ref: str, default_ref: str = "origin/main"):
     if base_ref:
         validate_base_ref(base_ref)
         return base_ref
-    for candidate in (default_ref, "main", "master"):
+    branch = current_branch()
+    candidates = [default_ref, "main", "master"]
+    if branch and branch not in candidates:
+        candidates.append(branch)
+    for candidate in candidates:
         proc = run_git("rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}")
         if proc.returncode == 0:
             return candidate
