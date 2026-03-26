@@ -265,6 +265,36 @@ func TestWorktreePrunePlanRejectsMissingConfiguredPythonGracefully(t *testing.T)
 	}
 }
 
+func TestWorktreePrunePlanRejectsNonASCIIMissingConfiguredPythonGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_prune_plan.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+			"PYTHON=/缺失/python3",
+		},
+		"--json",
+		"main",
+	)
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to execute worktree_audit.py via configured python command") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "/缺失/python3") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
@@ -601,6 +631,36 @@ func TestWorktreeCleanupReportRejectsUnknownBaseRefGracefully(t *testing.T) {
 		t.Fatalf("unexpected traceback: %s", output)
 	}
 	if !strings.Contains(output, "unknown base ref: does-not-exist") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportRejectsNonASCIIMissingConfiguredPythonGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_cleanup_report.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+			"PYTHON=/缺失/python3",
+		},
+		"--json",
+		"main",
+	)
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to execute worktree_audit.py via configured python command") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "/缺失/python3") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
