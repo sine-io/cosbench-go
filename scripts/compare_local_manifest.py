@@ -89,6 +89,10 @@ def validate_fixture_name(name: str):
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: reserved for the all-fixtures selector"
         )
+    if name.startswith("#"):
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: must not start with #"
+        )
     if name.startswith("--"):
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not start with --"
@@ -171,7 +175,9 @@ def read_manifest(manifest_path: str):
 
     for line_no, raw_line in enumerate(lines, start=1):
         line = raw_line.strip()
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        if line == "#" or line.startswith("# ") or line.startswith("#\t"):
             continue
         fields = line.split()
         if len(fields) != 2:
