@@ -12,9 +12,13 @@ func createRepoRelativeTempWorkload(t *testing.T, filename, contents string) str
 	t.Helper()
 
 	replacer := strings.NewReplacer("/", "_", "\\", "_", ":", "_", " ", "_")
-	dir := filepath.Join(repoRootDir(), ".artifacts", "compare-local-test", replacer.Replace(t.Name()))
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatalf("mkdir artifact dir: %v", err)
+	baseDir := filepath.Join(repoRootDir(), ".artifacts", "compare-local-test")
+	if err := os.MkdirAll(baseDir, 0o755); err != nil {
+		t.Fatalf("mkdir artifact base dir: %v", err)
+	}
+	dir, err := os.MkdirTemp(baseDir, replacer.Replace(t.Name())+"-")
+	if err != nil {
+		t.Fatalf("mkdir temp workload dir: %v", err)
 	}
 	t.Cleanup(func() {
 		_ = os.RemoveAll(dir)
