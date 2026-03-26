@@ -31,6 +31,13 @@ def build_summary(payload, output_dir: Path):
     return "\n".join(lines) + "\n"
 
 
+def write_output_file(path: Path, content: str):
+    try:
+        path.write_text(content)
+    except OSError as err:
+        raise SystemExit(f"unable to write compare-local artifact {path}: {err}")
+
+
 def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str):
     summary_path = output_dir / summary_name
     try:
@@ -108,8 +115,8 @@ def main() -> int:
         "fixtures": fixtures,
     }
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "index.json").write_text(json.dumps(payload, indent=2) + "\n")
-    (output_dir / "summary.md").write_text(build_summary(payload, output_dir))
+    write_output_file(output_dir / "index.json", json.dumps(payload, indent=2) + "\n")
+    write_output_file(output_dir / "summary.md", build_summary(payload, output_dir))
     return 0
 
 
