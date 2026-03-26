@@ -6,6 +6,7 @@ import sys
 from worktree_output import (
     build_prune_plan_row,
     build_single_view_payload,
+    configure_utf8_stdout,
     current_worktree,
     generated_at,
     is_prune_candidate,
@@ -17,6 +18,7 @@ from worktree_output import (
 
 
 def main():
+    configure_utf8_stdout()
     flags, args = parse_known_flags(sys.argv[1:], ("--json",))
     if len(args) > 1:
         raise SystemExit("usage: worktree_prune_plan.py [--json] [base_ref]")

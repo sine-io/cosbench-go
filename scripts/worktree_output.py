@@ -9,11 +9,21 @@ import sys
 python_env = {"PYTHONDONTWRITEBYTECODE": "1"}
 
 
+def configure_utf8_stdout():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
+
+def utf8_argv(*args):
+    return [arg.encode("utf-8") if isinstance(arg, str) else arg for arg in args]
+
+
 def run_git(*args):
     return subprocess.run(
-        ["git", *args],
+        utf8_argv("git", *args),
         check=False,
         text=True,
+        encoding="utf-8",
         capture_output=True,
     )
 
@@ -163,6 +173,7 @@ def run_script(name, *args):
         proc = subprocess.run(
             command,
             text=True,
+            encoding="utf-8",
             capture_output=True,
             env={**os.environ, **python_env},
         )
