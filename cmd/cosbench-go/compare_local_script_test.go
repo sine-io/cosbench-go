@@ -302,6 +302,57 @@ func TestBuildCompareLocalIndexRejectsInvalidFixtureSummaryEncodingGracefully(t 
 	}
 }
 
+func TestBuildCompareLocalIndexAcceptsUTF8BOMFixtureSummary(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("mock-stage-aware testdata/workloads/mock-stage-aware.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	summaryPath := filepath.Join(outputDir, "mock-stage-aware.json")
+	summaryPayload := append(
+		[]byte{0xef, 0xbb, 0xbf},
+		[]byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n")...,
+	)
+	if err := os.WriteFile(summaryPath, summaryPayload, 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected stdout: %s", output)
+	}
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	var payload struct {
+		Meta struct {
+			FixtureCount int `json:"fixture_count"`
+		} `json:"meta"`
+		Fixtures []struct {
+			Name   string `json:"name"`
+			Errors int    `json:"errors"`
+		} `json:"fixtures"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if payload.Meta.FixtureCount != 1 || len(payload.Fixtures) != 1 {
+		t.Fatalf("unexpected payload: %#v", payload)
+	}
+	if payload.Fixtures[0].Name != "mock-stage-aware" || payload.Fixtures[0].Errors != 0 {
+		t.Fatalf("unexpected payload: %#v", payload)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsUnknownFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
