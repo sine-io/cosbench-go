@@ -863,6 +863,21 @@ func TestCompareLocalListRespectsFilter(t *testing.T) {
 	}
 }
 
+func TestCompareLocalListPreservesFilterOrder(t *testing.T) {
+	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=xml-splitrw-subset,mock-stage-aware")
+
+	lines := strings.Fields(strings.TrimSpace(string(output)))
+	want := []string{"xml-splitrw-subset", "mock-stage-aware"}
+	if len(lines) != len(want) {
+		t.Fatalf("lines = %#v", lines)
+	}
+	for i, name := range want {
+		if lines[i] != name {
+			t.Fatalf("lines = %#v", lines)
+		}
+	}
+}
+
 func TestCompareLocalListTrimsFilterWhitespace(t *testing.T) {
 	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware, xml-splitrw-subset")
 
@@ -887,5 +902,41 @@ func TestCompareLocalListJSONRespectsFilter(t *testing.T) {
 	mustUnmarshalJSON(t, output, &payload)
 	if len(payload) != 2 || payload[0].Name != "mock-stage-aware" || payload[1].Name != "xml-splitrw-subset" {
 		t.Fatalf("payload = %#v", payload)
+	}
+}
+
+func TestCompareLocalFilterPreservesFixtureOrder(t *testing.T) {
+	goBin := mustLookPath(t, "go")
+	outputDir := filepath.Join(t.TempDir(), "compare-local")
+	runMakeSuccess(
+		t,
+		"compare-local",
+		"GO="+goBin,
+		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
+		"COMPARE_LOCAL_FILTER=xml-splitrw-subset,mock-stage-aware",
+	)
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	var payload struct {
+		Meta struct {
+			Filter       string `json:"filter"`
+			FixtureCount int    `json:"fixture_count"`
+		} `json:"meta"`
+		Fixtures []struct {
+			Name string `json:"name"`
+		} `json:"fixtures"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if payload.Meta.Filter != "xml-splitrw-subset,mock-stage-aware" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if payload.Meta.FixtureCount != 2 {
+		t.Fatalf("meta fixture_count = %d", payload.Meta.FixtureCount)
+	}
+	if len(payload.Fixtures) != 2 {
+		t.Fatalf("fixtures = %#v", payload.Fixtures)
+	}
+	if payload.Fixtures[0].Name != "xml-splitrw-subset" || payload.Fixtures[1].Name != "mock-stage-aware" {
+		t.Fatalf("fixtures = %#v", payload.Fixtures)
 	}
 }

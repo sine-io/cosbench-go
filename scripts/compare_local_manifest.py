@@ -78,10 +78,11 @@ def normalize_filter(raw_filter: str):
 
 
 def select_fixtures(fixtures, raw_filter: str):
-    selected = set(parse_filter(raw_filter))
+    selected = parse_filter(raw_filter)
     if not selected:
         return fixtures
-    return [fixture for fixture in fixtures if fixture["name"] in selected]
+    fixture_map = {fixture["name"]: fixture for fixture in fixtures}
+    return [fixture_map[name] for name in selected if name in fixture_map]
 
 
 def format_filter_error(fixtures, err: FilterError):
