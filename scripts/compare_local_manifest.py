@@ -52,6 +52,14 @@ def validate_fixture_name(name: str):
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain path separators or dot-path segments"
         )
+    if name == "all":
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: reserved for the all-fixtures selector"
+        )
+    if name.startswith("--"):
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: must not start with --"
+        )
 
 
 def read_manifest(manifest_path: str):
