@@ -782,6 +782,28 @@ func TestListCompareLocalFixturesRejectsMixedAllFilterGracefully(t *testing.T) {
 	}
 }
 
+func TestListCompareLocalFixturesRejectsUppercaseMixedAllFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "ALL,mock-stage-aware")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "'all' cannot be combined with specific fixtures") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsMixedAllFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	outputDir := filepath.Join(t.TempDir(), "out")
@@ -794,6 +816,32 @@ func TestBuildCompareLocalIndexRejectsMixedAllFilterGracefully(t *testing.T) {
 		t.Fatalf("abs script path: %v", err)
 	}
 	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", outputDir, "all,mock-stage-aware")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "'all' cannot be combined with specific fixtures") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestBuildCompareLocalIndexRejectsUppercaseMixedAllFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	outputDir := filepath.Join(t.TempDir(), "out")
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", outputDir, "ALL,mock-stage-aware")
 	cmd.Dir = repoRootDir()
 	output := string(runCommandFailure(t, cmd))
 
@@ -823,6 +871,28 @@ func TestValidateCompareLocalFilterRejectsUnknownOptionGracefully(t *testing.T) 
 		t.Fatalf("unexpected traceback: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestValidateCompareLocalFilterRejectsUppercaseMixedAllFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "ALL,mock-stage-aware")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "'all' cannot be combined with specific fixtures") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }

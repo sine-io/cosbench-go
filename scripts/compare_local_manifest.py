@@ -228,7 +228,7 @@ def validate_filter(fixtures, raw_filter: str):
         if stripped == "" or non_empty_tokens == ["all"]:
             return
         raise InvalidFilterError("filter did not include any fixture names")
-    if "all" in selected and len(selected) > 1:
+    if any(name.casefold() == "all" for name in selected) and len(selected) > 1:
         raise InvalidFilterError("'all' cannot be combined with specific fixtures")
     known = {fixture["name"].casefold() for fixture in fixtures}
     for name in selected:
