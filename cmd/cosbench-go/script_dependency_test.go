@@ -19,6 +19,7 @@ var scriptTestDependencies = []string{
 	"scripts/worktree_output.py",
 	"scripts/worktree_prune_plan.py",
 	"testdata/workloads/compare-local-fixtures.txt",
+	"testdata/workloads/mock-stage-aware.xml",
 }
 
 func TestMain(m *testing.M) {
