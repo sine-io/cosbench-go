@@ -95,7 +95,7 @@ def validate_fixture_name(name: str):
         )
 
 
-def validate_workload_path(workload: str):
+def resolve_workload_path(workload: str, manifest_dir: Path):
     posix_path = PurePosixPath(workload)
     windows_path = PureWindowsPath(workload)
     if workload.startswith("-"):
@@ -122,24 +122,36 @@ def validate_workload_path(workload: str):
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must be repo-relative without '..' segments"
         )
-    try:
-        stat_result = stat_workload_path(workload)
-    except FileNotFoundError:
+    candidates = [workload]
+    manifest_relative = manifest_dir / Path(workload)
+    manifest_relative_str = str(manifest_relative)
+    if manifest_relative_str not in candidates:
+        candidates.append(manifest_relative_str)
+
+    last_error = None
+    for candidate in candidates:
+        try:
+            stat_result = stat_workload_path(candidate)
+        except FileNotFoundError:
+            continue
+        except NotADirectoryError:
+            continue
+        except OSError as err:
+            last_error = err
+            continue
+        if not statmod.S_ISREG(stat_result.st_mode):
+            raise ManifestFormatError(
+                f"invalid compare-local workload path {workload!r}: must refer to a file"
+            )
+        return workload if candidate == workload else manifest_relative_str
+
+    if last_error is not None:
         raise ManifestFormatError(
-            f"invalid compare-local workload path {workload!r}: does not exist"
+            f"invalid compare-local workload path {workload!r}: {format_os_error(last_error)}"
         )
-    except NotADirectoryError:
-        raise ManifestFormatError(
-            f"invalid compare-local workload path {workload!r}: does not exist"
-        )
-    except OSError as err:
-        raise ManifestFormatError(
-            f"invalid compare-local workload path {workload!r}: {format_os_error(err)}"
-        )
-    if not statmod.S_ISREG(stat_result.st_mode):
-        raise ManifestFormatError(
-            f"invalid compare-local workload path {workload!r}: must refer to a file"
-        )
+    raise ManifestFormatError(
+        f"invalid compare-local workload path {workload!r}: does not exist"
+    )
 
 
 def read_manifest(manifest_path: str):
@@ -147,6 +159,7 @@ def read_manifest(manifest_path: str):
     seen_names = {}
     seen_names_folded = {}
     manifest_display = display_text(manifest_path)
+    manifest_dir = Path(manifest_path).resolve().parent
     try:
         lines = Path(manifest_path).read_text(encoding="utf-8-sig").splitlines()
     except FileNotFoundError:
@@ -167,7 +180,7 @@ def read_manifest(manifest_path: str):
             )
         name, workload = fields
         validate_fixture_name(name)
-        validate_workload_path(workload)
+        workload = resolve_workload_path(workload, manifest_dir)
         if name in seen_names:
             raise ManifestFormatError(
                 f"duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_display}; first seen on line {seen_names[name]}"
