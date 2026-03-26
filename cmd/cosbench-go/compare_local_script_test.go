@@ -931,6 +931,16 @@ func TestListCompareLocalFixturesRejectsUnsafeWorkloadPathsGracefully(t *testing
 			workload:    "/tmp/outside.xml",
 			expectError: "must not be absolute",
 		},
+		{
+			name:        "windows drive absolute",
+			workload:    "C:/outside.xml",
+			expectError: "must not be absolute",
+		},
+		{
+			name:        "windows backslash traversal",
+			workload:    "..\\outside.xml",
+			expectError: "must use forward slashes instead of backslashes",
+		},
 	}
 
 	for _, tc := range tests {
