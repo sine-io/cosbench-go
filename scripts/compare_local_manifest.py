@@ -60,6 +60,10 @@ def validate_fixture_name(name: str):
         "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
         "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
     }
+    if len(name) > 200:
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: must be 200 characters or fewer"
+        )
     if name in (".", "..") or "/" in name or "\\" in name:
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain path separators or dot-path segments"
