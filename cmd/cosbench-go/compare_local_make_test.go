@@ -898,9 +898,18 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 	if generatedAt, ok := payload["generated_at"].(string); !ok || generatedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
 	}
-	for _, key := range []string{"summary", "merged", "integrated", "stale", "prune_candidates", "prune_plan"} {
+	for _, key := range []string{"summary", "views", "merged", "integrated", "stale", "prune_candidates", "prune_plan"} {
 		if _, ok := payload[key]; !ok {
 			t.Fatalf("missing %s: %#v", key, payload)
+		}
+	}
+	views, ok := payload["views"].(map[string]any)
+	if !ok {
+		t.Fatalf("views is not structured: %#v", payload["views"])
+	}
+	for _, key := range []string{"merged", "integrated", "stale", "prune_candidates", "prune_plan"} {
+		if _, ok := views[key].(map[string]any); !ok {
+			t.Fatalf("views[%s] is not structured: %#v", key, views[key])
 		}
 	}
 	if _, ok := payload["merged"].(map[string]any); !ok {

@@ -32,13 +32,24 @@ def main():
     report_generated_at = generated_at()
     current_worktree = prune_plan["summary"].get("current_worktree", "")
     if json_mode:
+        merged_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref))
+        integrated_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref))
+        stale_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref))
+        prune_candidates_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--prune-only", base_ref))
         payload = {
             "generated_at": report_generated_at,
             "summary": summary,
-            "merged": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref)),
-            "integrated": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref)),
-            "stale": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref)),
-            "prune_candidates": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--prune-only", base_ref)),
+            "views": {
+                "merged": merged_view,
+                "integrated": integrated_view,
+                "stale": stale_view,
+                "prune_candidates": prune_candidates_view,
+                "prune_plan": prune_plan,
+            },
+            "merged": merged_view,
+            "integrated": integrated_view,
+            "stale": stale_view,
+            "prune_candidates": prune_candidates_view,
             "prune_plan": prune_plan,
         }
         print(json.dumps(payload, indent=2))

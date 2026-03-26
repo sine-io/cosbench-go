@@ -66,6 +66,7 @@ Status: In Progress
 - [x] Add generation-time, base-ref, and current-worktree metadata to the text `worktree-prune-plan` output
 - [x] Add a Markdown `worktree-cleanup-report` helper
 - [x] Add a machine-readable `worktree-cleanup-report-json` helper
+- [x] Add a preferred `views` container to `worktree-cleanup-report-json`
 - [x] Add integrated / stale / prune-candidate counts to the Markdown cleanup report summary
 - [x] Add an integrated section to the cleanup report outputs
 - [x] Add a prune-candidates section to the cleanup report outputs

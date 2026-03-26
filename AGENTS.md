@@ -57,7 +57,7 @@ Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to
 `make --no-print-directory worktree-prune-plan` prints suggested cleanup commands without actually deleting anything, and now includes generation-time, base-ref, and current-worktree header metadata.
 `make --no-print-directory worktree-prune-plan-json` exposes the same non-destructive cleanup plan as a structured JSON object with top-level `generated_at`, plus `summary` and `rows`.
 `make --no-print-directory worktree-cleanup-report` combines the main audit, integrated view, stale view, prune-candidates view, and prune plan into a single Markdown report, and its summary now includes generation time, current-worktree context, and integrated/stale/prune-candidate counts.
-`make --no-print-directory worktree-cleanup-report-json` exposes the same combined cleanup report in machine-readable form with top-level `generated_at` metadata.
+`make --no-print-directory worktree-cleanup-report-json` exposes the same combined cleanup report in machine-readable form with top-level `generated_at` metadata and a preferred `views` container for all section payloads.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
 That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.
