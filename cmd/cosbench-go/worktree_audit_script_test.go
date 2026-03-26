@@ -9,17 +9,19 @@ import (
 	"testing"
 )
 
-func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
+func setupPatchEquivalentRepo(t *testing.T) (repoDir string, gitBin string, pythonBin string) {
+	t.Helper()
+
 	gitBin, err := exec.LookPath("git")
 	if err != nil {
 		t.Fatalf("look path git: %v", err)
 	}
-	pythonBin, err := exec.LookPath("python3")
+	pythonBin, err = exec.LookPath("python3")
 	if err != nil {
 		t.Fatalf("look path python3: %v", err)
 	}
 
-	repoDir := t.TempDir()
+	repoDir = t.TempDir()
 	runCmd(t, repoDir, gitBin, "init", "-b", "main")
 	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
 	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
@@ -41,6 +43,12 @@ func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 	appendLine(t, filepath.Join(repoDir, "note.txt"), "feature\n")
 	runCmd(t, repoDir, gitBin, "add", "note.txt")
 	runCmd(t, repoDir, gitBin, "commit", "-m", "squash-equivalent")
+
+	return repoDir, gitBin, pythonBin
+}
+
+func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
 	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_audit.py"))
 	if err != nil {
@@ -91,37 +99,7 @@ func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 }
 
 func TestWorktreePrunePlanJSONIncludesBranchContext(t *testing.T) {
-	gitBin, err := exec.LookPath("git")
-	if err != nil {
-		t.Fatalf("look path git: %v", err)
-	}
-	pythonBin, err := exec.LookPath("python3")
-	if err != nil {
-		t.Fatalf("look path python3: %v", err)
-	}
-
-	repoDir := t.TempDir()
-	runCmd(t, repoDir, gitBin, "init", "-b", "main")
-	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
-	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
-
-	filePath := filepath.Join(repoDir, "note.txt")
-	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
-		t.Fatalf("write base file: %v", err)
-	}
-	runCmd(t, repoDir, gitBin, "add", "note.txt")
-	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
-
-	featureDir := filepath.Join(t.TempDir(), "feature")
-	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "feature")
-
-	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
-	runCmd(t, featureDir, gitBin, "add", "note.txt")
-	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
-
-	appendLine(t, filepath.Join(repoDir, "note.txt"), "feature\n")
-	runCmd(t, repoDir, gitBin, "add", "note.txt")
-	runCmd(t, repoDir, gitBin, "commit", "-m", "squash-equivalent")
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
 	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_prune_plan.py"))
 	if err != nil {
