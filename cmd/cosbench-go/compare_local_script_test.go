@@ -802,6 +802,39 @@ func TestBuildCompareLocalIndexCreatesMissingOutputDirForEmptyManifest(t *testin
 	}
 }
 
+func TestBuildCompareLocalIndexCreatesNonASCIIOutputDirGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "输出")
+	if err := os.WriteFile(manifestPath, []byte("# comment only\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	cmd.Env = append(
+		os.Environ(),
+		"LC_ALL=C",
+		"LANG=C",
+		"PYTHONCOERCECLOCALE=0",
+		"PYTHONUTF8=0",
+	)
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected stdout: %s", output)
+	}
+	summaryData := mustReadFile(t, filepath.Join(outputDir, "summary.md"))
+	if !strings.Contains(string(summaryData), "Artifact directory: `"+outputDir+"`") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsFileOutputDirGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
