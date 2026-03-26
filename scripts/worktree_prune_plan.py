@@ -70,7 +70,18 @@ def main():
             "merged": sum(1 for row in rows if row["state"] == "merged"),
             "integrated": sum(1 for row in rows if row["state"] == "integrated"),
         }
-        print(json.dumps({"generated_at": plan_generated_at, "summary": summary, "rows": rows}, indent=2))
+        view = {"summary": summary, "rows": rows}
+        print(
+            json.dumps(
+                {
+                    "generated_at": plan_generated_at,
+                    "views": {"prune_plan": view},
+                    "summary": summary,
+                    "rows": rows,
+                },
+                indent=2,
+            )
+        )
         return
 
     print("# Suggested cleanup commands")
