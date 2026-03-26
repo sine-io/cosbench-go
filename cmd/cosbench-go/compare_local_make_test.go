@@ -38,6 +38,22 @@ func makeCommand(t *testing.T, args ...string) *exec.Cmd {
 	return cmd
 }
 
+func mustReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return data
+}
+
+func mustUnmarshalJSON(t *testing.T, data []byte, target any) {
+	t.Helper()
+	if err := json.Unmarshal(data, target); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, data)
+	}
+}
+
 func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
@@ -70,14 +86,8 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 		}
 	}
 
-	indexData, err := os.ReadFile(filepath.Join(outputDir, "index.json"))
-	if err != nil {
-		t.Fatalf("read index: %v", err)
-	}
-	summaryData, err := os.ReadFile(filepath.Join(outputDir, "summary.md"))
-	if err != nil {
-		t.Fatalf("read summary: %v", err)
-	}
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	summaryData := mustReadFile(t, filepath.Join(outputDir, "summary.md"))
 	if !strings.Contains(string(summaryData), "## Compare Local") || !strings.Contains(string(summaryData), "| Fixture | Workload |") || !strings.Contains(string(summaryData), "Filter: `all`") {
 		t.Fatalf("unexpected summary: %s", summaryData)
 	}
@@ -97,9 +107,7 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 			Errors   int64  `json:"errors"`
 		} `json:"fixtures"`
 	}
-	if err := json.Unmarshal(indexData, &payload); err != nil {
-		t.Fatalf("unmarshal index: %v", err)
-	}
+	mustUnmarshalJSON(t, indexData, &payload)
 	if len(payload.Fixtures) != 4 {
 		t.Fatalf("fixtures = %#v", payload.Fixtures)
 	}
@@ -160,10 +168,7 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 		t.Fatal("unexpected unfiltered output")
 	}
 
-	indexData, err := os.ReadFile(filepath.Join(outputDir, "index.json"))
-	if err != nil {
-		t.Fatalf("read index: %v", err)
-	}
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
 	var payload struct {
 		Meta struct {
 			Filter       string `json:"filter"`
@@ -174,9 +179,7 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"fixtures"`
 	}
-	if err := json.Unmarshal(indexData, &payload); err != nil {
-		t.Fatalf("unmarshal index: %v", err)
-	}
+	mustUnmarshalJSON(t, indexData, &payload)
 	if len(payload.Fixtures) != 1 || payload.Fixtures[0].Name != "mock-stage-aware" {
 		t.Fatalf("fixtures = %#v", payload.Fixtures)
 	}
@@ -216,10 +219,7 @@ func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
 		t.Fatal("unexpected unfiltered output")
 	}
 
-	indexData, err := os.ReadFile(filepath.Join(outputDir, "index.json"))
-	if err != nil {
-		t.Fatalf("read index: %v", err)
-	}
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
 	var payload struct {
 		Meta struct {
 			Filter       string `json:"filter"`
@@ -229,9 +229,7 @@ func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"fixtures"`
 	}
-	if err := json.Unmarshal(indexData, &payload); err != nil {
-		t.Fatalf("unmarshal index: %v", err)
-	}
+	mustUnmarshalJSON(t, indexData, &payload)
 	if payload.Meta.Filter != "mock-stage-aware,xml-splitrw-subset" {
 		t.Fatalf("meta filter = %q", payload.Meta.Filter)
 	}
@@ -258,19 +256,14 @@ func TestCompareLocalFilterAcceptsAllAlias(t *testing.T) {
 		t.Fatalf("make compare-local failed: %v\n%s", err, output)
 	}
 
-	indexData, err := os.ReadFile(filepath.Join(outputDir, "index.json"))
-	if err != nil {
-		t.Fatalf("read index: %v", err)
-	}
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
 	var payload struct {
 		Meta struct {
 			Filter       string `json:"filter"`
 			FixtureCount int    `json:"fixture_count"`
 		} `json:"meta"`
 	}
-	if err := json.Unmarshal(indexData, &payload); err != nil {
-		t.Fatalf("unmarshal index: %v", err)
-	}
+	mustUnmarshalJSON(t, indexData, &payload)
 	if payload.Meta.Filter != "all" {
 		t.Fatalf("meta filter = %q", payload.Meta.Filter)
 	}
@@ -333,9 +326,7 @@ func TestCompareLocalListJSONShowsFixtureMetadata(t *testing.T) {
 		Name     string `json:"name"`
 		Workload string `json:"workload"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	if len(payload) != 4 {
 		t.Fatalf("payload = %#v", payload)
 	}
@@ -404,9 +395,7 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 			Rows    []map[string]any `json:"rows"`
 		} `json:"views"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	if payload.GeneratedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
 	}
@@ -580,9 +569,7 @@ func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
 			State  string `json:"state"`
 		} `json:"rows"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	for _, row := range payload.Rows {
 		if row.State != "merged" {
 			t.Fatalf("unexpected row: %#v", row)
@@ -604,9 +591,7 @@ func TestWorktreeAuditIntegratedJSONTargetRuns(t *testing.T) {
 			State  string `json:"state"`
 		} `json:"rows"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	for _, row := range payload.Rows {
 		if row.State != "integrated" {
 			t.Fatalf("unexpected row: %#v", row)
@@ -656,9 +641,7 @@ func TestWorktreeAuditPruneJSONTargetRuns(t *testing.T) {
 			Current bool   `json:"current"`
 		} `json:"rows"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	for _, row := range payload.Rows {
 		if row.State != "merged" && row.State != "integrated" {
 			t.Fatalf("unexpected row: %#v", row)
@@ -739,9 +722,7 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 			} `json:"rows"`
 		} `json:"views"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	if payload.GeneratedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
 	}
@@ -808,10 +789,7 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	if !strings.Contains(text, "## Prune Candidates") {
 		t.Fatalf("unexpected output: %s", text)
 	}
-	reportData, err := os.ReadFile(reportPath)
-	if err != nil {
-		t.Fatalf("read report: %v", err)
-	}
+	reportData := mustReadFile(t, reportPath)
 	if !strings.Contains(string(reportData), "# Worktree Cleanup Report") {
 		t.Fatalf("unexpected report file: %s", reportData)
 	}
@@ -842,9 +820,7 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 	}
 
 	var payload map[string]any
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	if generatedAt, ok := payload["generated_at"].(string); !ok || generatedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
 	}
@@ -936,9 +912,7 @@ func TestCompareLocalListJSONRespectsFilter(t *testing.T) {
 	var payload []struct {
 		Name string `json:"name"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	mustUnmarshalJSON(t, output, &payload)
 	if len(payload) != 2 || payload[0].Name != "mock-stage-aware" || payload[1].Name != "xml-splitrw-subset" {
 		t.Fatalf("payload = %#v", payload)
 	}
