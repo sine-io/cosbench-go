@@ -171,6 +171,19 @@ func runRepoScriptFailureText(t *testing.T, repoDir, pythonBin, scriptRel string
 	return string(runCommandFailure(t, cmd))
 }
 
+func runRepoScriptFailureTextWithEnv(t *testing.T, repoDir, pythonBin, scriptRel string, env []string, args ...string) string {
+	t.Helper()
+
+	scriptPath, err := filepath.Abs(filepath.Clean(scriptRel))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, append([]string{scriptPath}, args...)...)
+	cmd.Dir = repoDir
+	cmd.Env = append(append([]string{}, os.Environ()...), env...)
+	return string(runCommandFailure(t, cmd))
+}
+
 func TestWorktreePrunePlanUsesConfiguredPythonForNestedScripts(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
@@ -538,6 +551,44 @@ func TestWorktreeCleanupReportRejectsUncreatableParentDirGracefully(t *testing.T
 		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, blocked) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportRendersNonASCIIOutputPathGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	baseDir := t.TempDir()
+	blocked := filepath.Join(baseDir, "阻止")
+	if err := os.WriteFile(blocked, []byte("file\n"), 0o644); err != nil {
+		t.Fatalf("write blocker file: %v", err)
+	}
+	outputPath := filepath.Join(blocked, "报告.md")
+	output := runRepoScriptFailureTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_cleanup_report.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+		},
+		"main",
+		outputPath,
+	)
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if strings.Contains(output, "\\udc") {
+		t.Fatalf("unexpected surrogate escapes: %s", output)
+	}
+	if !strings.Contains(output, "unable to prepare worktree cleanup report parent dir") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "阻止") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }

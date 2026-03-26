@@ -10,8 +10,13 @@ python_env = {"PYTHONDONTWRITEBYTECODE": "1"}
 
 
 def configure_utf8_stdout():
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
+
+def display_text(value: str):
+    return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
 
 
 def utf8_argv(*args):

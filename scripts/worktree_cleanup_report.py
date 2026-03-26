@@ -7,6 +7,7 @@ import sys
 from worktree_output import (
     build_meta,
     configure_utf8_stdout,
+    display_text,
     generated_at,
     load_json_script,
     load_worktree_audit_text,
@@ -16,6 +17,17 @@ from worktree_output import (
     run_script,
     validate_base_ref,
 )
+
+def format_os_error(err: OSError) -> str:
+    parts = []
+    if getattr(err, "errno", None) is not None:
+        parts.append(f"[Errno {err.errno}]")
+    if getattr(err, "strerror", None):
+        parts.append(display_text(str(err.strerror)))
+    elif str(err):
+        parts.append(display_text(str(err)))
+    return " ".join(parts) or err.__class__.__name__
+
 
 def main():
     configure_utf8_stdout()
@@ -93,12 +105,16 @@ def main():
         try:
             parent_dir.mkdir(parents=True, exist_ok=True)
         except OSError as err:
-            raise SystemExit(f"unable to prepare worktree cleanup report parent dir {parent_dir}: {err}")
+            raise SystemExit(
+                f"unable to prepare worktree cleanup report parent dir {display_text(str(parent_dir))}: {format_os_error(err)}"
+            )
         try:
             with open(output_path, "w", encoding="utf-8") as fh:
                 fh.write(report)
         except OSError as err:
-            raise SystemExit(f"unable to write worktree cleanup report {output_path}: {err}")
+            raise SystemExit(
+                f"unable to write worktree cleanup report {display_text(str(output_path))}: {format_os_error(err)}"
+            )
     print(report, end="")
 
 
