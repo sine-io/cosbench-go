@@ -11,6 +11,8 @@ def main() -> int:
 
     manifest_path = sys.argv[1]
     raw_filter = sys.argv[2]
+    if raw_filter.startswith("--"):
+        raise SystemExit(f"unknown option: {raw_filter}")
     try:
         fixtures = read_manifest(manifest_path)
     except ManifestError as err:

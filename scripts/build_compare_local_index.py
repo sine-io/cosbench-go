@@ -64,6 +64,8 @@ def main() -> int:
 
     output_dir = Path(sys.argv[2])
     selected = sys.argv[3] if len(sys.argv) == 4 else ""
+    if selected.startswith("--"):
+        raise SystemExit(f"unknown option: {selected}")
     filter_label = normalize_filter(selected)
     fixtures = []
 
