@@ -31,6 +31,7 @@ Owner: Ross
 - Worktree audit stale view
 - Worktree prune plan JSON output
 - Worktree prune plan JSON summary
+- Worktree prune plan text metadata
 - Worktree cleanup report
 - Worktree cleanup report JSON output
 - Worktree cleanup report summary counts
@@ -126,6 +127,7 @@ Owner: Ross
 - Worktree audit stale view landed
 - Worktree prune plan JSON output landed
 - Worktree prune plan JSON summary landed
+- Worktree prune plan text metadata landed
 - Worktree cleanup report landed
 - Worktree cleanup report JSON output landed
 - Worktree cleanup report summary counts landed

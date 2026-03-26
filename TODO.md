@@ -63,6 +63,7 @@ Status: In Progress
 - [x] Add a machine-readable `worktree-prune-plan-json` helper
 - [x] Add top-level `generated_at` metadata to machine-readable worktree helpers
 - [x] Add a structured `summary + rows` JSON shape for `worktree-prune-plan-json`
+- [x] Add generation-time, base-ref, and current-worktree metadata to the text `worktree-prune-plan` output
 - [x] Add a Markdown `worktree-cleanup-report` helper
 - [x] Add a machine-readable `worktree-cleanup-report-json` helper
 - [x] Add integrated / stale / prune-candidate counts to the Markdown cleanup report summary
