@@ -260,6 +260,28 @@ func TestWorktreePrunePlanTextUsesPruneCandidateWordingWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestWorktreeCleanupReportCreatesMissingParentDir(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	outputPath := filepath.Join(t.TempDir(), "nested", "reports", "cleanup.md")
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_cleanup_report.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "main", outputPath)
+	cmd.Dir = repoDir
+	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")
+	output := runCommandSuccess(t, cmd)
+
+	reportData := mustReadFile(t, outputPath)
+	if !strings.Contains(string(output), "# Worktree Cleanup Report") {
+		t.Fatalf("unexpected stdout: %s", output)
+	}
+	if !strings.Contains(string(reportData), "# Worktree Cleanup Report") {
+		t.Fatalf("unexpected report file: %s", reportData)
+	}
+}
+
 func runCmd(t *testing.T, dir, bin string, args ...string) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
