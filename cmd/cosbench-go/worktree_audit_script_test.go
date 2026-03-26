@@ -47,10 +47,10 @@ func setupPatchEquivalentRepo(t *testing.T) (repoDir string, gitBin string, pyth
 	return repoDir, gitBin, pythonBin
 }
 
-func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
-	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, target any) {
+	t.Helper()
 
-	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_audit.py"))
+	scriptPath, err := filepath.Abs(filepath.Clean(scriptRel))
 	if err != nil {
 		t.Fatalf("abs script path: %v", err)
 	}
@@ -60,6 +60,13 @@ func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run script: %v\n%s", err, output)
 	}
+	if err := json.Unmarshal(output, target); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+}
+
+func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
 	var payload struct {
 		Summary map[string]any `json:"summary"`
@@ -68,9 +75,7 @@ func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 			State  string `json:"state"`
 		} `json:"rows"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	runRepoScriptJSON(t, repoDir, pythonBin, "../../scripts/worktree_audit.py", &payload)
 
 	found := false
 	for _, row := range payload.Rows {
@@ -82,7 +87,7 @@ func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatalf("missing feature row: %s", output)
+		t.Fatalf("missing feature row: %#v", payload.Rows)
 	}
 	if payload.Summary["integrated"] == nil {
 		t.Fatalf("missing integrated count: %#v", payload.Summary)
@@ -101,17 +106,6 @@ func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
 func TestWorktreePrunePlanJSONIncludesBranchContext(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
-	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/worktree_prune_plan.py"))
-	if err != nil {
-		t.Fatalf("abs script path: %v", err)
-	}
-	cmd := exec.Command(pythonBin, scriptPath, "--json", "main")
-	cmd.Dir = repoDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("run script: %v\n%s", err, output)
-	}
-
 	var payload struct {
 		Summary struct {
 			BaseRef         string `json:"base_ref"`
@@ -129,9 +123,7 @@ func TestWorktreePrunePlanJSONIncludesBranchContext(t *testing.T) {
 			Commands []string `json:"commands"`
 		} `json:"rows"`
 	}
-	if err := json.Unmarshal(output, &payload); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	runRepoScriptJSON(t, repoDir, pythonBin, "../../scripts/worktree_prune_plan.py", &payload)
 	if payload.Summary.BaseRef != "main" {
 		t.Fatalf("summary = %#v", payload.Summary)
 	}
