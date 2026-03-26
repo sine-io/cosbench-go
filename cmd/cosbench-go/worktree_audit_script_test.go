@@ -152,11 +152,46 @@ func setupActiveTrunkRepo(t *testing.T) (repoDir string, gitBin string, pythonBi
 	return repoDir, gitBin, pythonBin
 }
 
+func setupActiveTrunkRepoWithFeatureWorktree(t *testing.T) (repoDir, featureDir, gitBin, pythonBin string) {
+	t.Helper()
+
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("look path git: %v", err)
+	}
+	pythonBin, err = exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("look path python3: %v", err)
+	}
+
+	repoDir = t.TempDir()
+	runCmd(t, repoDir, gitBin, "init", "-b", "trunk")
+	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
+	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
+
+	filePath := filepath.Join(repoDir, "note.txt")
+	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
+		t.Fatalf("write base file: %v", err)
+	}
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
+
+	featureDir = filepath.Join(t.TempDir(), "feature")
+	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "feature")
+
+	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
+	runCmd(t, featureDir, gitBin, "add", "note.txt")
+	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
+
+	return repoDir, featureDir, gitBin, pythonBin
+}
+
 func setupDetachedTrunkRepo(t *testing.T) (repoDir string, gitBin string, pythonBin string) {
 	t.Helper()
 
 	repoDir, gitBin, pythonBin = setupActiveTrunkRepo(t)
 	runCmd(t, repoDir, gitBin, "checkout", "--detach", "HEAD")
+	runCmd(t, repoDir, gitBin, "branch", "-D", "trunk")
 	return repoDir, gitBin, pythonBin
 }
 
@@ -224,6 +259,19 @@ func runRepoScriptFailureTextWithEnv(t *testing.T, repoDir, pythonBin, scriptRel
 	cmd.Dir = repoDir
 	cmd.Env = append(append([]string{}, os.Environ()...), env...)
 	return string(runCommandFailure(t, cmd))
+}
+
+func runRepoScriptTextAtDir(t *testing.T, dir, pythonBin, scriptRel string, args ...string) string {
+	t.Helper()
+
+	scriptPath, err := filepath.Abs(filepath.Clean(scriptRel))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, append([]string{scriptPath}, args...)...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")
+	return string(runCommandSuccess(t, cmd))
 }
 
 func TestWorktreePrunePlanUsesConfiguredPythonForNestedScripts(t *testing.T) {
@@ -498,6 +546,33 @@ func TestWorktreeCleanupReportDefaultsToCurrentBranchWhenNoStandardBaseRefExists
 	if !strings.Contains(output, "# Worktree Cleanup Report") {
 		t.Fatalf("unexpected output: %s", output)
 	}
+	if !strings.Contains(output, "- Base ref: `trunk`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditPrefersTrunkOverCurrentBranchWhenRunFromFeatureWorktree(t *testing.T) {
+	_, featureDir, _, pythonBin := setupActiveTrunkRepoWithFeatureWorktree(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: trunk") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanPrefersTrunkOverCurrentBranchWhenRunFromFeatureWorktree(t *testing.T) {
+	_, featureDir, _, pythonBin := setupActiveTrunkRepoWithFeatureWorktree(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: trunk") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportPrefersTrunkOverCurrentBranchWhenRunFromFeatureWorktree(t *testing.T) {
+	_, featureDir, _, pythonBin := setupActiveTrunkRepoWithFeatureWorktree(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
 	if !strings.Contains(output, "- Base ref: `trunk`") {
 		t.Fatalf("unexpected output: %s", output)
 	}
