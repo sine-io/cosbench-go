@@ -18,6 +18,7 @@ def main():
     audit = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", base_ref))
     prune_plan = json.loads(run("python3", "./scripts/worktree_prune_plan.py", "--json", base_ref))
     merged_text = run("python3", "./scripts/worktree_audit.py", "--merged-only", base_ref).rstrip()
+    integrated_text = run("python3", "./scripts/worktree_audit.py", "--integrated-only", base_ref).rstrip()
     stale_text = run("python3", "./scripts/worktree_audit.py", "--stale-only", base_ref).rstrip()
     prune_text = run("python3", "./scripts/worktree_prune_plan.py", base_ref).rstrip()
 
@@ -26,6 +27,7 @@ def main():
         payload = {
             "summary": summary,
             "merged": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref)),
+            "integrated": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref)),
             "stale": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref)),
             "prune_plan": prune_plan,
         }
@@ -51,6 +53,12 @@ def main():
         "",
         "```text",
         merged_text,
+        "```",
+        "",
+        "## Integrated",
+        "",
+        "```text",
+        integrated_text,
         "```",
         "",
         "## Stale",
