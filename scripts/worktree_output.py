@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import subprocess
+
+python_env = {"PYTHONDONTWRITEBYTECODE": "1"}
 
 
 def run_git(*args):
@@ -128,6 +131,7 @@ def run_script(name, *args):
         check=True,
         text=True,
         capture_output=True,
+        env={**os.environ, **python_env},
     )
     return proc.stdout
 

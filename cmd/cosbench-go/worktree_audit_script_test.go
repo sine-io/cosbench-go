@@ -56,6 +56,7 @@ func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, targe
 	}
 	cmd := exec.Command(pythonBin, scriptPath, "--json", "main")
 	cmd.Dir = repoDir
+	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("run script: %v\n%s", err, output)
