@@ -174,6 +174,7 @@ def python_command():
 
 def run_script(name, *args):
     command = [*python_command(), script_path(name), *args]
+    command_display = " ".join(display_text(str(part)) for part in (command[:-len(args)-1] if args else command[:-1]))
     try:
         proc = subprocess.run(
             command,
@@ -182,8 +183,8 @@ def run_script(name, *args):
             capture_output=True,
             env={**os.environ, **python_env},
         )
-    except OSError as err:
-        raise SystemExit(f"unable to execute {name} via configured python command {' '.join(command[:-len(args)-1] if args else command[:-1])}: {err}")
+    except (OSError, UnicodeEncodeError) as err:
+        raise SystemExit(f"unable to execute {name} via configured python command {command_display}: {display_text(str(err))}")
     if proc.returncode != 0:
         message = proc.stderr.strip() or proc.stdout.strip() or f"{name} failed with exit code {proc.returncode}"
         raise SystemExit(message)
