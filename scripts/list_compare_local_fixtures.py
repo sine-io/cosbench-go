@@ -16,7 +16,7 @@ def main() -> int:
         raise SystemExit(str(err))
     names_only = False
     pairs_only = False
-    raw_filter = ""
+    filter_args = []
     for arg in sys.argv[2:]:
         if arg == "--names":
             names_only = True
@@ -25,9 +25,13 @@ def main() -> int:
         elif arg.startswith("--"):
             raise SystemExit(f"unknown option: {arg}")
         else:
-            raw_filter = arg
+            filter_args.append(arg)
     if names_only and pairs_only:
         raise SystemExit("choose only one of --names or --pairs")
+    if len(filter_args) > 1:
+        joined = " ".join(filter_args)
+        raise SystemExit(f"expected at most one filter argument, got: {joined}")
+    raw_filter = filter_args[0] if filter_args else ""
 
     try:
         validate_filter(fixtures, raw_filter)
