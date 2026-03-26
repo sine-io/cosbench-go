@@ -1278,6 +1278,84 @@ func TestWorktreeCleanupReportWritesTextWithExplicitUTF8Stdout(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditWritesJSONWithExplicitUTF8Characters(t *testing.T) {
+	repoDir, _, pythonBin := setupUnicodePatchEquivalentRepo(t)
+
+	output := runRepoScriptTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_audit.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+		},
+		"--json",
+		"main",
+	)
+	if !strings.Contains(output, "特性") || !strings.Contains(output, "工作树") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if strings.Contains(output, "\\u7279\\u6027") || strings.Contains(output, "\\u5de5\\u4f5c\\u6811") {
+		t.Fatalf("unexpected escaped unicode: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanWritesJSONWithExplicitUTF8Characters(t *testing.T) {
+	repoDir, _, pythonBin := setupUnicodePatchEquivalentRepo(t)
+
+	output := runRepoScriptTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_prune_plan.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+		},
+		"--json",
+		"main",
+	)
+	if !strings.Contains(output, "特性") || !strings.Contains(output, "工作树") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if strings.Contains(output, "\\u7279\\u6027") || strings.Contains(output, "\\u5de5\\u4f5c\\u6811") {
+		t.Fatalf("unexpected escaped unicode: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportWritesJSONWithExplicitUTF8Characters(t *testing.T) {
+	repoDir, _, pythonBin := setupUnicodePatchEquivalentRepo(t)
+
+	output := runRepoScriptTextWithEnv(
+		t,
+		repoDir,
+		pythonBin,
+		"../../scripts/worktree_cleanup_report.py",
+		[]string{
+			"PYTHONDONTWRITEBYTECODE=1",
+			"LC_ALL=C",
+			"LANG=C",
+			"PYTHONCOERCECLOCALE=0",
+			"PYTHONUTF8=0",
+		},
+		"--json",
+		"main",
+	)
+	if !strings.Contains(output, "特性") || !strings.Contains(output, "工作树") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if strings.Contains(output, "\\u7279\\u6027") || strings.Contains(output, "\\u5de5\\u4f5c\\u6811") {
+		t.Fatalf("unexpected escaped unicode: %s", output)
+	}
+}
+
 func TestWorktreeAuditRejectsUnknownOptionGracefully(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 

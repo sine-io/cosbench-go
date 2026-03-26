@@ -73,7 +73,7 @@ def main():
             "prune_candidates": prune_candidates_view,
             "prune_plan": prune_plan,
         }
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
         return
 
     lines = [

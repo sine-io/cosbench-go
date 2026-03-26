@@ -74,7 +74,7 @@ def main():
 
     if json_mode:
         summary = build_audit_summary(rows, base_ref, current_worktree_path)
-        print(json.dumps(build_single_view_payload(generated_at(), base_ref, current_worktree_path, "audit", summary, rows), indent=2))
+        print(json.dumps(build_single_view_payload(generated_at(), base_ref, current_worktree_path, "audit", summary, rows), indent=2, ensure_ascii=False))
         return
 
     print_text_header(audit_generated_at, base_ref, current_worktree_path)

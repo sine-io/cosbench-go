@@ -54,6 +54,7 @@ def main():
             json.dumps(
                 build_single_view_payload(plan_generated_at, base_ref, current_worktree_path, "prune_plan", summary, rows),
                 indent=2,
+                ensure_ascii=False,
             )
         )
         return
