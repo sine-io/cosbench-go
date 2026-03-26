@@ -29,7 +29,7 @@ def read_manifest(manifest_path: str):
     fixtures = []
     seen_names = {}
     try:
-        lines = Path(manifest_path).read_text().splitlines()
+        lines = Path(manifest_path).read_text(encoding="utf-8-sig").splitlines()
     except FileNotFoundError:
         raise ManifestReadError(f"compare-local manifest not found: {manifest_path}")
     except UnicodeDecodeError as err:
