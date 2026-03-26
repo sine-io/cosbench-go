@@ -36,8 +36,14 @@ def main():
         integrated_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref))
         stale_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref))
         prune_candidates_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--prune-only", base_ref))
+        meta = {
+            "generated_at": report_generated_at,
+            "base_ref": summary["base_ref"],
+            "current_worktree": current_worktree,
+        }
         payload = {
             "generated_at": report_generated_at,
+            "meta": meta,
             "summary": summary,
             "views": {
                 "merged": merged_view,
