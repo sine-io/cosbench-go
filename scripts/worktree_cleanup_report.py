@@ -87,7 +87,11 @@ def main():
     lines.extend(markdown_text_section("Prune Plan", prune_text))
     report = "\n".join(lines) + "\n"
     if output_path:
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        parent_dir = Path(output_path).parent
+        try:
+            parent_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as err:
+            raise SystemExit(f"unable to prepare worktree cleanup report parent dir {parent_dir}: {err}")
         try:
             with open(output_path, "w", encoding="utf-8") as fh:
                 fh.write(report)

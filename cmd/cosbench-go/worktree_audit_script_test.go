@@ -371,6 +371,27 @@ func TestWorktreeCleanupReportRejectsDirectoryOutputPathGracefully(t *testing.T)
 	}
 }
 
+func TestWorktreeCleanupReportRejectsUncreatableParentDirGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	baseDir := t.TempDir()
+	blocked := filepath.Join(baseDir, "blocked")
+	if err := os.WriteFile(blocked, []byte("file\n"), 0o644); err != nil {
+		t.Fatalf("write blocker file: %v", err)
+	}
+	outputPath := filepath.Join(blocked, "cleanup.md")
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_cleanup_report.py", "main", outputPath)
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unable to prepare worktree cleanup report parent dir") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, blocked) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreeCleanupReportRejectsUnknownBaseRefGracefully(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
