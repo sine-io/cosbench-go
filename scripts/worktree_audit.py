@@ -4,62 +4,16 @@ import json
 import sys
 
 from worktree_output import (
+    branch_name,
     build_single_view_payload,
+    classify_branch,
     current_worktree,
     generated_at,
     is_prune_candidate,
     is_stale_row,
+    load_worktree_entries,
     print_text_header,
-    run_git,
 )
-
-
-def worktree_entries():
-    proc = run_git("worktree", "list", "--porcelain")
-    if proc.returncode != 0:
-        raise SystemExit(proc.stderr or proc.stdout)
-    entry = {}
-    for raw_line in proc.stdout.splitlines():
-        if not raw_line:
-            if entry:
-                yield entry
-                entry = {}
-            continue
-        if " " in raw_line:
-            key, value = raw_line.split(" ", 1)
-        else:
-            key, value = raw_line, ""
-        entry[key] = value
-    if entry:
-        yield entry
-
-
-def branch_name(entry):
-    ref = entry.get("branch", "")
-    if ref.startswith("refs/heads/"):
-        return ref.removeprefix("refs/heads/")
-    return "(detached)"
-
-
-def classify(branch, base_ref):
-    if branch == "(detached)":
-        return "detached", "", 0, 0
-    merged = run_git("merge-base", "--is-ancestor", branch, base_ref)
-    if merged.returncode == 0:
-        return "merged", base_ref, 0, 0
-    cherry = run_git("cherry", base_ref, branch)
-    cherry_lines = [line for line in cherry.stdout.splitlines() if line.strip()]
-    if cherry.returncode == 0 and cherry_lines and all(line.startswith("- ") for line in cherry_lines):
-        ahead_behind = run_git("rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
-        if ahead_behind.returncode == 0:
-            behind, ahead = ahead_behind.stdout.strip().split()
-            return "integrated", f"patch-equivalent to {base_ref}", int(ahead), int(behind)
-        return "integrated", f"patch-equivalent to {base_ref}", 0, 0
-    ahead_behind = run_git("rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
-    if ahead_behind.returncode != 0:
-        return "unknown", ahead_behind.stderr.strip() or ahead_behind.stdout.strip(), 0, 0
-    behind, ahead = ahead_behind.stdout.strip().split()
-    return "active", f"ahead={ahead} behind={behind}", int(ahead), int(behind)
 
 
 def sort_key(row):
@@ -91,7 +45,7 @@ def should_include_row(state, branch, path, behind, current_worktree_path, *, me
 
 def build_audit_row(entry, base_ref, current_worktree_path):
     branch = branch_name(entry)
-    state, details, ahead, behind = classify(branch, base_ref)
+    state, details, ahead, behind = classify_branch(branch, base_ref)
     path = entry["worktree"]
     return {
         "path": path,
@@ -135,7 +89,7 @@ def main():
     current_worktree_path = current_worktree()
 
     rows = []
-    for entry in worktree_entries():
+    for entry in load_worktree_entries():
         row = build_audit_row(entry, base_ref, current_worktree_path)
         if not should_include_row(
             row["state"],
