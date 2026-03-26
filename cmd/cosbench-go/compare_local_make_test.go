@@ -58,6 +58,9 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 	if !strings.Contains(string(summaryData), "## Compare Local") || !strings.Contains(string(summaryData), "| Fixture | Workload |") || !strings.Contains(string(summaryData), "Filter: `all`") {
 		t.Fatalf("unexpected summary: %s", summaryData)
 	}
+	if !strings.Contains(string(summaryData), "Artifact directory: `"+outputDir+"`") {
+		t.Fatalf("unexpected summary artifact directory: %s", summaryData)
+	}
 	var payload struct {
 		Meta struct {
 			Filter       string `json:"filter"`
