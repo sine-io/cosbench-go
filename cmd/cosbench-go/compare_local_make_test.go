@@ -9,17 +9,28 @@ import (
 	"testing"
 )
 
-func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
+func mustLookPath(t *testing.T, name string) string {
+	t.Helper()
+	path, err := exec.LookPath(name)
 	if err != nil {
-		t.Fatalf("look path make: %v", err)
+		t.Fatalf("look path %s: %v", name, err)
 	}
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Fatalf("look path go: %v", err)
-	}
+	return path
+}
 
-	rootDir := filepath.Clean("../..")
+func repoRootDir() string {
+	return filepath.Clean("../..")
+}
+
+func makeCommand(t *testing.T, args ...string) *exec.Cmd {
+	t.Helper()
+	cmd := exec.Command(mustLookPath(t, "make"), args...)
+	cmd.Dir = repoRootDir()
+	return cmd
+}
+
+func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
+	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		t.Fatalf("mkdir output dir: %v", err)
@@ -29,8 +40,7 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 		t.Fatalf("seed stale file: %v", err)
 	}
 
-	cmd := exec.Command(makeBin, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+outputDir)
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+outputDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local failed: %v\n%s", err, output)
@@ -110,19 +120,9 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 }
 
 func TestCompareLocalRejectsUnsafeOutputDir(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Fatalf("look path go: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
+	goBin := mustLookPath(t, "go")
 	unsafeDir := t.TempDir()
-	cmd := exec.Command(makeBin, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+unsafeDir)
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+unsafeDir)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("expected compare-local to reject unsafe output dir %s\n%s", unsafeDir, output)
@@ -130,25 +130,15 @@ func TestCompareLocalRejectsUnsafeOutputDir(t *testing.T) {
 }
 
 func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Fatalf("look path go: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
+	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := exec.Command(
-		makeBin,
+	cmd := makeCommand(
+		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=mock-stage-aware",
 	)
-	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local failed: %v\n%s", err, output)
@@ -193,25 +183,15 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 }
 
 func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Fatalf("look path go: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
+	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := exec.Command(
-		makeBin,
+	cmd := makeCommand(
+		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset",
 	)
-	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local failed: %v\n%s", err, output)
@@ -255,25 +235,15 @@ func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
 }
 
 func TestCompareLocalFilterAcceptsAllAlias(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Fatalf("look path go: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
+	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := exec.Command(
-		makeBin,
+	cmd := makeCommand(
+		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=all",
 	)
-	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local failed: %v\n%s", err, output)
@@ -301,25 +271,15 @@ func TestCompareLocalFilterAcceptsAllAlias(t *testing.T) {
 }
 
 func TestCompareLocalFilterRejectsUnknownFixture(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Fatalf("look path go: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
+	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := exec.Command(
-		makeBin,
+	cmd := makeCommand(
+		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=does-not-exist",
 	)
-	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("expected compare-local to reject unknown fixture\n%s", output)
@@ -330,14 +290,7 @@ func TestCompareLocalFilterRejectsUnknownFixture(t *testing.T) {
 }
 
 func TestCompareLocalListShowsFixtureNames(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "compare-local-list")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local-list failed: %v\n%s", err, output)
