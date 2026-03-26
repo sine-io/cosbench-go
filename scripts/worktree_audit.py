@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-from datetime import datetime, timezone
 import json
 import subprocess
 import sys
+
+from worktree_output import build_meta, current_worktree, generated_at, print_text_header
 
 
 def run(*args):
@@ -72,11 +73,6 @@ def sort_key(row):
         row["branch"],
     )
 
-
-def generated_at():
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
 def main():
     json_mode = "--json" in sys.argv[1:]
     merged_only = "--merged-only" in sys.argv[1:]
@@ -89,8 +85,7 @@ def main():
         if arg not in ("--json", "--merged-only", "--integrated-only", "--prune-only", "--stale-only")
     ]
     base_ref = args[0] if args else "origin/main"
-    current_proc = run("git", "rev-parse", "--show-toplevel")
-    current_worktree = current_proc.stdout.strip() if current_proc.returncode == 0 else ""
+    current_worktree_path = current_worktree()
 
     rows = []
     for entry in worktree_entries():
@@ -103,7 +98,7 @@ def main():
         if prune_only and (
             state not in ("merged", "integrated")
             or branch in ("main", "master")
-            or entry["worktree"] == current_worktree
+            or entry["worktree"] == current_worktree_path
         ):
             continue
         if stale_only and not (state == "active" and behind > 0):
@@ -116,7 +111,7 @@ def main():
                 "details": details,
                 "ahead": ahead,
                 "behind": behind,
-                "current": entry["worktree"] == current_worktree,
+                "current": entry["worktree"] == current_worktree_path,
             }
         )
 
@@ -142,11 +137,7 @@ def main():
             ),
         }
         view = {"summary": summary, "rows": rows}
-        meta = {
-            "generated_at": generated_at(),
-            "base_ref": base_ref,
-            "current_worktree": current_worktree,
-        }
+        meta = build_meta(generated_at(), base_ref, current_worktree_path)
         print(
             json.dumps(
                 {
@@ -161,9 +152,7 @@ def main():
         )
         return
 
-    print(f"# Generated at: {audit_generated_at}")
-    print(f"# Base ref: {base_ref}")
-    print(f"# Current worktree: {current_worktree}")
+    print_text_header(audit_generated_at, base_ref, current_worktree_path)
     print("PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS")
     for row in rows:
         current = "yes" if row["current"] else "no"
