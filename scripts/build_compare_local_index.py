@@ -80,6 +80,7 @@ def main() -> int:
         },
         "fixtures": fixtures,
     }
+    output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "index.json").write_text(json.dumps(payload, indent=2) + "\n")
     (output_dir / "summary.md").write_text(build_summary(payload, output_dir))
     return 0

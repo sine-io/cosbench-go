@@ -92,3 +92,45 @@ func TestListCompareLocalFixturesRejectsDuplicateFixtureNamesGracefully(t *testi
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
+
+func TestBuildCompareLocalIndexCreatesMissingOutputDirForEmptyManifest(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "nested", "out")
+	if err := os.WriteFile(manifestPath, []byte("# comment only\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected stdout: %s", output)
+	}
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	summaryData := mustReadFile(t, filepath.Join(outputDir, "summary.md"))
+
+	var payload struct {
+		Meta struct {
+			Filter       string `json:"filter"`
+			FixtureCount int    `json:"fixture_count"`
+		} `json:"meta"`
+		Fixtures []any `json:"fixtures"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if payload.Meta.Filter != "all" || payload.Meta.FixtureCount != 0 || len(payload.Fixtures) != 0 {
+		t.Fatalf("unexpected index payload: %#v", payload)
+	}
+	if !strings.Contains(string(summaryData), "Artifact directory: `"+outputDir+"`") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+	if !strings.Contains(string(summaryData), "Fixture count: 0") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
