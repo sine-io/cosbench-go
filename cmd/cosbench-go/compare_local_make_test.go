@@ -309,6 +309,33 @@ func TestCompareLocalFilterDeduplicatesRepeatedFixtureNames(t *testing.T) {
 	}
 }
 
+func TestCompareLocalFilterCanonicalizesCaseInsensitiveLabel(t *testing.T) {
+	goBin := mustLookPath(t, "go")
+	outputDir := filepath.Join(t.TempDir(), "compare-local")
+	runMakeSuccess(
+		t,
+		"compare-local",
+		"GO="+goBin,
+		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
+		"COMPARE_LOCAL_FILTER=MOCK-STAGE-AWARE",
+	)
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	summaryData := mustReadFile(t, filepath.Join(outputDir, "summary.md"))
+	var payload struct {
+		Meta struct {
+			Filter string `json:"filter"`
+		} `json:"meta"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if payload.Meta.Filter != "mock-stage-aware" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if !strings.Contains(string(summaryData), "Filter: `mock-stage-aware`") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
 func TestCompareLocalFilterRejectsUnknownFixture(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")

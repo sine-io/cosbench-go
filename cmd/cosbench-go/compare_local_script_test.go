@@ -655,6 +655,45 @@ func TestBuildCompareLocalIndexRejectsUnknownFilterGracefully(t *testing.T) {
 	}
 }
 
+func TestBuildCompareLocalIndexCanonicalizesCaseInsensitiveFilterLabel(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("mock-stage-aware testdata/workloads/mock-stage-aware.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "mock-stage-aware.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir, "MOCK-STAGE-AWARE")
+	cmd.Dir = repoRootDir()
+	runCommandSuccess(t, cmd)
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	summaryData := mustReadFile(t, filepath.Join(outputDir, "summary.md"))
+	var payload struct {
+		Meta struct {
+			Filter string `json:"filter"`
+		} `json:"meta"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if payload.Meta.Filter != "mock-stage-aware" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if !strings.Contains(string(summaryData), "Filter: `mock-stage-aware`") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
 func TestValidateCompareLocalFilterAcceptsCaseInsensitiveFixtureNames(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 

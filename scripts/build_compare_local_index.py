@@ -122,9 +122,6 @@ def main() -> int:
     if len(filter_args) > 1:
         raise SystemExit(f"expected at most one filter argument, got: {' '.join(filter_args)}")
     selected = filter_args[0] if filter_args else ""
-    filter_label = normalize_filter(selected)
-    fixtures = []
-
     try:
         manifest_fixtures = read_manifest(sys.argv[1])
     except ManifestError as err:
@@ -133,8 +130,12 @@ def main() -> int:
         validate_filter(manifest_fixtures, selected)
     except FilterError as err:
         raise SystemExit(format_filter_error(manifest_fixtures, err))
+    selected_fixtures = select_fixtures(manifest_fixtures, selected)
+    normalized_filter = normalize_filter(selected)
+    filter_label = "all" if normalized_filter == "all" else ",".join(fixture["name"] for fixture in selected_fixtures)
+    fixtures = []
 
-    for fixture in select_fixtures(manifest_fixtures, selected):
+    for fixture in selected_fixtures:
         name = fixture["name"]
         workload = fixture["workload"]
         summary_name = f"{name}.json"
