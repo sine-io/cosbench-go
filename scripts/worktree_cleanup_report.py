@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+from pathlib import Path
 import sys
 
 from worktree_output import (
@@ -79,6 +80,7 @@ def main():
     lines.extend(markdown_text_section("Prune Plan", prune_text))
     report = "\n".join(lines) + "\n"
     if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as fh:
             fh.write(report)
     print(report, end="")
