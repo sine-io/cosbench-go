@@ -3,7 +3,7 @@
 import json
 import sys
 
-from compare_local_manifest import ManifestError, read_manifest, select_fixtures, validate_filter
+from compare_local_manifest import FilterError, ManifestError, format_filter_error, read_manifest, select_fixtures, validate_filter
 
 
 def main() -> int:
@@ -35,9 +35,8 @@ def main() -> int:
 
     try:
         validate_filter(fixtures, raw_filter)
-    except ValueError as err:
-        names = "".join(f"  - {fixture['name']}\n" for fixture in fixtures)
-        raise SystemExit(f"unknown compare-local fixture: {err}\nknown fixtures:\n{names}")
+    except FilterError as err:
+        raise SystemExit(format_filter_error(fixtures, err))
 
     fixtures = select_fixtures(fixtures, raw_filter)
 
