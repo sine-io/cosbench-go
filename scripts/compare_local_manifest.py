@@ -57,7 +57,8 @@ def validate_fixture_name(name: str):
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain path separators or dot-path segments"
         )
-    if name.casefold() in reserved_device_names:
+    device_stem = name.split(".", 1)[0].casefold()
+    if device_stem in reserved_device_names:
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: reserved device name"
         )
