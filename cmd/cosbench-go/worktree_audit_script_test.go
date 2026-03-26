@@ -307,6 +307,18 @@ func TestWorktreeAuditRejectsUnknownOptionGracefully(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditRejectsDuplicateOptionGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_audit.py", "--json", "--json")
+	if strings.Contains(output, "usage: git rev-list") {
+		t.Fatalf("unexpected git usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "duplicate option: --json") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreeAuditRejectsUnknownBaseRefGracefully(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
@@ -339,6 +351,18 @@ func TestWorktreePrunePlanRejectsUnknownOptionGracefully(t *testing.T) {
 		t.Fatalf("unexpected git usage leakage: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanRejectsDuplicateOptionGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_prune_plan.py", "--json", "--json")
+	if strings.Contains(output, "usage: git rev-list") {
+		t.Fatalf("unexpected git usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "duplicate option: --json") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }

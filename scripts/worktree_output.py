@@ -95,6 +95,8 @@ def parse_known_flags(args, allowed_flags):
     positionals = []
     for arg in args:
         if arg in flags:
+            if flags[arg]:
+                raise SystemExit(f"duplicate option: {arg}")
             flags[arg] = True
         elif arg.startswith("--"):
             raise SystemExit(f"unknown option: {arg}")
