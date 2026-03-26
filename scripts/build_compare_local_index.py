@@ -37,6 +37,8 @@ def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str)
         return json.loads(summary_path.read_text())
     except FileNotFoundError:
         raise SystemExit(f"missing compare-local summary for fixture {fixture_name}: {summary_path}")
+    except OSError as err:
+        raise SystemExit(f"unable to read compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
     except json.JSONDecodeError as err:
         raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
 
