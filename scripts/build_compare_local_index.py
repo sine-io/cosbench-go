@@ -8,12 +8,12 @@ from pathlib import Path
 from compare_local_manifest import ManifestFormatError, normalize_filter, read_manifest, select_fixtures
 
 
-def build_summary(payload):
+def build_summary(payload, output_dir: Path):
     meta = payload["meta"]
     lines = [
         "## Compare Local",
         "",
-        "Artifact directory: `.artifacts/compare-local/`",
+        f"Artifact directory: `{output_dir}`",
         "",
         f"Filter: `{meta.get('filter', 'all')}`",
         "",
@@ -71,7 +71,7 @@ def main() -> int:
         "fixtures": fixtures,
     }
     (output_dir / "index.json").write_text(json.dumps(payload, indent=2) + "\n")
-    (output_dir / "summary.md").write_text(build_summary(payload))
+    (output_dir / "summary.md").write_text(build_summary(payload, output_dir))
     return 0
 
 
