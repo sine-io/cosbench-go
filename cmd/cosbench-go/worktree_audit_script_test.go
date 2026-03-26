@@ -285,6 +285,18 @@ func TestWorktreeAuditRejectsUnknownOptionGracefully(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditRejectsMultipleViewFiltersGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_audit.py", "--merged-only", "--integrated-only")
+	if strings.Contains(output, "usage: git rev-list") {
+		t.Fatalf("unexpected git usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "choose at most one of --merged-only, --integrated-only, --prune-only, or --stale-only") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreePrunePlanRejectsUnknownOptionGracefully(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
