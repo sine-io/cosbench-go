@@ -22,6 +22,8 @@ def main() -> int:
             names_only = True
         elif arg == "--pairs":
             pairs_only = True
+        elif arg.startswith("--"):
+            raise SystemExit(f"unknown option: {arg}")
         else:
             raw_filter = arg
     if names_only and pairs_only:
