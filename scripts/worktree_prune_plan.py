@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
-from datetime import datetime, timezone
 import json
 import subprocess
 import sys
 from pathlib import Path
 
-
-def generated_at():
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+from worktree_output import build_meta, current_worktree, generated_at, print_text_header
 
 
 def main():
@@ -17,13 +14,7 @@ def main():
     base_ref = args[0] if args else "origin/main"
     script_dir = Path(__file__).resolve().parent
     audit_script = str(script_dir / "worktree_audit.py")
-    cwd_proc = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        check=True,
-        text=True,
-        capture_output=True,
-    )
-    current_worktree = cwd_proc.stdout.strip()
+    current_worktree_path = current_worktree()
     proc = subprocess.run(
         ["python3", audit_script, "--json", base_ref],
         check=True,
@@ -43,7 +34,7 @@ def main():
         behind = row.get("behind", 0)
         if state not in ("merged", "integrated"):
             continue
-        if branch in ("main", "master") or not path or path == current_worktree:
+        if branch in ("main", "master") or not path or path == current_worktree_path:
             continue
         rows.append(
             {
@@ -65,17 +56,13 @@ def main():
     if json_mode:
         summary = {
             "base_ref": base_ref,
-            "current_worktree": current_worktree,
+            "current_worktree": current_worktree_path,
             "total": len(rows),
             "merged": sum(1 for row in rows if row["state"] == "merged"),
             "integrated": sum(1 for row in rows if row["state"] == "integrated"),
         }
         view = {"summary": summary, "rows": rows}
-        meta = {
-            "generated_at": plan_generated_at,
-            "base_ref": base_ref,
-            "current_worktree": current_worktree,
-        }
+        meta = build_meta(plan_generated_at, base_ref, current_worktree_path)
         print(
             json.dumps(
                 {
@@ -91,9 +78,7 @@ def main():
         return
 
     print("# Suggested cleanup commands")
-    print(f"# Generated at: {plan_generated_at}")
-    print(f"# Base ref: {base_ref}")
-    print(f"# Current worktree: {current_worktree}")
+    print_text_header(plan_generated_at, base_ref, current_worktree_path)
     if not rows:
         print("# no merged worktrees to prune")
         return

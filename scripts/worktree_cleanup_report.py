@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 
-from datetime import datetime, timezone
 import json
 import subprocess
 import sys
+
+from worktree_output import build_meta, generated_at
 
 
 def run(*args):
     proc = subprocess.run(args, check=True, text=True, capture_output=True)
     return proc.stdout
-
-
-def generated_at():
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
 
 def main():
     json_mode = "--json" in sys.argv[1:]
@@ -36,11 +32,7 @@ def main():
         integrated_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref))
         stale_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--stale-only", base_ref))
         prune_candidates_view = json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--prune-only", base_ref))
-        meta = {
-            "generated_at": report_generated_at,
-            "base_ref": summary["base_ref"],
-            "current_worktree": current_worktree,
-        }
+        meta = build_meta(report_generated_at, summary["base_ref"], current_worktree)
         payload = {
             "generated_at": report_generated_at,
             "meta": meta,
