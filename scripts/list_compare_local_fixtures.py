@@ -18,8 +18,6 @@ def main() -> int:
     configure_utf8_stdio()
     if len(sys.argv) < 2:
         raise SystemExit("missing manifest argument")
-    if len(sys.argv) > 4:
-        raise SystemExit("usage: list_compare_local_fixtures.py <manifest> [--names|--pairs] [filter]")
 
     try:
         fixtures = read_manifest(sys.argv[1])
