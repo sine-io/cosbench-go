@@ -21,7 +21,7 @@ def main():
     configure_utf8_stdout()
     flags, args = parse_known_flags(sys.argv[1:], ("--json",))
     if len(args) > 1:
-        raise SystemExit("usage: worktree_prune_plan.py [--json] [base_ref]")
+        raise SystemExit(f"expected at most one base_ref argument, got: {' '.join(args)}")
     json_mode = flags["--json"]
     base_ref = resolve_base_ref(args[0] if args else "")
     current_worktree_path = current_worktree()
