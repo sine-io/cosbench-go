@@ -8,12 +8,16 @@ from pathlib import Path
 from compare_local_manifest import FilterError, ManifestError, format_filter_error, normalize_filter, read_manifest, select_fixtures, validate_filter
 
 
+def display_text(value: str) -> str:
+    return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
+
+
 def build_summary(payload, output_dir: Path):
     meta = payload["meta"]
     lines = [
         "## Compare Local",
         "",
-        f"Artifact directory: `{output_dir}`",
+        f"Artifact directory: `{display_text(str(output_dir))}`",
         "",
         f"Filter: `{meta.get('filter', 'all')}`",
         "",
@@ -35,47 +39,50 @@ def write_output_file(path: Path, content: str):
     try:
         path.write_text(content, encoding="utf-8")
     except OSError as err:
-        raise SystemExit(f"unable to write compare-local artifact {path}: {err}")
+        raise SystemExit(f"unable to write compare-local artifact {display_text(str(path))}: {err}")
 
 
 def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str):
     summary_path = output_dir / summary_name
+    summary_display = display_text(str(summary_path))
     try:
         summary = json.loads(summary_path.read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
-        raise SystemExit(f"missing compare-local summary for fixture {fixture_name}: {summary_path}")
+        raise SystemExit(f"missing compare-local summary for fixture {fixture_name}: {summary_display}")
     except UnicodeEncodeError as err:
-        raise SystemExit(f"unable to access compare-local summary path for fixture {fixture_name}: {summary_path}: {err}")
+        raise SystemExit(f"unable to access compare-local summary path for fixture {fixture_name}: {summary_display}: {err}")
     except UnicodeDecodeError as err:
-        raise SystemExit(f"unable to decode compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
+        raise SystemExit(f"unable to decode compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
     except OSError as err:
-        raise SystemExit(f"unable to read compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
+        raise SystemExit(f"unable to read compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
     except json.JSONDecodeError as err:
-        raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: {err}")
+        raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
     if not isinstance(summary, dict):
         raise SystemExit(
-            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: summary payload must be a JSON object"
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_display}: summary payload must be a JSON object"
         )
     return summary
 
 
 def require_summary_field(summary, field: str, fixture_name: str, summary_path: Path):
+    summary_display = display_text(str(summary_path))
     if field not in summary:
         raise SystemExit(
-            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: missing required field {field}"
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_display}: missing required field {field}"
         )
     return summary[field]
 
 
 def require_summary_int(summary, field: str, fixture_name: str, summary_path: Path):
     value = require_summary_field(summary, field, fixture_name, summary_path)
+    summary_display = display_text(str(summary_path))
     if isinstance(value, bool) or not isinstance(value, int):
         raise SystemExit(
-            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: field {field} must be an integer"
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_display}: field {field} must be an integer"
         )
     if value < 0:
         raise SystemExit(
-            f"invalid compare-local summary for fixture {fixture_name}: {summary_path}: field {field} must be a non-negative integer"
+            f"invalid compare-local summary for fixture {fixture_name}: {summary_display}: field {field} must be a non-negative integer"
         )
     return value
 
@@ -133,7 +140,7 @@ def main() -> int:
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except OSError as err:
-        raise SystemExit(f"unable to prepare compare-local output dir {output_dir}: {err}")
+        raise SystemExit(f"unable to prepare compare-local output dir {display_text(str(output_dir))}: {err}")
     write_output_file(output_dir / "index.json", json.dumps(payload, indent=2) + "\n")
     write_output_file(output_dir / "summary.md", build_summary(payload, output_dir))
     return 0
