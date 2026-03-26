@@ -6,13 +6,17 @@ from compare_local_manifest import FilterError, ManifestError, format_filter_err
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         raise SystemExit("usage: validate_compare_local_filter.py <manifest> <filter>")
 
     manifest_path = sys.argv[1]
-    raw_filter = sys.argv[2]
-    if raw_filter.startswith("--"):
-        raise SystemExit(f"unknown option: {raw_filter}")
+    filter_args = sys.argv[2:]
+    for arg in filter_args:
+        if arg.startswith("--"):
+            raise SystemExit(f"unknown option: {arg}")
+    if len(filter_args) > 1:
+        raise SystemExit(f"expected exactly one filter argument, got: {' '.join(filter_args)}")
+    raw_filter = filter_args[0]
     try:
         fixtures = read_manifest(manifest_path)
     except ManifestError as err:
