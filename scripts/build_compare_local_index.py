@@ -21,8 +21,15 @@ def display_text(value: str) -> str:
     return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
 
 
-def display_text(value: str) -> str:
-    return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
+def format_os_error(err: OSError) -> str:
+    parts = []
+    if getattr(err, "errno", None) is not None:
+        parts.append(f"[Errno {err.errno}]")
+    if getattr(err, "strerror", None):
+        parts.append(display_text(str(err.strerror)))
+    elif str(err):
+        parts.append(display_text(str(err)))
+    return " ".join(parts) or err.__class__.__name__
 
 
 def build_summary(payload, output_dir: Path):
@@ -52,7 +59,7 @@ def write_output_file(path: Path, content: str):
     try:
         path.write_text(content, encoding="utf-8")
     except OSError as err:
-        raise SystemExit(f"unable to write compare-local artifact {display_text(str(path))}: {err}")
+        raise SystemExit(f"unable to write compare-local artifact {display_text(str(path))}: {format_os_error(err)}")
 
 
 def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str):
@@ -154,7 +161,7 @@ def main() -> int:
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except OSError as err:
-        raise SystemExit(f"unable to prepare compare-local output dir {display_text(str(output_dir))}: {err}")
+        raise SystemExit(f"unable to prepare compare-local output dir {display_text(str(output_dir))}: {format_os_error(err)}")
     write_output_file(output_dir / "index.json", json.dumps(payload, indent=2) + "\n")
     write_output_file(output_dir / "summary.md", build_summary(payload, output_dir))
     return 0
