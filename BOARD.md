@@ -44,6 +44,7 @@ Owner: Ross
 - Worktree audit prune-candidates view
 - Worktree audit prune-candidates JSON output
 - Worktree JSON generated_at metadata
+- Worktree JSON views envelopes
 - Worktree audit structured ahead/behind fields
 - Worktree audit merged-only view
 - Compare-local local summary artifact
@@ -141,6 +142,7 @@ Owner: Ross
 - Worktree audit prune-candidates view landed
 - Worktree audit prune-candidates JSON output landed
 - Worktree JSON generated_at metadata landed
+- Worktree JSON views envelopes landed
 - Worktree audit structured ahead/behind fields landed
 - Worktree audit merged-only view landed
 - Compare-local local summary artifact landed

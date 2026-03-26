@@ -140,7 +140,13 @@ def main():
                 and not row["current"]
             ),
         }
-        print(json.dumps({"generated_at": generated_at(), "summary": summary, "rows": rows}, indent=2))
+        view = {"summary": summary, "rows": rows}
+        print(
+            json.dumps(
+                {"generated_at": generated_at(), "views": {"audit": view}, "summary": summary, "rows": rows},
+                indent=2,
+            )
+        )
         return
 
     print("PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS")

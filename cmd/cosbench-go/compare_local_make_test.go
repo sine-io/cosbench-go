@@ -448,15 +448,29 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	}
 
 	var payload struct {
-		GeneratedAt string           `json:"generated_at"`
-		Summary map[string]any   `json:"summary"`
-		Rows    []map[string]any `json:"rows"`
+		GeneratedAt string `json:"generated_at"`
+		Summary     map[string]any   `json:"summary"`
+		Rows        []map[string]any `json:"rows"`
+		Views       map[string]struct {
+			Summary map[string]any   `json:"summary"`
+			Rows    []map[string]any `json:"rows"`
+		} `json:"views"`
 	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
 	if payload.GeneratedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
+	}
+	auditView, ok := payload.Views["audit"]
+	if !ok {
+		t.Fatalf("missing audit view: %#v", payload.Views)
+	}
+	if auditView.Summary == nil {
+		t.Fatalf("missing audit view summary: %#v", auditView)
+	}
+	if len(auditView.Rows) == 0 {
+		t.Fatalf("missing audit view rows: %#v", auditView)
 	}
 	if payload.Summary == nil {
 		t.Fatalf("missing summary: %#v", payload)
@@ -787,12 +801,36 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 			Branch   string   `json:"branch"`
 			Commands []string `json:"commands"`
 		} `json:"rows"`
+		Views map[string]struct {
+			Summary struct {
+				BaseRef         string `json:"base_ref"`
+				CurrentWorktree string `json:"current_worktree"`
+				Total           int    `json:"total"`
+				Merged          int    `json:"merged"`
+				Integrated      int    `json:"integrated"`
+			} `json:"summary"`
+			Rows []struct {
+				Path     string   `json:"path"`
+				Branch   string   `json:"branch"`
+				Commands []string `json:"commands"`
+			} `json:"rows"`
+		} `json:"views"`
 	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
 	if payload.GeneratedAt == "" {
 		t.Fatalf("missing generated_at: %#v", payload)
+	}
+	pruneView, ok := payload.Views["prune_plan"]
+	if !ok {
+		t.Fatalf("missing prune_plan view: %#v", payload.Views)
+	}
+	if pruneView.Summary.CurrentWorktree == "" {
+		t.Fatalf("missing prune_plan view summary: %#v", pruneView)
+	}
+	if pruneView.Rows == nil {
+		t.Fatalf("missing prune_plan view rows: %#v", pruneView)
 	}
 	if payload.Summary.Total < 0 {
 		t.Fatalf("unexpected summary: %#v", payload.Summary)
