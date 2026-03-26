@@ -743,6 +743,39 @@ func TestBuildCompareLocalIndexEscapesBackticksInMarkdownSummary(t *testing.T) {
 	}
 }
 
+func TestBuildCompareLocalIndexEscapesPipesInMarkdownSummaryTable(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "pipe|load.xml", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("fixture "+workloadPath+"\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "fixture.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	runCommandSuccess(t, cmd)
+
+	summaryData := string(mustReadFile(t, filepath.Join(outputDir, "summary.md")))
+	if !strings.Contains(summaryData, "\\|") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+	if !strings.Contains(summaryData, "pipe\\|load.xml") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsUnknownFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
