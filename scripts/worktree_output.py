@@ -232,13 +232,23 @@ def build_prune_plan_row(path, branch, state, details, ahead, behind):
 
 
 def markdown_text_section(title, content):
+    longest_run = 0
+    current_run = 0
+    for ch in content:
+        if ch == "`":
+            current_run += 1
+            if current_run > longest_run:
+                longest_run = current_run
+        else:
+            current_run = 0
+    fence = "`" * max(3, longest_run+1)
     return [
         "",
         f"## {title}",
         "",
-        "```text",
+        f"{fence}text",
         content,
-        "```",
+        fence,
     ]
 
 
