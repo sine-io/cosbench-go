@@ -13,6 +13,23 @@ def run_git(*args):
     )
 
 
+def parse_porcelain_entries(text):
+    entry = {}
+    for raw_line in text.splitlines():
+        if not raw_line:
+            if entry:
+                yield entry
+                entry = {}
+            continue
+        if " " in raw_line:
+            key, value = raw_line.split(" ", 1)
+        else:
+            key, value = raw_line, ""
+        entry[key] = value
+    if entry:
+        yield entry
+
+
 def generated_at():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -20,6 +37,20 @@ def generated_at():
 def current_worktree():
     proc = run_git("rev-parse", "--show-toplevel")
     return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def load_worktree_entries():
+    proc = run_git("worktree", "list", "--porcelain")
+    if proc.returncode != 0:
+        raise SystemExit(proc.stderr or proc.stdout)
+    return list(parse_porcelain_entries(proc.stdout))
+
+
+def branch_name(entry):
+    ref = entry.get("branch", "")
+    if ref.startswith("refs/heads/"):
+        return ref.removeprefix("refs/heads/")
+    return "(detached)"
 
 
 def build_meta(generated_at_value, base_ref, current_worktree_path):
@@ -111,3 +142,24 @@ def load_worktree_audit_text(base_ref, *flags):
 
 def load_worktree_audit_view(base_ref, *flags):
     return load_json_script("worktree_audit.py", "--json", *flags, base_ref)
+
+
+def classify_branch(branch, base_ref):
+    if branch == "(detached)":
+        return "detached", "", 0, 0
+    merged = run_git("merge-base", "--is-ancestor", branch, base_ref)
+    if merged.returncode == 0:
+        return "merged", base_ref, 0, 0
+    cherry = run_git("cherry", base_ref, branch)
+    cherry_lines = [line for line in cherry.stdout.splitlines() if line.strip()]
+    if cherry.returncode == 0 and cherry_lines and all(line.startswith("- ") for line in cherry_lines):
+        ahead_behind = run_git("rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
+        if ahead_behind.returncode == 0:
+            behind, ahead = ahead_behind.stdout.strip().split()
+            return "integrated", f"patch-equivalent to {base_ref}", int(ahead), int(behind)
+        return "integrated", f"patch-equivalent to {base_ref}", 0, 0
+    ahead_behind = run_git("rev-list", "--left-right", "--count", f"{base_ref}...{branch}")
+    if ahead_behind.returncode != 0:
+        return "unknown", ahead_behind.stderr.strip() or ahead_behind.stdout.strip(), 0, 0
+    behind, ahead = ahead_behind.stdout.strip().split()
+    return "active", f"ahead={ahead} behind={behind}", int(ahead), int(behind)
