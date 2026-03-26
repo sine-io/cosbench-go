@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from compare_local_manifest import ManifestError, normalize_filter, read_manifest, select_fixtures, validate_filter
+from compare_local_manifest import FilterError, ManifestError, format_filter_error, normalize_filter, read_manifest, select_fixtures, validate_filter
 
 
 def build_summary(payload, output_dir: Path):
@@ -93,9 +93,8 @@ def main() -> int:
         raise SystemExit(str(err))
     try:
         validate_filter(manifest_fixtures, selected)
-    except ValueError as err:
-        names = "".join(f"  - {fixture['name']}\n" for fixture in manifest_fixtures)
-        raise SystemExit(f"unknown compare-local fixture: {err}\nknown fixtures:\n{names}")
+    except FilterError as err:
+        raise SystemExit(format_filter_error(manifest_fixtures, err))
 
     for fixture in select_fixtures(manifest_fixtures, selected):
         name = fixture["name"]

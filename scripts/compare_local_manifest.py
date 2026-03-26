@@ -13,6 +13,18 @@ class ManifestReadError(ManifestError):
     pass
 
 
+class FilterError(ValueError):
+    pass
+
+
+class InvalidFilterError(FilterError):
+    pass
+
+
+class UnknownFixtureError(FilterError):
+    pass
+
+
 def read_manifest(manifest_path: str):
     fixtures = []
     seen_names = {}
@@ -72,11 +84,20 @@ def select_fixtures(fixtures, raw_filter: str):
     return [fixture for fixture in fixtures if fixture["name"] in selected]
 
 
+def format_filter_error(fixtures, err: FilterError):
+    if isinstance(err, InvalidFilterError):
+        return f"invalid compare-local filter: {err}"
+    names = "".join(f"  - {fixture['name']}\n" for fixture in fixtures)
+    return f"unknown compare-local fixture: {err}\nknown fixtures:\n{names}"
+
+
 def validate_filter(fixtures, raw_filter: str):
     selected = parse_filter(raw_filter)
     if not selected and raw_filter in ("", "all"):
         return
+    if "all" in selected and len(selected) > 1:
+        raise InvalidFilterError("'all' cannot be combined with specific fixtures")
     known = {fixture["name"] for fixture in fixtures}
     for name in selected:
         if name not in known:
-            raise ValueError(name)
+            raise UnknownFixtureError(name)
