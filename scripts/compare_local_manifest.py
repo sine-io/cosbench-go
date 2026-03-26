@@ -48,9 +48,18 @@ def configure_utf8_stdio():
 
 
 def validate_fixture_name(name: str):
+    reserved_device_names = {
+        "con", "prn", "aux", "nul",
+        "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
+        "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+    }
     if name in (".", "..") or "/" in name or "\\" in name:
         raise ManifestFormatError(
             f"invalid compare-local fixture name {name!r}: must not contain path separators or dot-path segments"
+        )
+    if name.casefold() in reserved_device_names:
+        raise ManifestFormatError(
+            f"invalid compare-local fixture name {name!r}: reserved device name"
         )
     if any(ch in name for ch in '<>:"|?*'):
         raise ManifestFormatError(
