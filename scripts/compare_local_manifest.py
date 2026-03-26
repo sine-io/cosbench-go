@@ -28,6 +28,13 @@ class UnknownFixtureError(FilterError):
     pass
 
 
+def is_comment_line(line: str):
+    if not line.startswith("#"):
+        return False
+    remainder = line.lstrip("#")
+    return remainder == "" or remainder[0].isspace()
+
+
 def display_text(value: str):
     return value.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
 
@@ -177,14 +184,7 @@ def read_manifest(manifest_path: str):
         line = raw_line.strip()
         if not line:
             continue
-        if (
-            line == "#"
-            or line.startswith("# ")
-            or line.startswith("#\t")
-            or line.startswith("## ")
-            or line.startswith("##\t")
-            or line.startswith("###")
-        ):
+        if is_comment_line(line):
             continue
         fields = line.split()
         if len(fields) != 2:
