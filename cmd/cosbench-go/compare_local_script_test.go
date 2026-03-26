@@ -86,6 +86,34 @@ func TestBuildCompareLocalIndexRejectsMissingFixtureSummaryGracefully(t *testing
 	}
 }
 
+func TestBuildCompareLocalIndexRejectsUnknownFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("# comment only\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir, "does-not-exist")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unknown compare-local fixture: does-not-exist") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "known fixtures:") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsDuplicateFixtureNamesGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
