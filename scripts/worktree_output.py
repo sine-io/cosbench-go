@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 python_env = {"PYTHONDONTWRITEBYTECODE": "1"}
 
@@ -125,9 +126,13 @@ def script_path(name):
     return str(Path(__file__).resolve().parent / name)
 
 
+def python_command():
+    return os.environ.get("PYTHON") or sys.executable or "python3"
+
+
 def run_script(name, *args):
     proc = subprocess.run(
-        ["python3", script_path(name), *args],
+        [python_command(), script_path(name), *args],
         check=True,
         text=True,
         capture_output=True,

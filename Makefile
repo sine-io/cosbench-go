@@ -1,6 +1,7 @@
 GO ?= /snap/bin/go
 PYTHON ?= python3
 PYTHON_ENV ?= PYTHONDONTWRITEBYTECODE=1
+export PYTHON
 COMPARE_LOCAL_OUTPUT_DIR ?= .artifacts/compare-local
 COMPARE_LOCAL_MANIFEST ?= testdata/workloads/compare-local-fixtures.txt
 COMPARE_LOCAL_FILTER ?=
