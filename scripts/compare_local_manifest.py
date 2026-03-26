@@ -45,7 +45,14 @@ def read_manifest(manifest_path: str):
 
 
 def parse_filter(raw_filter: str):
-    items = [item.strip() for item in raw_filter.split(",") if item.strip()]
+    items = []
+    seen = set()
+    for raw_item in raw_filter.split(","):
+        item = raw_item.strip()
+        if not item or item in seen:
+            continue
+        seen.add(item)
+        items.append(item)
     if items == ["all"]:
         return []
     return items
