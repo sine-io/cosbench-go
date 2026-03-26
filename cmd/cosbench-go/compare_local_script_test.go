@@ -688,6 +688,39 @@ func TestListCompareLocalFixturesAcceptsCaseInsensitiveFixtureNames(t *testing.T
 	}
 }
 
+func TestListCompareLocalFixturesDeduplicatesCaseInsensitiveFilterVariants(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "--names", "mock-stage-aware,MOCK-STAGE-AWARE")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	lines := strings.Fields(strings.TrimSpace(output))
+	if len(lines) != 1 || lines[0] != "mock-stage-aware" {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestValidateCompareLocalFilterAcceptsUppercaseAllAlias(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "ALL")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsMixedAllFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 
