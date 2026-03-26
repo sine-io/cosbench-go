@@ -55,7 +55,7 @@ def main():
     print("# Suggested cleanup commands")
     print_text_header(plan_generated_at, base_ref, current_worktree_path)
     if not rows:
-        print("# no merged worktrees to prune")
+        print("# no prune-candidate worktrees to prune")
         return
     for row in rows:
         for command in row["commands"]:
