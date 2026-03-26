@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import sys
 
 
@@ -62,6 +62,21 @@ def validate_fixture_name(name: str):
         )
 
 
+def validate_workload_path(workload: str):
+    posix_path = PurePosixPath(workload)
+    windows_path = PureWindowsPath(workload)
+    if "\\" in workload:
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: must use forward slashes instead of backslashes"
+        )
+    if posix_path.is_absolute() or windows_path.is_absolute():
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: must not be absolute"
+        )
+    if any(part == ".." for part in posix_path.parts) or any(part == ".." for part in windows_path.parts):
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: must be repo-relative without '..' segments"
+        )
 def read_manifest(manifest_path: str):
     fixtures = []
     seen_names = {}
@@ -86,6 +101,7 @@ def read_manifest(manifest_path: str):
             )
         name, workload = fields
         validate_fixture_name(name)
+        validate_workload_path(workload)
         if name in seen_names:
             raise ManifestFormatError(
                 f"duplicate compare-local fixture name {name!r} on line {line_no} in {manifest_display}; first seen on line {seen_names[name]}"
