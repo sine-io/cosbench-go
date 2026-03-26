@@ -19,8 +19,12 @@ def main() -> int:
     filter_args = []
     for arg in sys.argv[2:]:
         if arg == "--names":
+            if names_only:
+                raise SystemExit("duplicate option: --names")
             names_only = True
         elif arg == "--pairs":
+            if pairs_only:
+                raise SystemExit("duplicate option: --pairs")
             pairs_only = True
         elif arg.startswith("--"):
             raise SystemExit(f"unknown option: {arg}")
