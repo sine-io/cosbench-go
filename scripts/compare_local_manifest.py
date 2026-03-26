@@ -177,7 +177,14 @@ def read_manifest(manifest_path: str):
         line = raw_line.strip()
         if not line:
             continue
-        if line == "#" or line.startswith("# ") or line.startswith("#\t") or line.startswith("##"):
+        if (
+            line == "#"
+            or line.startswith("# ")
+            or line.startswith("#\t")
+            or line.startswith("## ")
+            or line.startswith("##\t")
+            or line.startswith("###")
+        ):
             continue
         fields = line.split()
         if len(fields) != 2:
