@@ -129,8 +129,10 @@ def require_summary_int(summary, field: str, fixture_name: str, summary_path: Pa
 
 def main() -> int:
     configure_utf8_stdio()
+    if len(sys.argv) < 2:
+        raise SystemExit("missing manifest and output_dir arguments")
     if len(sys.argv) < 3:
-        raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
+        raise SystemExit("missing output_dir argument")
 
     output_dir = Path(sys.argv[2])
     filter_args = sys.argv[3:]
