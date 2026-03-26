@@ -84,6 +84,19 @@ def build_single_view_payload(generated_at_value, base_ref, current_worktree_pat
     }
 
 
+def parse_known_flags(args, allowed_flags):
+    flags = {flag: False for flag in allowed_flags}
+    positionals = []
+    for arg in args:
+        if arg in flags:
+            flags[arg] = True
+        elif arg.startswith("--"):
+            raise SystemExit(f"unknown option: {arg}")
+        else:
+            positionals.append(arg)
+    return flags, positionals
+
+
 def is_prune_candidate(state, branch, path, current_worktree_path):
     return (
         state in ("merged", "integrated")

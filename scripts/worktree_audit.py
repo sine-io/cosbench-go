@@ -11,6 +11,7 @@ from worktree_output import (
     current_worktree,
     generated_at,
     load_worktree_entries,
+    parse_known_flags,
     print_text_header,
     should_include_audit_row,
 )
@@ -31,16 +32,17 @@ def sort_key(row):
     )
 
 def main():
-    json_mode = "--json" in sys.argv[1:]
-    merged_only = "--merged-only" in sys.argv[1:]
-    integrated_only = "--integrated-only" in sys.argv[1:]
-    prune_only = "--prune-only" in sys.argv[1:]
-    stale_only = "--stale-only" in sys.argv[1:]
-    args = [
-        arg
-        for arg in sys.argv[1:]
-        if arg not in ("--json", "--merged-only", "--integrated-only", "--prune-only", "--stale-only")
-    ]
+    flags, args = parse_known_flags(
+        sys.argv[1:],
+        ("--json", "--merged-only", "--integrated-only", "--prune-only", "--stale-only"),
+    )
+    if len(args) > 1:
+        raise SystemExit("usage: worktree_audit.py [--json] [--merged-only|--integrated-only|--prune-only|--stale-only] [base_ref]")
+    json_mode = flags["--json"]
+    merged_only = flags["--merged-only"]
+    integrated_only = flags["--integrated-only"]
+    prune_only = flags["--prune-only"]
+    stale_only = flags["--stale-only"]
     base_ref = args[0] if args else "origin/main"
     current_worktree_path = current_worktree()
 

@@ -10,13 +10,16 @@ from worktree_output import (
     generated_at,
     is_prune_candidate,
     load_json_script,
+    parse_known_flags,
     print_text_header,
 )
 
 
 def main():
-    json_mode = "--json" in sys.argv[1:]
-    args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    flags, args = parse_known_flags(sys.argv[1:], ("--json",))
+    if len(args) > 1:
+        raise SystemExit("usage: worktree_prune_plan.py [--json] [base_ref]")
+    json_mode = flags["--json"]
     base_ref = args[0] if args else "origin/main"
     current_worktree_path = current_worktree()
     payload = load_json_script("worktree_audit.py", "--json", base_ref)
