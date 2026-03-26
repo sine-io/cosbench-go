@@ -76,11 +76,12 @@ def main():
     json_mode = "--json" in sys.argv[1:]
     merged_only = "--merged-only" in sys.argv[1:]
     integrated_only = "--integrated-only" in sys.argv[1:]
+    prune_only = "--prune-only" in sys.argv[1:]
     stale_only = "--stale-only" in sys.argv[1:]
     args = [
         arg
         for arg in sys.argv[1:]
-        if arg not in ("--json", "--merged-only", "--integrated-only", "--stale-only")
+        if arg not in ("--json", "--merged-only", "--integrated-only", "--prune-only", "--stale-only")
     ]
     base_ref = args[0] if args else "origin/main"
     current_proc = run("git", "rev-parse", "--show-toplevel")
@@ -93,6 +94,12 @@ def main():
         if merged_only and state != "merged":
             continue
         if integrated_only and state != "integrated":
+            continue
+        if prune_only and (
+            state not in ("merged", "integrated")
+            or branch in ("main", "master")
+            or entry["worktree"] == current_worktree
+        ):
             continue
         if stale_only and not (state == "active" and behind > 0):
             continue

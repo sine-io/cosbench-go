@@ -653,6 +653,66 @@ func TestWorktreeAuditIntegratedJSONTargetRuns(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditPruneTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-prune")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-audit-prune failed: %v\n%s", err, output)
+	}
+	text := string(output)
+	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if strings.Contains(text, "\tactive\t") {
+		t.Fatalf("unexpected active row in prune-only output: %s", text)
+	}
+	if strings.Contains(text, "\tyes\t") {
+		t.Fatalf("unexpected current row in prune-only output: %s", text)
+	}
+}
+
+func TestWorktreeAuditPruneJSONTargetRuns(t *testing.T) {
+	makeBin, err := exec.LookPath("make")
+	if err != nil {
+		t.Fatalf("look path make: %v", err)
+	}
+
+	rootDir := filepath.Clean("../..")
+	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-prune-json")
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make worktree-audit-prune-json failed: %v\n%s", err, output)
+	}
+
+	var payload struct {
+		Rows []struct {
+			Path    string `json:"path"`
+			Branch  string `json:"branch"`
+			State   string `json:"state"`
+			Current bool   `json:"current"`
+		} `json:"rows"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	for _, row := range payload.Rows {
+		if row.State != "merged" && row.State != "integrated" {
+			t.Fatalf("unexpected row: %#v", row)
+		}
+		if row.Current {
+			t.Fatalf("unexpected current row: %#v", row)
+		}
+	}
+}
+
 func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 	makeBin, err := exec.LookPath("make")
 	if err != nil {
@@ -769,6 +829,9 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	if !strings.Contains(text, "## Integrated") {
 		t.Fatalf("unexpected output: %s", text)
 	}
+	if !strings.Contains(text, "## Prune Candidates") {
+		t.Fatalf("unexpected output: %s", text)
+	}
 	reportData, err := os.ReadFile(reportPath)
 	if err != nil {
 		t.Fatalf("read report: %v", err)
@@ -777,6 +840,9 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 		t.Fatalf("unexpected report file: %s", reportData)
 	}
 	if !strings.Contains(string(reportData), "## Integrated") {
+		t.Fatalf("unexpected report file: %s", reportData)
+	}
+	if !strings.Contains(string(reportData), "## Prune Candidates") {
 		t.Fatalf("unexpected report file: %s", reportData)
 	}
 	for _, expected := range []string{
@@ -808,7 +874,7 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
 	}
-	for _, key := range []string{"summary", "merged", "integrated", "stale", "prune_plan"} {
+	for _, key := range []string{"summary", "merged", "integrated", "stale", "prune_candidates", "prune_plan"} {
 		if _, ok := payload[key]; !ok {
 			t.Fatalf("missing %s: %#v", key, payload)
 		}
@@ -821,6 +887,9 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 	}
 	if _, ok := payload["stale"].(map[string]any); !ok {
 		t.Fatalf("stale is not structured: %#v", payload["stale"])
+	}
+	if _, ok := payload["prune_candidates"].(map[string]any); !ok {
+		t.Fatalf("prune_candidates is not structured: %#v", payload["prune_candidates"])
 	}
 	prunePlan, ok := payload["prune_plan"].(map[string]any)
 	if !ok {

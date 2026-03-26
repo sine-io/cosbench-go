@@ -51,10 +51,12 @@ Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to
 `make --no-print-directory worktree-audit-merged-json` gives the merged-only view in machine-readable form.
 `make --no-print-directory worktree-audit-integrated` narrows the view to worktrees whose patches are already present in the base ref via squash merge or equivalent history.
 `make --no-print-directory worktree-audit-integrated-json` gives the integrated-only view in machine-readable form.
+`make --no-print-directory worktree-audit-prune` narrows the view to the worktrees that current cleanup rules would treat as prune candidates.
+`make --no-print-directory worktree-audit-prune-json` gives the prune-candidates view in machine-readable form.
 `make --no-print-directory worktree-audit-stale` narrows the view to active worktrees that are behind `origin/main`.
 `make --no-print-directory worktree-prune-plan` prints suggested cleanup commands without actually deleting anything.
 `make --no-print-directory worktree-prune-plan-json` exposes the same non-destructive cleanup plan as a structured JSON object with `summary` and `rows`.
-`make --no-print-directory worktree-cleanup-report` combines the main audit, integrated view, stale view, and prune plan into a single Markdown report, and its summary now includes integrated, stale, and prune-candidate counts.
+`make --no-print-directory worktree-cleanup-report` combines the main audit, integrated view, stale view, prune-candidates view, and prune plan into a single Markdown report, and its summary now includes integrated, stale, and prune-candidate counts.
 `make --no-print-directory worktree-cleanup-report-json` exposes the same combined cleanup report in machine-readable form.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
 That manual workflow now uploads the compare output as a downloadable artifact.
