@@ -48,6 +48,34 @@ def build_single_view_payload(generated_at_value, base_ref, current_worktree_pat
     }
 
 
+def is_prune_candidate(state, branch, path, current_worktree_path):
+    return (
+        state in ("merged", "integrated")
+        and branch not in ("main", "master")
+        and bool(path)
+        and path != current_worktree_path
+    )
+
+
+def is_stale_row(state, behind):
+    return state == "active" and behind > 0
+
+
+def build_prune_plan_row(path, branch, state, details, ahead, behind):
+    return {
+        "path": path,
+        "branch": branch,
+        "state": state,
+        "details": details,
+        "ahead": ahead,
+        "behind": behind,
+        "commands": [
+            f"git worktree remove '{path}'",
+            f"git branch -D {branch}",
+        ],
+    }
+
+
 def script_path(name):
     return str(Path(__file__).resolve().parent / name)
 

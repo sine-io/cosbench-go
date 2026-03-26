@@ -3,7 +3,15 @@
 import json
 import sys
 
-from worktree_output import build_single_view_payload, current_worktree, generated_at, print_text_header, run_git
+from worktree_output import (
+    build_single_view_payload,
+    current_worktree,
+    generated_at,
+    is_prune_candidate,
+    is_stale_row,
+    print_text_header,
+    run_git,
+)
 
 
 def worktree_entries():
@@ -68,6 +76,7 @@ def sort_key(row):
         row["branch"],
     )
 
+
 def main():
     json_mode = "--json" in sys.argv[1:]
     merged_only = "--merged-only" in sys.argv[1:]
@@ -90,13 +99,9 @@ def main():
             continue
         if integrated_only and state != "integrated":
             continue
-        if prune_only and (
-            state not in ("merged", "integrated")
-            or branch in ("main", "master")
-            or entry["worktree"] == current_worktree_path
-        ):
+        if prune_only and not is_prune_candidate(state, branch, entry["worktree"], current_worktree_path):
             continue
-        if stale_only and not (state == "active" and behind > 0):
+        if stale_only and not is_stale_row(state, behind):
             continue
         rows.append(
             {
@@ -122,14 +127,8 @@ def main():
             "active": sum(1 for row in rows if row["state"] == "active"),
             "detached": sum(1 for row in rows if row["state"] == "detached"),
             "unknown": sum(1 for row in rows if row["state"] == "unknown"),
-            "stale": sum(1 for row in rows if row["state"] == "active" and row["behind"] > 0),
-            "prune_candidates": sum(
-                1
-                for row in rows
-                if row["state"] in ("merged", "integrated")
-                and row["branch"] not in ("main", "master")
-                and not row["current"]
-            ),
+            "stale": sum(1 for row in rows if is_stale_row(row["state"], row["behind"])),
+            "prune_candidates": sum(1 for row in rows if is_prune_candidate(row["state"], row["branch"], row["path"], current_worktree_path)),
         }
         print(json.dumps(build_single_view_payload(generated_at(), base_ref, current_worktree_path, "audit", summary, rows), indent=2))
         return

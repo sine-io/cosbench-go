@@ -3,7 +3,15 @@
 import json
 import sys
 
-from worktree_output import build_single_view_payload, current_worktree, generated_at, load_json_script, print_text_header
+from worktree_output import (
+    build_prune_plan_row,
+    build_single_view_payload,
+    current_worktree,
+    generated_at,
+    is_prune_candidate,
+    load_json_script,
+    print_text_header,
+)
 
 
 def main():
@@ -22,24 +30,9 @@ def main():
         details = row.get("details", "")
         ahead = row.get("ahead", 0)
         behind = row.get("behind", 0)
-        if state not in ("merged", "integrated"):
+        if not is_prune_candidate(state, branch, path, current_worktree_path):
             continue
-        if branch in ("main", "master") or not path or path == current_worktree_path:
-            continue
-        rows.append(
-            {
-                "path": path,
-                "branch": branch,
-                "state": state,
-                "details": details,
-                "ahead": ahead,
-                "behind": behind,
-                "commands": [
-                    f"git worktree remove '{path}'",
-                    f"git branch -D {branch}",
-                ],
-            }
-        )
+        rows.append(build_prune_plan_row(path, branch, state, details, ahead, behind))
 
     plan_generated_at = generated_at()
 
