@@ -931,6 +931,11 @@ func TestListCompareLocalFixturesRejectsUnsafeWorkloadPathsGracefully(t *testing
 			workload:    "/tmp/outside.xml",
 			expectError: "must not be absolute",
 		},
+		{
+			name:        "dash prefixed",
+			workload:    "-bad.xml",
+			expectError: "must not start with -",
+		},
 	}
 
 	for _, tc := range tests {

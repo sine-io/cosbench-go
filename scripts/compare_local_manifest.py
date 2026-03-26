@@ -64,6 +64,10 @@ def validate_fixture_name(name: str):
 
 def validate_workload_path(workload: str):
     path = PurePosixPath(workload)
+    if workload.startswith("-"):
+        raise ManifestFormatError(
+            f"invalid compare-local workload path {workload!r}: must not start with -"
+        )
     if path.is_absolute():
         raise ManifestFormatError(
             f"invalid compare-local workload path {workload!r}: must not be absolute"
