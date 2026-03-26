@@ -38,6 +38,24 @@ func makeCommand(t *testing.T, args ...string) *exec.Cmd {
 	return cmd
 }
 
+func runMakeSuccess(t *testing.T, args ...string) []byte {
+	t.Helper()
+	output, err := makeCommand(t, args...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("make %s failed: %v\n%s", strings.Join(args, " "), err, output)
+	}
+	return output
+}
+
+func runMakeFailure(t *testing.T, args ...string) []byte {
+	t.Helper()
+	output, err := makeCommand(t, args...).CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected make %s to fail\n%s", strings.Join(args, " "), output)
+	}
+	return output
+}
+
 func mustReadFile(t *testing.T, path string) []byte {
 	t.Helper()
 	data, err := os.ReadFile(path)
@@ -65,11 +83,7 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 		t.Fatalf("seed stale file: %v", err)
 	}
 
-	cmd := makeCommand(t, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+outputDir)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local failed: %v\n%s", err, output)
-	}
+	runMakeSuccess(t, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+outputDir)
 
 	if _, err := os.Stat(staleFile); err == nil {
 		t.Fatalf("expected stale output %s to be removed", staleFile)
@@ -139,27 +153,22 @@ func TestCompareLocalPrunesStaleOutputs(t *testing.T) {
 func TestCompareLocalRejectsUnsafeOutputDir(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	unsafeDir := t.TempDir()
-	cmd := makeCommand(t, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+unsafeDir)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected compare-local to reject unsafe output dir %s\n%s", unsafeDir, output)
+	output := runMakeFailure(t, "compare-local", "GO="+goBin, "COMPARE_LOCAL_OUTPUT_DIR="+unsafeDir)
+	if !strings.Contains(string(output), "COMPARE_LOCAL_OUTPUT_DIR") {
+		t.Fatalf("unexpected output: %s", output)
 	}
 }
 
 func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := makeCommand(
+	runMakeSuccess(
 		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=mock-stage-aware",
 	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local failed: %v\n%s", err, output)
-	}
 
 	if _, err := os.Stat(filepath.Join(outputDir, "mock-stage-aware.json")); err != nil {
 		t.Fatalf("expected filtered output: %v", err)
@@ -197,17 +206,13 @@ func TestCompareLocalFilterRunsSingleFixture(t *testing.T) {
 func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := makeCommand(
+	runMakeSuccess(
 		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset",
 	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local failed: %v\n%s", err, output)
-	}
 
 	if _, err := os.Stat(filepath.Join(outputDir, "mock-stage-aware.json")); err != nil {
 		t.Fatalf("expected subset output: %v", err)
@@ -244,17 +249,13 @@ func TestCompareLocalFilterRunsFixtureSubset(t *testing.T) {
 func TestCompareLocalFilterAcceptsAllAlias(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := makeCommand(
+	runMakeSuccess(
 		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=all",
 	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local failed: %v\n%s", err, output)
-	}
 
 	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
 	var payload struct {
@@ -275,28 +276,20 @@ func TestCompareLocalFilterAcceptsAllAlias(t *testing.T) {
 func TestCompareLocalFilterRejectsUnknownFixture(t *testing.T) {
 	goBin := mustLookPath(t, "go")
 	outputDir := filepath.Join(t.TempDir(), "compare-local")
-	cmd := makeCommand(
+	output := runMakeFailure(
 		t,
 		"compare-local",
 		"GO="+goBin,
 		"COMPARE_LOCAL_OUTPUT_DIR="+outputDir,
 		"COMPARE_LOCAL_FILTER=does-not-exist",
 	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected compare-local to reject unknown fixture\n%s", output)
-	}
 	if !strings.Contains(string(output), "does-not-exist") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
 
 func TestCompareLocalListShowsFixtureNames(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "compare-local-list")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local-list failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list")
 
 	lines := strings.Fields(strings.TrimSpace(string(output)))
 	want := []string{
@@ -316,11 +309,7 @@ func TestCompareLocalListShowsFixtureNames(t *testing.T) {
 }
 
 func TestCompareLocalListJSONShowsFixtureMetadata(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "compare-local-list-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local-list-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list-json")
 
 	var payload []struct {
 		Name     string `json:"name"`
@@ -336,11 +325,7 @@ func TestCompareLocalListJSONShowsFixtureMetadata(t *testing.T) {
 }
 
 func TestWorktreeAuditTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit")
 	text := string(output)
 	for _, expected := range []string{
 		"# Generated at:",
@@ -360,11 +345,7 @@ func TestWorktreeAuditTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditTargetSupportsBaseRefOverride(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit", "WORKTREE_AUDIT_BASE_REF=HEAD")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit", "WORKTREE_AUDIT_BASE_REF=HEAD")
 	text := string(output)
 	if !strings.Contains(text, "PATH\tBRANCH\tCURRENT\tSTATE\tDETAILS") {
 		t.Fatalf("unexpected output: %s", text)
@@ -375,11 +356,7 @@ func TestWorktreeAuditTargetSupportsBaseRefOverride(t *testing.T) {
 }
 
 func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-json")
 
 	var payload struct {
 		GeneratedAt string `json:"generated_at"`
@@ -484,11 +461,7 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-merged")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-merged failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-merged")
 	text := string(output)
 	for _, expected := range []string{
 		"# Generated at:",
@@ -508,11 +481,7 @@ func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditStaleTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-stale")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-stale failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-stale")
 	text := string(output)
 	for _, expected := range []string{
 		"# Generated at:",
@@ -532,11 +501,7 @@ func TestWorktreeAuditStaleTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditIntegratedTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-integrated")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-integrated failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-integrated")
 	text := string(output)
 	for _, expected := range []string{
 		"# Generated at:",
@@ -556,11 +521,7 @@ func TestWorktreeAuditIntegratedTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-merged-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-merged-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-merged-json")
 
 	var payload struct {
 		Rows []struct {
@@ -578,11 +539,7 @@ func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditIntegratedJSONTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-integrated-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-integrated-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-integrated-json")
 
 	var payload struct {
 		Rows []struct {
@@ -600,11 +557,7 @@ func TestWorktreeAuditIntegratedJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditPruneTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-prune")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-prune failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-prune")
 	text := string(output)
 	for _, expected := range []string{
 		"# Generated at:",
@@ -627,11 +580,7 @@ func TestWorktreeAuditPruneTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditPruneJSONTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-prune-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-audit-prune-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit-prune-json")
 
 	var payload struct {
 		Rows []struct {
@@ -654,11 +603,7 @@ func TestWorktreeAuditPruneJSONTargetRuns(t *testing.T) {
 
 func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 	repoRoot := repoRootAbs(t)
-	cmd := makeCommand(t, "--no-print-directory", "worktree-prune-plan")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-prune-plan failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-prune-plan")
 	text := string(output)
 	if !strings.Contains(text, "# Suggested cleanup commands") {
 		t.Fatalf("unexpected output: %s", text)
@@ -682,11 +627,7 @@ func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 
 func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 	repoRoot := repoRootAbs(t)
-	cmd := makeCommand(t, "--no-print-directory", "worktree-prune-plan-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-prune-plan-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-prune-plan-json")
 
 	var payload struct {
 		GeneratedAt string `json:"generated_at"`
@@ -760,11 +701,7 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 
 func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 	reportPath := filepath.Join(t.TempDir(), "worktree-cleanup-report.md")
-	cmd := makeCommand(t, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_CLEANUP_REPORT_PATH="+reportPath)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-cleanup-report failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_CLEANUP_REPORT_PATH="+reportPath)
 	text := string(output)
 	if !strings.Contains(text, "# Worktree Cleanup Report") {
 		t.Fatalf("unexpected output: %s", text)
@@ -813,11 +750,7 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-cleanup-report-json")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-cleanup-report-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-cleanup-report-json")
 
 	var payload map[string]any
 	mustUnmarshalJSON(t, output, &payload)
@@ -872,11 +805,7 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_AUDIT_BASE_REF=HEAD")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make worktree-cleanup-report failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_AUDIT_BASE_REF=HEAD")
 	text := string(output)
 	if !strings.Contains(text, "- Base ref: `HEAD`") {
 		t.Fatalf("unexpected output: %s", text)
@@ -884,11 +813,7 @@ func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
 }
 
 func TestCompareLocalListRespectsFilter(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local-list failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
 
 	lines := strings.Fields(strings.TrimSpace(string(output)))
 	want := []string{"mock-stage-aware", "xml-splitrw-subset"}
@@ -903,11 +828,7 @@ func TestCompareLocalListRespectsFilter(t *testing.T) {
 }
 
 func TestCompareLocalListJSONRespectsFilter(t *testing.T) {
-	cmd := makeCommand(t, "--no-print-directory", "compare-local-list-json", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make compare-local-list-json failed: %v\n%s", err, output)
-	}
+	output := runMakeSuccess(t, "--no-print-directory", "compare-local-list-json", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
 
 	var payload []struct {
 		Name string `json:"name"`
