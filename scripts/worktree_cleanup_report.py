@@ -3,7 +3,15 @@
 import json
 import sys
 
-from worktree_output import build_meta, generated_at, load_json_script, run_script
+from worktree_output import (
+    build_meta,
+    generated_at,
+    load_json_script,
+    load_worktree_audit_text,
+    load_worktree_audit_view,
+    markdown_text_section,
+    run_script,
+)
 
 def main():
     json_mode = "--json" in sys.argv[1:]
@@ -12,20 +20,20 @@ def main():
     output_path = sys.argv[2] if len(sys.argv) > 2 else ""
     audit = load_json_script("worktree_audit.py", "--json", base_ref)
     prune_plan = load_json_script("worktree_prune_plan.py", "--json", base_ref)
-    merged_text = run_script("worktree_audit.py", "--merged-only", base_ref).rstrip()
-    integrated_text = run_script("worktree_audit.py", "--integrated-only", base_ref).rstrip()
-    prune_candidates_text = run_script("worktree_audit.py", "--prune-only", base_ref).rstrip()
-    stale_text = run_script("worktree_audit.py", "--stale-only", base_ref).rstrip()
+    merged_text = load_worktree_audit_text(base_ref, "--merged-only")
+    integrated_text = load_worktree_audit_text(base_ref, "--integrated-only")
+    prune_candidates_text = load_worktree_audit_text(base_ref, "--prune-only")
+    stale_text = load_worktree_audit_text(base_ref, "--stale-only")
     prune_text = run_script("worktree_prune_plan.py", base_ref).rstrip()
 
     summary = audit["summary"]
     report_generated_at = generated_at()
     current_worktree = prune_plan["summary"].get("current_worktree", "")
     if json_mode:
-        merged_view = load_json_script("worktree_audit.py", "--json", "--merged-only", base_ref)
-        integrated_view = load_json_script("worktree_audit.py", "--json", "--integrated-only", base_ref)
-        stale_view = load_json_script("worktree_audit.py", "--json", "--stale-only", base_ref)
-        prune_candidates_view = load_json_script("worktree_audit.py", "--json", "--prune-only", base_ref)
+        merged_view = load_worktree_audit_view(base_ref, "--merged-only")
+        integrated_view = load_worktree_audit_view(base_ref, "--integrated-only")
+        stale_view = load_worktree_audit_view(base_ref, "--stale-only")
+        prune_candidates_view = load_worktree_audit_view(base_ref, "--prune-only")
         meta = build_meta(report_generated_at, summary["base_ref"], current_worktree)
         payload = {
             "generated_at": report_generated_at,
@@ -63,37 +71,12 @@ def main():
         f"- Active: {summary['active']}",
         f"- Detached: {summary['detached']}",
         f"- Unknown: {summary['unknown']}",
-        "",
-        "## Merged",
-        "",
-        "```text",
-        merged_text,
-        "```",
-        "",
-        "## Integrated",
-        "",
-        "```text",
-        integrated_text,
-        "```",
-        "",
-        "## Stale",
-        "",
-        "```text",
-        stale_text,
-        "```",
-        "",
-        "## Prune Candidates",
-        "",
-        "```text",
-        prune_candidates_text,
-        "```",
-        "",
-        "## Prune Plan",
-        "",
-        "```text",
-        prune_text,
-        "```",
     ]
+    lines.extend(markdown_text_section("Merged", merged_text))
+    lines.extend(markdown_text_section("Integrated", integrated_text))
+    lines.extend(markdown_text_section("Stale", stale_text))
+    lines.extend(markdown_text_section("Prune Candidates", prune_candidates_text))
+    lines.extend(markdown_text_section("Prune Plan", prune_text))
     report = "\n".join(lines) + "\n"
     if output_path:
         with open(output_path, "w", encoding="utf-8") as fh:
