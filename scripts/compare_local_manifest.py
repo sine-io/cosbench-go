@@ -22,10 +22,24 @@ def read_manifest(manifest_path: str):
 
 
 def parse_filter(raw_filter: str):
-    items = [item for item in raw_filter.split(",") if item]
+    items = [item.strip() for item in raw_filter.split(",") if item.strip()]
     if items == ["all"]:
         return []
     return items
+
+
+def normalize_filter(raw_filter: str):
+    selected = parse_filter(raw_filter)
+    if not selected:
+        return "all"
+    return ",".join(selected)
+
+
+def select_fixtures(fixtures, raw_filter: str):
+    selected = set(parse_filter(raw_filter))
+    if not selected:
+        return fixtures
+    return [fixture for fixture in fixtures if fixture["name"] in selected]
 
 
 def validate_filter(fixtures, raw_filter: str):

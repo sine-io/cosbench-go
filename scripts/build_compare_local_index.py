@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from compare_local_manifest import ManifestFormatError, parse_filter, read_manifest
+from compare_local_manifest import ManifestFormatError, normalize_filter, read_manifest, select_fixtures
 
 
 def build_summary(payload):
@@ -37,8 +37,7 @@ def main() -> int:
 
     output_dir = Path(sys.argv[2])
     selected = sys.argv[3] if len(sys.argv) == 4 else ""
-    selected_set = set(parse_filter(selected))
-    filter_label = selected if selected else "all"
+    filter_label = normalize_filter(selected)
     fixtures = []
 
     try:
@@ -46,11 +45,9 @@ def main() -> int:
     except ManifestFormatError as err:
         raise SystemExit(str(err))
 
-    for fixture in manifest_fixtures:
+    for fixture in select_fixtures(manifest_fixtures, selected):
         name = fixture["name"]
         workload = fixture["workload"]
-        if selected_set and name not in selected_set:
-            continue
         summary_name = f"{name}.json"
         summary = json.loads((output_dir / summary_name).read_text())
         fixtures.append(
