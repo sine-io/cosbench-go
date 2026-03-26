@@ -9,31 +9,37 @@ import (
 	"testing"
 )
 
-func TestRunCLIStageAwareMockFixture(t *testing.T) {
+func mockStageAwareFixture() string {
+	return filepath.Clean("../../testdata/workloads/mock-stage-aware.xml")
+}
+
+func runCLITest(t *testing.T, jsonOut, quiet bool, summaryFile string) (string, string) {
+	t.Helper()
+
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, false, "", &stdout, &stderr)
+	err := runCLI(mockStageAwareFixture(), "mock", jsonOut, quiet, summaryFile, &stdout, &stderr)
 	if err != nil {
 		t.Fatalf("runCLI(): %v stderr=%s", err, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), `"workload": "mock-stage-aware"`) {
-		t.Fatalf("unexpected stdout: %s", stdout.String())
+	return stdout.String(), stderr.String()
+}
+
+func TestRunCLIStageAwareMockFixture(t *testing.T) {
+	stdout, _ := runCLITest(t, true, false, "")
+	if !strings.Contains(stdout, `"workload": "mock-stage-aware"`) {
+		t.Fatalf("unexpected stdout: %s", stdout)
 	}
-	if strings.Contains(stdout.String(), `"errors": 0`) {
+	if strings.Contains(stdout, `"errors": 0`) {
 		return
 	}
-	t.Fatalf("expected zero errors in summary: %s", stdout.String())
+	t.Fatalf("expected zero errors in summary: %s", stdout)
 }
 
 func TestRunCLIWithFWorkloadAlias(t *testing.T) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, false, "", &stdout, &stderr)
-	if err != nil {
-		t.Fatalf("runCLI(): %v stderr=%s", err, stderr.String())
-	}
-	if !strings.HasPrefix(strings.TrimSpace(stdout.String()), "{") {
-		t.Fatalf("expected pure json output: %s", stdout.String())
+	stdout, _ := runCLITest(t, true, false, "")
+	if !strings.HasPrefix(strings.TrimSpace(stdout), "{") {
+		t.Fatalf("expected pure json output: %s", stdout)
 	}
 }
 
@@ -92,17 +98,12 @@ func TestParseCLIArgsSupportsPositionalPathWithTrailingFlags(t *testing.T) {
 }
 
 func TestRunCLIQuietSuppressesProgressOutput(t *testing.T) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	err := runCLI(filepath.Clean("../../testdata/workloads/mock-stage-aware.xml"), "mock", true, true, "", &stdout, &stderr)
-	if err != nil {
-		t.Fatalf("runCLI(): %v stderr=%s", err, stderr.String())
+	stdout, stderr := runCLITest(t, true, true, "")
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected no progress output, got: %s", stderr)
 	}
-	if strings.TrimSpace(stderr.String()) != "" {
-		t.Fatalf("expected no progress output, got: %s", stderr.String())
-	}
-	if !strings.HasPrefix(strings.TrimSpace(stdout.String()), "{") {
-		t.Fatalf("expected pure json output: %s", stdout.String())
+	if !strings.HasPrefix(strings.TrimSpace(stdout), "{") {
+		t.Fatalf("expected pure json output: %s", stdout)
 	}
 }
 
