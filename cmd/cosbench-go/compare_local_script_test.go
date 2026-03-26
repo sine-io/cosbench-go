@@ -35,6 +35,29 @@ func TestListCompareLocalFixturesRejectsMalformedManifestGracefully(t *testing.T
 	}
 }
 
+func TestListCompareLocalFixturesRejectsMissingManifestGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestPath := filepath.Join(t.TempDir(), "missing-compare-local-fixtures.txt")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "compare-local manifest not found") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, manifestPath) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsMissingFixtureSummaryGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()

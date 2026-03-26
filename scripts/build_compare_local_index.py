@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from compare_local_manifest import ManifestFormatError, normalize_filter, read_manifest, select_fixtures
+from compare_local_manifest import ManifestError, normalize_filter, read_manifest, select_fixtures
 
 
 def build_summary(payload, output_dir: Path):
@@ -69,7 +69,7 @@ def main() -> int:
 
     try:
         manifest_fixtures = read_manifest(sys.argv[1])
-    except ManifestFormatError as err:
+    except ManifestError as err:
         raise SystemExit(str(err))
 
     for fixture in select_fixtures(manifest_fixtures, selected):

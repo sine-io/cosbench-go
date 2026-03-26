@@ -1,14 +1,27 @@
 from pathlib import Path
 
 
-class ManifestFormatError(ValueError):
+class ManifestError(ValueError):
+    pass
+
+
+class ManifestFormatError(ManifestError):
+    pass
+
+
+class ManifestReadError(ManifestError):
     pass
 
 
 def read_manifest(manifest_path: str):
     fixtures = []
     seen_names = {}
-    for line_no, raw_line in enumerate(Path(manifest_path).read_text().splitlines(), start=1):
+    try:
+        lines = Path(manifest_path).read_text().splitlines()
+    except FileNotFoundError:
+        raise ManifestReadError(f"compare-local manifest not found: {manifest_path}")
+
+    for line_no, raw_line in enumerate(lines, start=1):
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
