@@ -448,11 +448,15 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 	}
 
 	var payload struct {
+		GeneratedAt string           `json:"generated_at"`
 		Summary map[string]any   `json:"summary"`
 		Rows    []map[string]any `json:"rows"`
 	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if payload.GeneratedAt == "" {
+		t.Fatalf("missing generated_at: %#v", payload)
 	}
 	if payload.Summary == nil {
 		t.Fatalf("missing summary: %#v", payload)
@@ -761,6 +765,7 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 	}
 
 	var payload struct {
+		GeneratedAt string `json:"generated_at"`
 		Summary struct {
 			BaseRef         string `json:"base_ref"`
 			CurrentWorktree string `json:"current_worktree"`
@@ -776,6 +781,9 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 	}
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if payload.GeneratedAt == "" {
+		t.Fatalf("missing generated_at: %#v", payload)
 	}
 	if payload.Summary.Total < 0 {
 		t.Fatalf("unexpected summary: %#v", payload.Summary)
@@ -873,6 +881,9 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 	var payload map[string]any
 	if err := json.Unmarshal(output, &payload); err != nil {
 		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if generatedAt, ok := payload["generated_at"].(string); !ok || generatedAt == "" {
+		t.Fatalf("missing generated_at: %#v", payload)
 	}
 	for _, key := range []string{"summary", "merged", "integrated", "stale", "prune_candidates", "prune_plan"} {
 		if _, ok := payload[key]; !ok {

@@ -74,16 +74,16 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Audit outputs now sort merged rows first, then active rows by descending `behind` count
 - Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to compare against something other than `origin/main`
 - Run `make --no-print-directory worktree-audit-merged` to list only worktrees already merged into `origin/main`
-- Run `make --no-print-directory worktree-audit-merged-json` to get the merged-only worktree audit data as JSON
+- Run `make --no-print-directory worktree-audit-merged-json` to get the merged-only worktree audit data as JSON, including top-level `generated_at` metadata
 - Run `make --no-print-directory worktree-audit-integrated` to list only worktrees whose patches are already present in the base ref via squash merge or equivalent history
-- Run `make --no-print-directory worktree-audit-integrated-json` to get the integrated-only worktree audit data as JSON
+- Run `make --no-print-directory worktree-audit-integrated-json` to get the integrated-only worktree audit data as JSON, including top-level `generated_at` metadata
 - Run `make --no-print-directory worktree-audit-prune` to list only worktrees that are prune candidates under the current cleanup rules
-- Run `make --no-print-directory worktree-audit-prune-json` to get the prune-candidates view as JSON
+- Run `make --no-print-directory worktree-audit-prune-json` to get the prune-candidates view as JSON, including top-level `generated_at` metadata
 - Run `make --no-print-directory worktree-audit-stale` to list only active worktrees that are behind `origin/main`
 - Run `make --no-print-directory worktree-prune-plan` to print suggested cleanup commands for merged worktrees without executing them
-- Run `make --no-print-directory worktree-prune-plan-json` to get the same non-destructive cleanup plan as structured JSON with top-level `summary` and `rows`
+- Run `make --no-print-directory worktree-prune-plan-json` to get the same non-destructive cleanup plan as structured JSON with top-level `generated_at`, `summary`, and `rows`
 - Run `make --no-print-directory worktree-cleanup-report` to generate a single Markdown report combining the audit, integrated view, stale view, prune-candidates view, and prune plan, with summary counts for merged, integrated, stale, and prune-candidate worktrees
-- Run `make --no-print-directory worktree-cleanup-report-json` to get the same combined cleanup report in machine-readable form
+- Run `make --no-print-directory worktree-cleanup-report-json` to get the same combined cleanup report in machine-readable form, with top-level `generated_at` metadata
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local COMPARE_LOCAL_FILTER=mock-stage-aware` to refresh only one curated fixture
 - Run `GO=$(which go || echo /snap/bin/go) make compare-local COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset` to refresh a curated subset
 - The list targets also respect `COMPARE_LOCAL_FILTER`, so you can preview the selected subset before running it

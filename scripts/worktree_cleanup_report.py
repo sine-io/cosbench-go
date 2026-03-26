@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from datetime import datetime, timezone
 import json
 import subprocess
 import sys
@@ -8,6 +9,10 @@ import sys
 def run(*args):
     proc = subprocess.run(args, check=True, text=True, capture_output=True)
     return proc.stdout
+
+
+def generated_at():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def main():
@@ -26,6 +31,7 @@ def main():
     summary = audit["summary"]
     if json_mode:
         payload = {
+            "generated_at": generated_at(),
             "summary": summary,
             "merged": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--merged-only", base_ref)),
             "integrated": json.loads(run("python3", "./scripts/worktree_audit.py", "--json", "--integrated-only", base_ref)),
