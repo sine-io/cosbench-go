@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -22,7 +23,27 @@ var scriptTestDependencies = []string{
 
 func TestMain(m *testing.M) {
 	rootDir := filepath.Clean("../..")
-	for _, rel := range scriptTestDependencies {
+	dependencies := append([]string{}, scriptTestDependencies...)
+	manifestPath := filepath.Join(rootDir, "testdata/workloads/compare-local-fixtures.txt")
+	manifestData, err := os.ReadFile(manifestPath)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "read compare-local manifest %s: %v\n", manifestPath, err)
+		os.Exit(1)
+	}
+	for _, rawLine := range strings.Split(string(manifestData), "\n") {
+		line := strings.TrimSpace(rawLine)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			_, _ = fmt.Fprintf(os.Stderr, "unexpected compare-local manifest line %q\n", line)
+			os.Exit(1)
+		}
+		dependencies = append(dependencies, fields[1])
+	}
+
+	for _, rel := range dependencies {
 		path := filepath.Join(rootDir, rel)
 		data, err := os.ReadFile(path)
 		if err != nil {
