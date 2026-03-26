@@ -397,6 +397,34 @@ func TestValidateCompareLocalFilterRejectsUnknownOptionGracefully(t *testing.T) 
 	}
 }
 
+func TestValidateCompareLocalFilterRejectsExtraFilterArgsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(
+		pythonBin,
+		scriptPath,
+		"testdata/workloads/compare-local-fixtures.txt",
+		"mock-stage-aware",
+		"xml-splitrw-subset",
+	)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "expected exactly one filter argument") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "mock-stage-aware xml-splitrw-subset") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsUnknownOptionGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
