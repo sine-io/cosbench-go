@@ -285,6 +285,18 @@ func TestWorktreeAuditRejectsUnknownOptionGracefully(t *testing.T) {
 	}
 }
 
+func TestWorktreeAuditRejectsUnknownBaseRefGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_audit.py", "does-not-exist")
+	if strings.Contains(output, "usage: git rev-list") {
+		t.Fatalf("unexpected git usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "unknown base ref: does-not-exist") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestWorktreeAuditRejectsMultipleViewFiltersGracefully(t *testing.T) {
 	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
 
@@ -305,6 +317,18 @@ func TestWorktreePrunePlanRejectsUnknownOptionGracefully(t *testing.T) {
 		t.Fatalf("unexpected git usage leakage: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanRejectsUnknownBaseRefGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_prune_plan.py", "does-not-exist")
+	if strings.Contains(output, "usage: git rev-list") {
+		t.Fatalf("unexpected git usage leakage: %s", output)
+	}
+	if !strings.Contains(output, "unknown base ref: does-not-exist") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
@@ -343,6 +367,18 @@ func TestWorktreeCleanupReportRejectsDirectoryOutputPathGracefully(t *testing.T)
 		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, outputDir) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportRejectsUnknownBaseRefGracefully(t *testing.T) {
+	repoDir, _, pythonBin := setupPatchEquivalentRepo(t)
+
+	output := runRepoScriptFailureText(t, repoDir, pythonBin, "../../scripts/worktree_cleanup_report.py", "does-not-exist")
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "unknown base ref: does-not-exist") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }

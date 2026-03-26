@@ -44,6 +44,12 @@ def current_worktree():
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
+def validate_base_ref(base_ref):
+    proc = run_git("rev-parse", "--verify", "--quiet", f"{base_ref}^{{commit}}")
+    if proc.returncode != 0:
+        raise SystemExit(f"unknown base ref: {base_ref}")
+
+
 def load_worktree_entries():
     proc = run_git("worktree", "list", "--porcelain")
     if proc.returncode != 0:
@@ -152,11 +158,13 @@ def python_command():
 def run_script(name, *args):
     proc = subprocess.run(
         [*python_command(), script_path(name), *args],
-        check=True,
         text=True,
         capture_output=True,
         env={**os.environ, **python_env},
     )
+    if proc.returncode != 0:
+        message = proc.stderr.strip() or proc.stdout.strip() or f"{name} failed with exit code {proc.returncode}"
+        raise SystemExit(message)
     return proc.stdout
 
 
