@@ -282,6 +282,46 @@ func setupRemoteHEADOnlyFeatureRepo(t *testing.T) (repoDir, featureDir, gitBin, 
 	return repoDir, featureDir, gitBin, pythonBin
 }
 
+func setupRemoteHeadOverridesOriginMainRepo(t *testing.T) (repoDir, featureDir, gitBin, pythonBin string) {
+	t.Helper()
+
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("look path git: %v", err)
+	}
+	pythonBin, err = exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("look path python3: %v", err)
+	}
+
+	repoDir = t.TempDir()
+	runCmd(t, repoDir, gitBin, "init", "-b", "develop")
+	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
+	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
+
+	filePath := filepath.Join(repoDir, "note.txt")
+	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
+		t.Fatalf("write base file: %v", err)
+	}
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
+
+	runCmd(t, repoDir, gitBin, "update-ref", "refs/remotes/origin/develop", "HEAD")
+	runCmd(t, repoDir, gitBin, "update-ref", "refs/remotes/origin/main", "HEAD")
+	runCmd(t, repoDir, gitBin, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/develop")
+
+	featureDir = filepath.Join(t.TempDir(), "feature")
+	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "feature")
+
+	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
+	runCmd(t, featureDir, gitBin, "add", "note.txt")
+	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
+
+	runCmd(t, repoDir, gitBin, "checkout", "--detach", "HEAD")
+	runCmd(t, repoDir, gitBin, "branch", "-D", "develop")
+	return repoDir, featureDir, gitBin, pythonBin
+}
+
 func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, target any) {
 	t.Helper()
 
@@ -739,6 +779,33 @@ func TestWorktreePrunePlanPrefersOriginHeadTargetOverCurrentBranchWhenOnlyRemote
 
 func TestWorktreeCleanupReportPrefersOriginHeadTargetOverCurrentBranchWhenOnlyRemoteHeadExists(t *testing.T) {
 	_, featureDir, _, pythonBin := setupRemoteHEADOnlyFeatureRepo(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
+	if !strings.Contains(output, "- Base ref: `origin/develop`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditPrefersOriginHeadTargetOverOriginMainWhenBothExist(t *testing.T) {
+	_, featureDir, _, pythonBin := setupRemoteHeadOverridesOriginMainRepo(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: origin/develop") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanPrefersOriginHeadTargetOverOriginMainWhenBothExist(t *testing.T) {
+	_, featureDir, _, pythonBin := setupRemoteHeadOverridesOriginMainRepo(t)
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: origin/develop") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportPrefersOriginHeadTargetOverOriginMainWhenBothExist(t *testing.T) {
+	_, featureDir, _, pythonBin := setupRemoteHeadOverridesOriginMainRepo(t)
 
 	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
 	if !strings.Contains(output, "- Base ref: `origin/develop`") {
