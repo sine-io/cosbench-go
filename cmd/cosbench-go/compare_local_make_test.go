@@ -22,6 +22,15 @@ func repoRootDir() string {
 	return filepath.Clean("../..")
 }
 
+func repoRootAbs(t *testing.T) string {
+	t.Helper()
+	path, err := filepath.Abs(repoRootDir())
+	if err != nil {
+		t.Fatalf("abs root dir: %v", err)
+	}
+	return path
+}
+
 func makeCommand(t *testing.T, args ...string) *exec.Cmd {
 	t.Helper()
 	cmd := exec.Command(mustLookPath(t, "make"), args...)
@@ -314,14 +323,7 @@ func TestCompareLocalListShowsFixtureNames(t *testing.T) {
 }
 
 func TestCompareLocalListJSONShowsFixtureMetadata(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list-json")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "compare-local-list-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local-list-json failed: %v\n%s", err, output)
@@ -343,14 +345,7 @@ func TestCompareLocalListJSONShowsFixtureMetadata(t *testing.T) {
 }
 
 func TestWorktreeAuditTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
@@ -374,14 +369,7 @@ func TestWorktreeAuditTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditTargetSupportsBaseRefOverride(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit", "WORKTREE_AUDIT_BASE_REF=HEAD")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit", "WORKTREE_AUDIT_BASE_REF=HEAD")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit failed: %v\n%s", err, output)
@@ -396,14 +384,7 @@ func TestWorktreeAuditTargetSupportsBaseRefOverride(t *testing.T) {
 }
 
 func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-json")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-json failed: %v\n%s", err, output)
@@ -514,14 +495,7 @@ func TestWorktreeAuditJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-merged")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-merged")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-merged failed: %v\n%s", err, output)
@@ -545,14 +519,7 @@ func TestWorktreeAuditMergedTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditStaleTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-stale")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-stale")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-stale failed: %v\n%s", err, output)
@@ -576,14 +543,7 @@ func TestWorktreeAuditStaleTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditIntegratedTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-integrated")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-integrated")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-integrated failed: %v\n%s", err, output)
@@ -607,14 +567,7 @@ func TestWorktreeAuditIntegratedTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-merged-json")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-merged-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-merged-json failed: %v\n%s", err, output)
@@ -638,14 +591,7 @@ func TestWorktreeAuditMergedJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditIntegratedJSONTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-integrated-json")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-integrated-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-integrated-json failed: %v\n%s", err, output)
@@ -669,14 +615,7 @@ func TestWorktreeAuditIntegratedJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditPruneTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-prune")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-prune")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-prune failed: %v\n%s", err, output)
@@ -703,14 +642,7 @@ func TestWorktreeAuditPruneTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeAuditPruneJSONTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-audit-prune-json")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-audit-prune-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-audit-prune-json failed: %v\n%s", err, output)
@@ -738,18 +670,8 @@ func TestWorktreeAuditPruneJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreePrunePlanTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	repoRoot, err := filepath.Abs(rootDir)
-	if err != nil {
-		t.Fatalf("abs root dir: %v", err)
-	}
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-prune-plan")
-	cmd.Dir = rootDir
+	repoRoot := repoRootAbs(t)
+	cmd := makeCommand(t, "--no-print-directory", "worktree-prune-plan")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-prune-plan failed: %v\n%s", err, output)
@@ -776,18 +698,8 @@ func TestWorktreePrunePlanTargetRuns(t *testing.T) {
 }
 
 func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	repoRoot, err := filepath.Abs(rootDir)
-	if err != nil {
-		t.Fatalf("abs root dir: %v", err)
-	}
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-prune-plan-json")
-	cmd.Dir = rootDir
+	repoRoot := repoRootAbs(t)
+	cmd := makeCommand(t, "--no-print-directory", "worktree-prune-plan-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-prune-plan-json failed: %v\n%s", err, output)
@@ -866,15 +778,8 @@ func TestWorktreePrunePlanJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
 	reportPath := filepath.Join(t.TempDir(), "worktree-cleanup-report.md")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_CLEANUP_REPORT_PATH="+reportPath)
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_CLEANUP_REPORT_PATH="+reportPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-cleanup-report failed: %v\n%s", err, output)
@@ -930,14 +835,7 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report-json")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-cleanup-report-json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-cleanup-report-json failed: %v\n%s", err, output)
@@ -998,14 +896,7 @@ func TestWorktreeCleanupReportJSONTargetRuns(t *testing.T) {
 }
 
 func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_AUDIT_BASE_REF=HEAD")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "worktree-cleanup-report", "WORKTREE_AUDIT_BASE_REF=HEAD")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make worktree-cleanup-report failed: %v\n%s", err, output)
@@ -1017,14 +908,7 @@ func TestWorktreeCleanupReportRespectsBaseRef(t *testing.T) {
 }
 
 func TestCompareLocalListRespectsFilter(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "compare-local-list", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local-list failed: %v\n%s", err, output)
@@ -1043,14 +927,7 @@ func TestCompareLocalListRespectsFilter(t *testing.T) {
 }
 
 func TestCompareLocalListJSONRespectsFilter(t *testing.T) {
-	makeBin, err := exec.LookPath("make")
-	if err != nil {
-		t.Fatalf("look path make: %v", err)
-	}
-
-	rootDir := filepath.Clean("../..")
-	cmd := exec.Command(makeBin, "--no-print-directory", "compare-local-list-json", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
-	cmd.Dir = rootDir
+	cmd := makeCommand(t, "--no-print-directory", "compare-local-list-json", "COMPARE_LOCAL_FILTER=mock-stage-aware,xml-splitrw-subset")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make compare-local-list-json failed: %v\n%s", err, output)
