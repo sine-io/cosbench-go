@@ -815,6 +815,8 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 		t.Fatalf("unexpected output: %s", text)
 	}
 	for _, expected := range []string{
+		"- Generated at:",
+		"- Current worktree:",
 		"- Integrated:",
 		"- Stale:",
 		"- Prune candidates:",
@@ -846,6 +848,8 @@ func TestWorktreeCleanupReportTargetRuns(t *testing.T) {
 		t.Fatalf("unexpected report file: %s", reportData)
 	}
 	for _, expected := range []string{
+		"- Generated at:",
+		"- Current worktree:",
 		"- Integrated:",
 		"- Stale:",
 		"- Prune candidates:",
