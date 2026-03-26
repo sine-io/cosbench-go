@@ -1,35 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
-
-func mustLookPath(t *testing.T, name string) string {
-	t.Helper()
-	path, err := exec.LookPath(name)
-	if err != nil {
-		t.Fatalf("look path %s: %v", name, err)
-	}
-	return path
-}
-
-func repoRootDir() string {
-	return filepath.Clean("../..")
-}
-
-func repoRootAbs(t *testing.T) string {
-	t.Helper()
-	path, err := filepath.Abs(repoRootDir())
-	if err != nil {
-		t.Fatalf("abs root dir: %v", err)
-	}
-	return path
-}
 
 func makeCommand(t *testing.T, args ...string) *exec.Cmd {
 	t.Helper()
@@ -40,36 +17,12 @@ func makeCommand(t *testing.T, args ...string) *exec.Cmd {
 
 func runMakeSuccess(t *testing.T, args ...string) []byte {
 	t.Helper()
-	output, err := makeCommand(t, args...).CombinedOutput()
-	if err != nil {
-		t.Fatalf("make %s failed: %v\n%s", strings.Join(args, " "), err, output)
-	}
-	return output
+	return runCommandSuccess(t, makeCommand(t, args...))
 }
 
 func runMakeFailure(t *testing.T, args ...string) []byte {
 	t.Helper()
-	output, err := makeCommand(t, args...).CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected make %s to fail\n%s", strings.Join(args, " "), output)
-	}
-	return output
-}
-
-func mustReadFile(t *testing.T, path string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read %s: %v", path, err)
-	}
-	return data
-}
-
-func mustUnmarshalJSON(t *testing.T, data []byte, target any) {
-	t.Helper()
-	if err := json.Unmarshal(data, target); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, data)
-	}
+	return runCommandFailure(t, makeCommand(t, args...))
 }
 
 func TestCompareLocalPrunesStaleOutputs(t *testing.T) {

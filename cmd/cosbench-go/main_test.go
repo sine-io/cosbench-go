@@ -137,10 +137,7 @@ func TestCLIWritesSummaryFile(t *testing.T) {
 	summaryFile := filepath.Join(t.TempDir(), "summary.json")
 	cmd := exec.Command(goBin, "run", "./cmd/cosbench-go", mockStageAwareFixtureArg(), "-backend", "mock", "-quiet", "-summary-file", summaryFile)
 	cmd.Dir = repoRootDir()
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("go run failed: %v\n%s", err, output)
-	}
+	runCommandSuccess(t, cmd)
 
 	data := mustReadFile(t, summaryFile)
 	if !strings.Contains(string(data), `"workload": "mock-stage-aware"`) {

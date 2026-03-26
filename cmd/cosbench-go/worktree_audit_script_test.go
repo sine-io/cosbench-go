@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -57,13 +56,8 @@ func runRepoScriptJSON(t *testing.T, repoDir, pythonBin, scriptRel string, targe
 	cmd := exec.Command(pythonBin, scriptPath, "--json", "main")
 	cmd.Dir = repoDir
 	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("run script: %v\n%s", err, output)
-	}
-	if err := json.Unmarshal(output, target); err != nil {
-		t.Fatalf("unmarshal output: %v\n%s", err, output)
-	}
+	output := runCommandSuccess(t, cmd)
+	mustUnmarshalJSON(t, output, target)
 }
 
 func TestWorktreeAuditJSONMarksPatchEquivalentBranchIntegrated(t *testing.T) {
@@ -152,10 +146,7 @@ func runCmd(t *testing.T, dir, bin string, args ...string) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
 	cmd.Dir = dir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("%s %v failed: %v\n%s", bin, args, err, output)
-	}
+	runCommandSuccess(t, cmd)
 }
 
 func appendLine(t *testing.T, path, line string) {
