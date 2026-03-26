@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from compare_local_manifest import parse_filter, read_manifest
+from compare_local_manifest import ManifestFormatError, parse_filter, read_manifest
 
 
 def build_summary(payload):
@@ -41,7 +41,12 @@ def main() -> int:
     filter_label = selected if selected else "all"
     fixtures = []
 
-    for fixture in read_manifest(sys.argv[1]):
+    try:
+        manifest_fixtures = read_manifest(sys.argv[1])
+    except ManifestFormatError as err:
+        raise SystemExit(str(err))
+
+    for fixture in manifest_fixtures:
         name = fixture["name"]
         workload = fixture["workload"]
         if selected_set and name not in selected_set:
