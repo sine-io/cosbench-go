@@ -186,12 +186,12 @@ def read_manifest(manifest_path: str):
             continue
         if is_comment_line(line):
             continue
-        fields = line.split()
-        if len(fields) != 2:
+        fields = line.split(maxsplit=2)
+        if len(fields) < 2 or (len(fields) == 3 and not fields[2].startswith("#")):
             raise ManifestFormatError(
                 f"invalid compare-local manifest line {line_no} in {manifest_display}: {line!r}"
             )
-        name, workload = fields
+        name, workload = fields[:2]
         validate_fixture_name(name)
         workload = resolve_workload_path(workload, manifest_dir)
         if name in seen_names:
