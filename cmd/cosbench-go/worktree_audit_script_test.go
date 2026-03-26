@@ -321,6 +321,44 @@ func setupNonOriginRemoteHEADOnlyFeatureRepo(t *testing.T) (repoDir, featureDir,
 	return repoDir, featureDir, gitBin, pythonBin
 }
 
+func setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t *testing.T, branch string) (repoDir, featureDir, gitBin, pythonBin string) {
+	t.Helper()
+
+	gitBin, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("look path git: %v", err)
+	}
+	pythonBin, err = exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("look path python3: %v", err)
+	}
+
+	repoDir = t.TempDir()
+	runCmd(t, repoDir, gitBin, "init", "-b", branch)
+	runCmd(t, repoDir, gitBin, "config", "user.name", "Test User")
+	runCmd(t, repoDir, gitBin, "config", "user.email", "test@example.com")
+
+	filePath := filepath.Join(repoDir, "note.txt")
+	if err := os.WriteFile(filePath, []byte("base\n"), 0o644); err != nil {
+		t.Fatalf("write base file: %v", err)
+	}
+	runCmd(t, repoDir, gitBin, "add", "note.txt")
+	runCmd(t, repoDir, gitBin, "commit", "-m", "base")
+
+	runCmd(t, repoDir, gitBin, "update-ref", "refs/remotes/upstream/"+branch, "HEAD")
+
+	featureDir = filepath.Join(t.TempDir(), "feature")
+	runCmd(t, repoDir, gitBin, "worktree", "add", featureDir, "-b", "feature")
+
+	appendLine(t, filepath.Join(featureDir, "note.txt"), "feature\n")
+	runCmd(t, featureDir, gitBin, "add", "note.txt")
+	runCmd(t, featureDir, gitBin, "commit", "-m", "feature change")
+
+	runCmd(t, repoDir, gitBin, "checkout", "--detach", "HEAD")
+	runCmd(t, repoDir, gitBin, "branch", "-D", branch)
+	return repoDir, featureDir, gitBin, pythonBin
+}
+
 func setupRemoteHeadOverridesOriginMainRepo(t *testing.T) (repoDir, featureDir, gitBin, pythonBin string) {
 	t.Helper()
 
@@ -848,6 +886,87 @@ func TestWorktreeCleanupReportPrefersNonOriginHeadTargetOverCurrentBranchWhenOnl
 
 	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
 	if !strings.Contains(output, "- Base ref: `upstream/develop`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditPrefersNonOriginMainOverCurrentBranchWhenOnlyRemoteMainExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "main")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: upstream/main") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanPrefersNonOriginMainOverCurrentBranchWhenOnlyRemoteMainExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "main")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: upstream/main") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportPrefersNonOriginMainOverCurrentBranchWhenOnlyRemoteMainExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "main")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
+	if !strings.Contains(output, "- Base ref: `upstream/main`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditPrefersNonOriginMasterOverCurrentBranchWhenOnlyRemoteMasterExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "master")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: upstream/master") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanPrefersNonOriginMasterOverCurrentBranchWhenOnlyRemoteMasterExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "master")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: upstream/master") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportPrefersNonOriginMasterOverCurrentBranchWhenOnlyRemoteMasterExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "master")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
+	if !strings.Contains(output, "- Base ref: `upstream/master`") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeAuditPrefersNonOriginTrunkOverCurrentBranchWhenOnlyRemoteTrunkExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "trunk")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_audit.py")
+	if !strings.Contains(output, "# Base ref: upstream/trunk") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreePrunePlanPrefersNonOriginTrunkOverCurrentBranchWhenOnlyRemoteTrunkExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "trunk")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_prune_plan.py")
+	if !strings.Contains(output, "# Base ref: upstream/trunk") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestWorktreeCleanupReportPrefersNonOriginTrunkOverCurrentBranchWhenOnlyRemoteTrunkExists(t *testing.T) {
+	_, featureDir, _, pythonBin := setupNonOriginRemoteNamedBranchOnlyFeatureRepo(t, "trunk")
+
+	output := runRepoScriptTextAtDir(t, featureDir, pythonBin, "../../scripts/worktree_cleanup_report.py")
+	if !strings.Contains(output, "- Base ref: `upstream/trunk`") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
