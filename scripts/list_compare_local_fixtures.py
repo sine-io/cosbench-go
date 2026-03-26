@@ -3,14 +3,17 @@
 import json
 import sys
 
-from compare_local_manifest import parse_filter, read_manifest, validate_filter
+from compare_local_manifest import ManifestFormatError, parse_filter, read_manifest, validate_filter
 
 
 def main() -> int:
     if len(sys.argv) not in (2, 3, 4):
         raise SystemExit("usage: list_compare_local_fixtures.py <manifest> [--names] [filter]")
 
-    fixtures = read_manifest(sys.argv[1])
+    try:
+        fixtures = read_manifest(sys.argv[1])
+    except ManifestFormatError as err:
+        raise SystemExit(str(err))
     names_only = False
     raw_filter = ""
     for arg in sys.argv[2:]:

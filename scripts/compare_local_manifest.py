@@ -1,13 +1,22 @@
 from pathlib import Path
 
 
+class ManifestFormatError(ValueError):
+    pass
+
+
 def read_manifest(manifest_path: str):
     fixtures = []
-    for raw_line in Path(manifest_path).read_text().splitlines():
+    for line_no, raw_line in enumerate(Path(manifest_path).read_text().splitlines(), start=1):
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
-        name, workload = line.split()
+        fields = line.split()
+        if len(fields) != 2:
+            raise ManifestFormatError(
+                f"invalid compare-local manifest line {line_no} in {manifest_path}: {line!r}"
+            )
+        name, workload = fields
         fixtures.append({"name": name, "workload": workload})
     return fixtures
 
