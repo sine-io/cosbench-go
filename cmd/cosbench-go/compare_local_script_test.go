@@ -322,6 +322,25 @@ func TestListCompareLocalFixturesRejectsUnknownOptionGracefully(t *testing.T) {
 	}
 }
 
+func TestListCompareLocalFixturesRejectsMissingManifestArgumentGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: list_compare_local_fixtures.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing manifest argument") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsDuplicateOutputModeOptionGracefully(t *testing.T) {
 	for _, option := range []string{"--names", "--pairs"} {
 		t.Run(option, func(t *testing.T) {
@@ -1024,6 +1043,44 @@ func TestValidateCompareLocalFilterRejectsUnknownOptionGracefully(t *testing.T) 
 	}
 }
 
+func TestValidateCompareLocalFilterRejectsMissingManifestAndFilterArgumentsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: validate_compare_local_filter.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing manifest and filter arguments") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestValidateCompareLocalFilterRejectsMissingFilterArgumentGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: validate_compare_local_filter.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing filter argument") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestValidateCompareLocalFilterRejectsUppercaseMixedAllFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 
@@ -1120,6 +1177,44 @@ func TestBuildCompareLocalIndexRejectsUnknownOptionGracefully(t *testing.T) {
 		t.Fatalf("unexpected traceback: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestBuildCompareLocalIndexRejectsMissingManifestAndOutputDirArgumentsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: build_compare_local_index.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing manifest and output_dir arguments") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestBuildCompareLocalIndexRejectsMissingOutputDirArgumentGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: build_compare_local_index.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing output_dir argument") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }

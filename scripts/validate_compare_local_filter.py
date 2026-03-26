@@ -14,8 +14,10 @@ from compare_local_manifest import (
 
 def main() -> int:
     configure_utf8_stdio()
+    if len(sys.argv) < 2:
+        raise SystemExit("missing manifest and filter arguments")
     if len(sys.argv) < 3:
-        raise SystemExit("usage: validate_compare_local_filter.py <manifest> <filter>")
+        raise SystemExit("missing filter argument")
 
     manifest_path = sys.argv[1]
     filter_args = sys.argv[2:]
