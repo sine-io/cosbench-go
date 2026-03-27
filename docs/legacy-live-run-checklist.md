@@ -20,6 +20,19 @@ Before claiming any live comparison result:
   - `COSBENCH_SMOKE_PATH_STYLE`
   - `COSBENCH_SMOKE_BUCKET_PREFIX`
 
+Quick readiness checks:
+
+```bash
+env | rg '^COSBENCH_SMOKE_'
+gh secret list --repo sine-io/cosbench-go
+gh workflow list --repo sine-io/cosbench-go
+```
+
+Treat the environment as ready when at least one of these is true:
+
+- the local shell already exposes the required `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`
+- the repository has the same three GitHub Actions secrets configured and the manual `Smoke S3` workflow is available
+
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 
 ## 2. Smoke Precheck
