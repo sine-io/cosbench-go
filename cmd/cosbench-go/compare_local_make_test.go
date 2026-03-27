@@ -479,6 +479,43 @@ func TestSmokeReadyJSONTargetReportsBlockers(t *testing.T) {
 	}
 }
 
+func TestSmokeLocalTargetReportsSuccessInMockMode(t *testing.T) {
+	output := runMakeSuccess(
+		t,
+		"--no-print-directory",
+		"smoke-local",
+		"SMOKE_LOCAL_MOCK=success",
+	)
+
+	text := string(output)
+	if !strings.Contains(text, "# Smoke Local") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if !strings.Contains(text, "S3 smoke: `pass`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if !strings.Contains(text, "SIO smoke: `pass`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if !strings.Contains(text, "Overall: `pass`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+}
+
+func TestSmokeLocalTargetPropagatesFailureInMockMode(t *testing.T) {
+	output := runMakeFailure(
+		t,
+		"--no-print-directory",
+		"smoke-local",
+		"SMOKE_LOCAL_MOCK=failure",
+	)
+
+	text := string(output)
+	if !strings.Contains(text, "Overall: `fail`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+}
+
 func TestWorktreeAuditTargetSupportsBaseRefOverride(t *testing.T) {
 	output := runMakeSuccess(t, "--no-print-directory", "worktree-audit", "WORKTREE_AUDIT_BASE_REF=HEAD")
 	text := string(output)

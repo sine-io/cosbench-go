@@ -23,6 +23,7 @@ Before claiming any live comparison result:
 Quick readiness checks:
 
 ```bash
+make --no-print-directory smoke-local
 make --no-print-directory smoke-ready
 make --no-print-directory smoke-ready-json
 env | rg '^COSBENCH_SMOKE_'

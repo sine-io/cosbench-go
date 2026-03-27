@@ -8,7 +8,7 @@ COMPARE_LOCAL_FILTER ?=
 WORKTREE_AUDIT_BASE_REF ?= origin/main
 WORKTREE_CLEANUP_REPORT_PATH ?= .artifacts/worktree-cleanup-report.md
 
-.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-ready smoke-ready-json smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-audit-integrated worktree-audit-integrated-json worktree-audit-prune worktree-audit-prune-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale worktree-cleanup-report worktree-cleanup-report-json
+.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-local smoke-ready smoke-ready-json smoke-s3 test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-audit-integrated worktree-audit-integrated-json worktree-audit-prune worktree-audit-prune-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale worktree-cleanup-report worktree-cleanup-report-json
 
 build:
 	$(GO) build ./...
@@ -86,6 +86,9 @@ compare-local:
 
 smoke-s3:
 	$(GO) test ./internal/driver/s3 -run Smoke -v
+
+smoke-local:
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/smoke_local.py
 
 smoke-ready:
 	@$(PYTHON_ENV) $(PYTHON) ./scripts/smoke_ready.py

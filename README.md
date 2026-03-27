@@ -30,6 +30,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 
 ## Smoke Tests
 - Live smoke coverage is opt-in and does not run by default in `go test ./...`
+- Run `make --no-print-directory smoke-local` to start a temporary local moto endpoint and verify both the S3 smoke path and the SIO multipart smoke path end-to-end
 - Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
