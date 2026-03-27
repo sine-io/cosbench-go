@@ -2,7 +2,7 @@
 
 This document is the step-by-step execution guide for future live comparisons against `cosbench-sineio`.
 
-Use [legacy-comparison-matrix.md](/root/.openclaw/workspace/projects/cosbench-go/.worktrees/migration-closure/docs/legacy-comparison-matrix.md) as the system of record for findings.
+Use [legacy-comparison-matrix.md](legacy-comparison-matrix.md) as the system of record for findings.
 Use this checklist to decide what to run, in what order, and what to record once a real endpoint is available.
 
 ## 1. Preconditions
@@ -30,11 +30,14 @@ First confirm that the current Go adapter path can talk to the target endpoint:
 GO=$(which go || echo /snap/bin/go) make smoke-s3
 ```
 
+If local credentials are awkward to inject but repository secrets are available, you can also trigger the manual GitHub Actions smoke workflow and use its job summary plus uploaded `smoke-s3-output` artifact as the recorded precheck evidence.
+
 Record:
 
 - whether smoke passed or failed
 - which backend was used
 - any endpoint-specific setup quirks
+- whether the run happened locally or through the manual GitHub Actions workflow
 
 If this fails, stop and fix credentials/connectivity before workload-level comparison.
 
@@ -77,7 +80,7 @@ Use concrete dates, fixture names, and short factual notes.
 
 ## 5. Known Watchpoints
 
-Review [storage-driver-comparison-notes.md](/root/.openclaw/workspace/projects/cosbench-go/.worktrees/migration-closure/docs/storage-driver-comparison-notes.md) before live runs.
+Review [storage-driver-comparison-notes.md](storage-driver-comparison-notes.md) before live runs.
 
 Highest-value watchpoints:
 
