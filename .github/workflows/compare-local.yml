@@ -29,7 +29,7 @@ jobs:
         run: cat .artifacts/compare-local/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload compare-local artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: compare-local-output
           path: .artifacts/compare-local
