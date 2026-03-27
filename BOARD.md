@@ -118,6 +118,7 @@ Owner: Ross
 - Curated compare-local evidence refreshed on 2026-03-27
 - Local worktree cleanup completed; stale and prune-candidate counts reduced to zero
 - Manual `Compare Local` workflow verified green on 2026-03-27 (`23641740849`) after GitHub Actions runtime upgrades
+- Local moto-backed smoke evidence captured on 2026-03-27 for `s3` object lifecycle and `sio` multipart lifecycle
 - In-repo checklist / board established
 
 ## Deferred
