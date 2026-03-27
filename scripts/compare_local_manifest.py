@@ -106,6 +106,9 @@ def validate_fixture_name(name: str):
         )
 
 
+def validate_workload_path(workload: str):
+    posix_path = PurePosixPath(workload)
+    windows_path = PureWindowsPath(workload)
 def resolve_workload_path(workload: str, manifest_dir: Path):
     posix_path = PurePosixPath(workload)
     windows_path = PureWindowsPath(workload)
@@ -193,6 +196,7 @@ def read_manifest(manifest_path: str):
             )
         name, workload = fields[:2]
         validate_fixture_name(name)
+        validate_workload_path(workload)
         workload = resolve_workload_path(workload, manifest_dir)
         if name in seen_names:
             raise ManifestFormatError(

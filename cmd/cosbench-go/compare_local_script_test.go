@@ -1970,6 +1970,64 @@ func TestListCompareLocalFixturesAcceptsUppercaseXMLWorkloadPaths(t *testing.T) 
 	}
 }
 
+func TestListCompareLocalFixturesRejectsUnsafeWorkloadPathsGracefully(t *testing.T) {
+	tests := []struct {
+		name        string
+		workload    string
+		expectError string
+	}{
+		{
+			name:        "parent traversal",
+			workload:    "../outside.xml",
+			expectError: "must be repo-relative without '..' segments",
+		},
+		{
+			name:        "absolute path",
+			workload:    "/tmp/outside.xml",
+			expectError: "must not be absolute",
+		},
+		{
+			name:        "windows drive absolute",
+			workload:    "C:/outside.xml",
+			expectError: "must not be absolute",
+		},
+		{
+			name:        "windows backslash traversal",
+			workload:    "..\\outside.xml",
+			expectError: "must use forward slashes instead of backslashes",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			pythonBin := mustLookPath(t, "python3")
+			manifestDir := t.TempDir()
+			manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+			data := "fixture " + tc.workload + "\n"
+			if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+				t.Fatalf("write manifest: %v", err)
+			}
+
+			scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+			if err != nil {
+				t.Fatalf("abs script path: %v", err)
+			}
+			cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+			cmd.Dir = repoRootDir()
+			output := string(runCommandFailure(t, cmd))
+
+			if strings.Contains(output, "Traceback") {
+				t.Fatalf("unexpected traceback: %s", output)
+			}
+			if !strings.Contains(output, "invalid compare-local workload path") {
+				t.Fatalf("unexpected output: %s", output)
+			}
+			if !strings.Contains(output, tc.expectError) {
+				t.Fatalf("unexpected output: %s", output)
+			}
+		})
+	}
+}
 func TestBuildCompareLocalIndexResolvesWorkloadsRelativeToManifestDir(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
