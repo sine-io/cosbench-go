@@ -46,6 +46,7 @@ Current readiness snapshot as of 2026-03-27:
 - local shell: required `COSBENCH_SMOKE_*` variables not present
 - repository secrets: no `COSBENCH_SMOKE_*` secrets configured
 - workflow availability: manual `Smoke S3` workflow exists and is ready once secrets are added
+- GitHub Actions evidence: manual run `23640888984` failed at `Validate smoke secrets` and confirmed `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY` were all unset
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 
