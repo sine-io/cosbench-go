@@ -67,6 +67,7 @@ Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to
 `make --no-print-directory worktree-cleanup-report` combines the main audit, integrated view, stale view, prune-candidates view, and prune plan into a single Markdown report, and its summary now includes generation time, current-worktree context, and integrated/stale/prune-candidate counts.
 `make --no-print-directory worktree-cleanup-report-json` exposes the same combined cleanup report in machine-readable form with a consistent top-level `meta` object and a preferred `views` container for all section payloads.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
+A manual GitHub Actions workflow also exists for `make smoke-local`; use it when you want remote proof that the local moto-backed smoke path still works without external secrets.
 That manual workflow now uploads the compare output as a downloadable artifact.
 That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.
 Use `-quiet` when you want the CLI to suppress progress output entirely.

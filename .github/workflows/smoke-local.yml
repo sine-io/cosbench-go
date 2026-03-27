@@ -1,0 +1,31 @@
+name: Smoke Local
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke-local:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Run local moto smoke
+        run: GO=go make smoke-local | tee smoke-local-output.txt
+
+      - name: Write smoke summary
+        if: always()
+        run: cat smoke-local-output.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload smoke artifact
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: smoke-local-output
+          path: smoke-local-output.txt

@@ -109,6 +109,7 @@ Owner: Ross
 - Smoke workflow always-summary landed
 - Smoke readiness helper landed (`make smoke-ready` / `make smoke-ready-json`)
 - Local moto smoke helper landed (`make smoke-local`)
+- Manual smoke-local workflow landed
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

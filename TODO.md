@@ -38,6 +38,7 @@ Status: In Progress
 - [x] Keep the smoke summary visible even when preflight fails
 - [x] Add `make smoke-ready` and `make smoke-ready-json` for local and GitHub smoke readiness checks
 - [x] Add `make smoke-local` for a temporary moto-backed local live smoke run
+- [x] Add manual workflow automation for `make smoke-local`
 - [x] Upload `compare-local` workflow output as an artifact
 - [x] Add structured per-fixture JSON outputs for `make compare-local`
 - [x] Define a single manifest for the curated `compare-local` fixture set
