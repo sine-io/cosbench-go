@@ -5,7 +5,7 @@ Owner: Ross
 
 ## Doing
 - Live-endpoint behavior comparison against legacy workloads
-- Environment provisioning for actual legacy live checks; current blocker as of 2026-03-27: no local `COSBENCH_SMOKE_*` environment and no repository `COSBENCH_SMOKE_*` secrets are configured yet, confirmed by failed `Smoke S3` preflight run `23640888984`
+- Environment provisioning for actual legacy live checks; current blocker as of 2026-03-27: no local `COSBENCH_SMOKE_*` environment and no repository `COSBENCH_SMOKE_*` secrets are configured yet, confirmed by failed `Smoke S3` preflight run `23641346921`
 - Keep comparison evidence and migration boards current as new milestones land
 
 ## Next
@@ -116,6 +116,7 @@ Owner: Ross
 - Duplicate compare-local unsafe-path test removed and `make validate` restored to green
 - Curated compare-local evidence refreshed on 2026-03-27
 - Local worktree cleanup completed; stale and prune-candidate counts reduced to zero
+- Manual `Compare Local` workflow verified green on 2026-03-27 (`23641740849`) after GitHub Actions runtime upgrades
 - In-repo checklist / board established
 
 ## Deferred
