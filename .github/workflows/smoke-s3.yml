@@ -33,6 +33,7 @@ jobs:
   smoke-s3:
     runs-on: ubuntu-latest
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       COSBENCH_SMOKE_ENDPOINT: ${{ secrets.COSBENCH_SMOKE_ENDPOINT }}
       COSBENCH_SMOKE_ACCESS_KEY: ${{ secrets.COSBENCH_SMOKE_ACCESS_KEY }}
       COSBENCH_SMOKE_SECRET_KEY: ${{ secrets.COSBENCH_SMOKE_SECRET_KEY }}
