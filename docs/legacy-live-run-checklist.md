@@ -28,6 +28,14 @@ gh secret list --repo sine-io/cosbench-go
 gh workflow list --repo sine-io/cosbench-go
 ```
 
+If you are preparing repository-side execution, set the required secrets explicitly:
+
+```bash
+printf '%s' "$COSBENCH_SMOKE_ENDPOINT" | gh secret set COSBENCH_SMOKE_ENDPOINT --repo sine-io/cosbench-go
+printf '%s' "$COSBENCH_SMOKE_ACCESS_KEY" | gh secret set COSBENCH_SMOKE_ACCESS_KEY --repo sine-io/cosbench-go
+printf '%s' "$COSBENCH_SMOKE_SECRET_KEY" | gh secret set COSBENCH_SMOKE_SECRET_KEY --repo sine-io/cosbench-go
+```
+
 Treat the environment as ready when at least one of these is true:
 
 - the local shell already exposes the required `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`
@@ -50,6 +58,16 @@ GO=$(which go || echo /snap/bin/go) make smoke-s3
 ```
 
 If local credentials are awkward to inject but repository secrets are available, you can also trigger the manual GitHub Actions smoke workflow and use its job summary plus uploaded `smoke-s3-output` artifact as the recorded precheck evidence.
+
+Example GitHub workflow trigger:
+
+```bash
+gh workflow run "Smoke S3" --repo sine-io/cosbench-go \
+  -f backend=s3 \
+  -f region= \
+  -f path_style= \
+  -f bucket_prefix=
+```
 
 Record:
 

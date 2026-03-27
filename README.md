@@ -41,6 +41,12 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
   - `COSBENCH_SMOKE_PATH_STYLE`
 - `COSBENCH_SMOKE_BUCKET_PREFIX`
 - If required env vars are missing, the smoke tests skip cleanly
+- To provision repository-side smoke secrets with GitHub CLI:
+  - `printf '%s' "$COSBENCH_SMOKE_ENDPOINT" | gh secret set COSBENCH_SMOKE_ENDPOINT --repo sine-io/cosbench-go`
+  - `printf '%s' "$COSBENCH_SMOKE_ACCESS_KEY" | gh secret set COSBENCH_SMOKE_ACCESS_KEY --repo sine-io/cosbench-go`
+  - `printf '%s' "$COSBENCH_SMOKE_SECRET_KEY" | gh secret set COSBENCH_SMOKE_SECRET_KEY --repo sine-io/cosbench-go`
+- To trigger the manual smoke workflow with GitHub CLI:
+  - `gh workflow run "Smoke S3" --repo sine-io/cosbench-go -f backend=s3 -f region= -f path_style= -f bucket_prefix=`
 
 ## CI
 - Repository CI runs `make validate` on `push` and `pull_request`
