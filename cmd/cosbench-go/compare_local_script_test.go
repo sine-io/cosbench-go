@@ -8,6 +8,34 @@ import (
 	"testing"
 )
 
+func createRepoRelativeTempWorkload(t *testing.T, filename, contents string) string {
+	t.Helper()
+
+	replacer := strings.NewReplacer("/", "_", "\\", "_", ":", "_", " ", "_")
+	baseDir := filepath.Join(repoRootDir(), ".artifacts", "compare-local-test")
+	if err := os.MkdirAll(baseDir, 0o755); err != nil {
+		t.Fatalf("mkdir artifact base dir: %v", err)
+	}
+	dir, err := os.MkdirTemp(baseDir, replacer.Replace(t.Name())+"-")
+	if err != nil {
+		t.Fatalf("mkdir temp workload dir: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.RemoveAll(dir)
+	})
+
+	path := filepath.Join(dir, filename)
+	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+		t.Fatalf("write workload: %v", err)
+	}
+
+	relativePath, err := filepath.Rel(repoRootDir(), path)
+	if err != nil {
+		t.Fatalf("relative path: %v", err)
+	}
+	return filepath.ToSlash(relativePath)
+}
+
 func TestListCompareLocalFixturesRejectsMalformedManifestGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -202,12 +230,14 @@ func TestListCompareLocalFixturesAcceptsUTF8BOMManifest(t *testing.T) {
 }
 
 func TestListCompareLocalFixturesWritesNamesAndPairsWithExplicitUTF8Stdout(t *testing.T) {
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
+
 	for _, mode := range []string{"--names", "--pairs"} {
 		t.Run(mode, func(t *testing.T) {
 			pythonBin := mustLookPath(t, "python3")
 			manifestDir := t.TempDir()
 			manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
-			if err := os.WriteFile(manifestPath, []byte("样例 testdata/workloads/测试.xml\n"), 0o644); err != nil {
+			if err := os.WriteFile(manifestPath, []byte("样例 "+workloadPath+"\n"), 0o644); err != nil {
 				t.Fatalf("write manifest: %v", err)
 			}
 
@@ -236,6 +266,38 @@ func TestListCompareLocalFixturesWritesNamesAndPairsWithExplicitUTF8Stdout(t *te
 	}
 }
 
+func TestListCompareLocalFixturesWritesJSONWithExplicitUTF8Characters(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	if err := os.WriteFile(manifestPath, []byte("样例 "+workloadPath+"\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	cmd.Env = append(
+		os.Environ(),
+		"LC_ALL=C",
+		"LANG=C",
+		"PYTHONCOERCECLOCALE=0",
+		"PYTHONUTF8=0",
+	)
+	output := string(runCommandSuccess(t, cmd))
+
+	if !strings.Contains(output, "样例") || !strings.Contains(output, "测试.xml") {
+		t.Fatalf("unexpected output: %q", output)
+	}
+	if strings.Contains(output, "\\u6837\\u4f8b") || strings.Contains(output, "\\u6d4b\\u8bd5") {
+		t.Fatalf("unexpected escaped unicode: %q", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsUnknownOptionGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -256,6 +318,25 @@ func TestListCompareLocalFixturesRejectsUnknownOptionGracefully(t *testing.T) {
 		t.Fatalf("unexpected traceback: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsMissingManifestArgumentGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: list_compare_local_fixtures.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing manifest argument") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
@@ -328,6 +409,33 @@ func TestListCompareLocalFixturesRejectsExtraFilterArgsGracefully(t *testing.T) 
 
 	if strings.Contains(output, "Traceback") {
 		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "expected at most one filter argument") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "foo") || !strings.Contains(output, "bar") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsExtraFilterArgsWithOutputModeGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	if err := os.WriteFile(manifestPath, []byte("# comment only\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, "--names", "foo", "bar")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: list_compare_local_fixtures.py") {
+		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, "expected at most one filter argument") {
 		t.Fatalf("unexpected output: %s", output)
@@ -434,6 +542,47 @@ func TestBuildCompareLocalIndexRejectsUnreadableFixtureSummaryGracefully(t *test
 	}
 }
 
+func TestBuildCompareLocalIndexRejectsUnreadableFixtureSummaryInNonASCIIOutputDirGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "输出")
+	if err := os.WriteFile(manifestPath, []byte("fixture testdata/workloads/mock-stage-aware.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(outputDir, "fixture.json"), 0o755); err != nil {
+		t.Fatalf("mkdir summary dir: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	cmd.Env = append(
+		os.Environ(),
+		"LC_ALL=C",
+		"LANG=C",
+		"PYTHONCOERCECLOCALE=0",
+		"PYTHONUTF8=0",
+	)
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if strings.Contains(output, "\\udc") {
+		t.Fatalf("unexpected surrogate escapes: %s", output)
+	}
+	if !strings.Contains(output, "unable to read compare-local summary for fixture fixture") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "输出") || !strings.Contains(output, "fixture.json") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsInvalidFixtureSummaryEncodingGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -521,10 +670,11 @@ func TestBuildCompareLocalIndexAcceptsUTF8BOMFixtureSummary(t *testing.T) {
 
 func TestBuildCompareLocalIndexWritesArtifactsWithExplicitUTF8Encoding(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
 	manifestDir := t.TempDir()
 	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
 	outputDir := filepath.Join(manifestDir, "out")
-	if err := os.WriteFile(manifestPath, []byte("fixture testdata/workloads/测试.xml\n"), 0o644); err != nil {
+	if err := os.WriteFile(manifestPath, []byte("fixture "+workloadPath+"\n"), 0o644); err != nil {
 		t.Fatalf("write manifest: %v", err)
 	}
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
@@ -559,6 +709,119 @@ func TestBuildCompareLocalIndexWritesArtifactsWithExplicitUTF8Encoding(t *testin
 	}
 }
 
+func TestBuildCompareLocalIndexWritesJSONArtifactsWithExplicitUTF8Characters(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "测试.xml", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("fixture "+workloadPath+"\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "fixture.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	cmd.Env = append(
+		os.Environ(),
+		"LC_ALL=C",
+		"LANG=C",
+		"PYTHONCOERCECLOCALE=0",
+		"PYTHONUTF8=0",
+	)
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected stdout: %s", output)
+	}
+
+	indexData := string(mustReadFile(t, filepath.Join(outputDir, "index.json")))
+	if !strings.Contains(indexData, "fixture") || !strings.Contains(indexData, "测试.xml") {
+		t.Fatalf("unexpected index.json: %s", indexData)
+	}
+	if strings.Contains(indexData, "\\u6d4b\\u8bd5") {
+		t.Fatalf("unexpected escaped unicode: %s", indexData)
+	}
+}
+
+func TestBuildCompareLocalIndexEscapesBackticksInMarkdownSummary(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "tick`load.xml", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("tick`fixture "+workloadPath+"\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "tick`fixture.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir, "tick`fixture")
+	cmd.Dir = repoRootDir()
+	runCommandSuccess(t, cmd)
+
+	summaryData := string(mustReadFile(t, filepath.Join(outputDir, "summary.md")))
+	if !strings.Contains(summaryData, "``tick`fixture``") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+	if !strings.Contains(summaryData, "tick`load.xml``") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+	if !strings.Contains(summaryData, "Filter: ``tick`fixture``") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
+func TestBuildCompareLocalIndexEscapesPipesInMarkdownSummaryTable(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "pipe|load.xml", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("fixture "+workloadPath+"\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "fixture.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	runCommandSuccess(t, cmd)
+
+	summaryData := string(mustReadFile(t, filepath.Join(outputDir, "summary.md")))
+	if !strings.Contains(summaryData, "\\|") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+	if !strings.Contains(summaryData, "pipe\\|load.xml") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
 func TestBuildCompareLocalIndexRejectsUnknownFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -587,6 +850,111 @@ func TestBuildCompareLocalIndexRejectsUnknownFilterGracefully(t *testing.T) {
 	}
 }
 
+func TestBuildCompareLocalIndexCanonicalizesCaseInsensitiveFilterLabel(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.WriteFile(manifestPath, []byte("mock-stage-aware testdata/workloads/mock-stage-aware.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "mock-stage-aware.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir, "MOCK-STAGE-AWARE")
+	cmd.Dir = repoRootDir()
+	runCommandSuccess(t, cmd)
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	summaryData := mustReadFile(t, filepath.Join(outputDir, "summary.md"))
+	var payload struct {
+		Meta struct {
+			Filter string `json:"filter"`
+		} `json:"meta"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if payload.Meta.Filter != "mock-stage-aware" {
+		t.Fatalf("meta filter = %q", payload.Meta.Filter)
+	}
+	if !strings.Contains(string(summaryData), "Filter: `mock-stage-aware`") {
+		t.Fatalf("unexpected summary: %s", summaryData)
+	}
+}
+
+func TestValidateCompareLocalFilterAcceptsCaseInsensitiveFixtureNames(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "MOCK-STAGE-AWARE")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesAcceptsCaseInsensitiveFixtureNames(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "--names", "MOCK-STAGE-AWARE")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	lines := strings.Fields(strings.TrimSpace(output))
+	if len(lines) != 1 || lines[0] != "mock-stage-aware" {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestListCompareLocalFixturesDeduplicatesCaseInsensitiveFilterVariants(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "--names", "mock-stage-aware,MOCK-STAGE-AWARE")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	lines := strings.Fields(strings.TrimSpace(output))
+	if len(lines) != 1 || lines[0] != "mock-stage-aware" {
+		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestValidateCompareLocalFilterAcceptsUppercaseAllAlias(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "ALL")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.TrimSpace(output) != "" {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsMixedAllFilterGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 
@@ -595,6 +963,28 @@ func TestListCompareLocalFixturesRejectsMixedAllFilterGracefully(t *testing.T) {
 		t.Fatalf("abs script path: %v", err)
 	}
 	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "all,mock-stage-aware")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "'all' cannot be combined with specific fixtures") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsUppercaseMixedAllFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "ALL,mock-stage-aware")
 	cmd.Dir = repoRootDir()
 	output := string(runCommandFailure(t, cmd))
 
@@ -635,6 +1025,32 @@ func TestBuildCompareLocalIndexRejectsMixedAllFilterGracefully(t *testing.T) {
 	}
 }
 
+func TestBuildCompareLocalIndexRejectsUppercaseMixedAllFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	outputDir := filepath.Join(t.TempDir(), "out")
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", outputDir, "ALL,mock-stage-aware")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "'all' cannot be combined with specific fixtures") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestValidateCompareLocalFilterRejectsUnknownOptionGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 
@@ -650,6 +1066,66 @@ func TestValidateCompareLocalFilterRejectsUnknownOptionGracefully(t *testing.T) 
 		t.Fatalf("unexpected traceback: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestValidateCompareLocalFilterRejectsMissingManifestAndFilterArgumentsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: validate_compare_local_filter.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing manifest and filter arguments") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestValidateCompareLocalFilterRejectsMissingFilterArgumentGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: validate_compare_local_filter.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing filter argument") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestValidateCompareLocalFilterRejectsUppercaseMixedAllFilterGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/validate_compare_local_filter.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt", "ALL,mock-stage-aware")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local filter") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "'all' cannot be combined with specific fixtures") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
@@ -728,6 +1204,44 @@ func TestBuildCompareLocalIndexRejectsUnknownOptionGracefully(t *testing.T) {
 		t.Fatalf("unexpected traceback: %s", output)
 	}
 	if !strings.Contains(output, "unknown option: --bogus") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestBuildCompareLocalIndexRejectsMissingManifestAndOutputDirArgumentsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: build_compare_local_index.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing manifest and output_dir arguments") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestBuildCompareLocalIndexRejectsMissingOutputDirArgumentGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, "testdata/workloads/compare-local-fixtures.txt")
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") || strings.Contains(output, "usage: build_compare_local_index.py") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "missing output_dir argument") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
@@ -831,6 +1345,36 @@ func TestListCompareLocalFixturesRejectsDuplicateFixtureNamesGracefully(t *testi
 	}
 }
 
+func TestListCompareLocalFixturesRejectsCaseFoldDuplicateFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "" +
+		"Mock-Stage-Aware testdata/workloads/mock-stage-aware.xml\n" +
+		"mock-stage-aware testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "case-insensitive duplicate compare-local fixture name 'mock-stage-aware'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "'Mock-Stage-Aware'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsPathLikeFixtureNamesGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -887,6 +1431,168 @@ func TestListCompareLocalFixturesRejectsReservedFixtureNameAllGracefully(t *test
 	}
 }
 
+func TestListCompareLocalFixturesRejectsCaseInsensitiveReservedFixtureNameAllGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "ALL testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name 'ALL'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "reserved for the all-fixtures selector") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsCommentLikeFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "#fixture testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name '#fixture'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must not start with #") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesAcceptsMarkdownStyleCommentLines(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "## fixtures\nmock-stage-aware testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "\"name\": \"mock-stage-aware\"") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsCommentLikeMarkdownHeadingFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "##fixture testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name '##fixture'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must not start with #") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsDeepCommentLikeMarkdownHeadingFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "###fixture testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name '###fixture'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must not start with #") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesAcceptsTrailingInlineComments(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "mock-stage-aware testdata/workloads/mock-stage-aware.xml # note\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "\"name\": \"mock-stage-aware\"") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
 func TestListCompareLocalFixturesRejectsOptionLikeFixtureNamesGracefully(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()
@@ -911,6 +1617,355 @@ func TestListCompareLocalFixturesRejectsOptionLikeFixtureNamesGracefully(t *test
 		t.Fatalf("unexpected output: %s", output)
 	}
 	if !strings.Contains(output, "must not start with --") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsCommaSeparatedFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "foo,bar testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name 'foo,bar'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must not contain commas") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsFilesystemSpecialFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "foo:bar testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name 'foo:bar'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must not contain filesystem-special characters") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsTrailingDotFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "foo. testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name 'foo.'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must not end with a dot") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsOverlongFixtureNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	name := strings.Repeat("a", 201)
+	data := name + " testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must be 200 characters or fewer") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsReservedDeviceNamesGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "con testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name 'con'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "reserved device name") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsReservedDeviceNamesWithExtensionsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "con.txt testdata/workloads/mock-stage-aware.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local fixture name 'con.txt'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "reserved device name") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsUnsafeWorkloadPathsGracefully(t *testing.T) {
+	tests := []struct {
+		name        string
+		workload    string
+		expectError string
+	}{
+		{
+			name:        "parent traversal",
+			workload:    "../outside.xml",
+			expectError: "must be repo-relative without '..' segments",
+		},
+		{
+			name:        "absolute path",
+			workload:    "/tmp/outside.xml",
+			expectError: "must not be absolute",
+		},
+		{
+			name:        "windows drive absolute",
+			workload:    "C:/outside.xml",
+			expectError: "must not be absolute",
+		},
+		{
+			name:        "windows drive relative",
+			workload:    "C:outside.xml",
+			expectError: "must not include a Windows drive prefix",
+		},
+		{
+			name:        "windows backslash traversal",
+			workload:    "..\\outside.xml",
+			expectError: "must use forward slashes instead of backslashes",
+		},
+		{
+			name:        "dash prefixed",
+			workload:    "-bad.xml",
+			expectError: "must not start with -",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			pythonBin := mustLookPath(t, "python3")
+			manifestDir := t.TempDir()
+			manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+			data := "fixture " + tc.workload + "\n"
+			if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+				t.Fatalf("write manifest: %v", err)
+			}
+
+			scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+			if err != nil {
+				t.Fatalf("abs script path: %v", err)
+			}
+			cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+			cmd.Dir = repoRootDir()
+			output := string(runCommandFailure(t, cmd))
+
+			if strings.Contains(output, "Traceback") {
+				t.Fatalf("unexpected traceback: %s", output)
+			}
+			if !strings.Contains(output, "invalid compare-local workload path") {
+				t.Fatalf("unexpected output: %s", output)
+			}
+			if !strings.Contains(output, tc.expectError) {
+				t.Fatalf("unexpected output: %s", output)
+			}
+		})
+	}
+}
+
+func TestListCompareLocalFixturesRejectsNonXMLWorkloadPathsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "fixture README.md\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local workload path 'README.md'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "must end with .xml") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesRejectsMissingWorkloadPathsGracefully(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "fixture testdata/workloads/does-not-exist.xml\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandFailure(t, cmd))
+
+	if strings.Contains(output, "Traceback") {
+		t.Fatalf("unexpected traceback: %s", output)
+	}
+	if !strings.Contains(output, "invalid compare-local workload path 'testdata/workloads/does-not-exist.xml'") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, "does not exist") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesResolvesWorkloadsRelativeToManifestDir(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	workloadDir := filepath.Join(manifestDir, "sub")
+	if err := os.MkdirAll(workloadDir, 0o755); err != nil {
+		t.Fatalf("mkdir workload dir: %v", err)
+	}
+	workloadPath := filepath.Join(workloadDir, "workload.xml")
+	if err := os.WriteFile(workloadPath, []byte("<workload name=\"fixture\"></workload>\n"), 0o644); err != nil {
+		t.Fatalf("write workload: %v", err)
+	}
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	if err := os.WriteFile(manifestPath, []byte("fixture sub/workload.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if !strings.Contains(output, "\"name\": \"fixture\"") {
+		t.Fatalf("unexpected output: %s", output)
+	}
+	if !strings.Contains(output, filepath.ToSlash(workloadPath)) {
+		t.Fatalf("unexpected output: %s", output)
+	}
+}
+
+func TestListCompareLocalFixturesAcceptsUppercaseXMLWorkloadPaths(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	workloadPath := createRepoRelativeTempWorkload(t, "WORKLOAD.XML", "<workload name=\"fixture\"></workload>\n")
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	data := "fixture " + workloadPath + "\n"
+	if err := os.WriteFile(manifestPath, []byte(data), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/list_compare_local_fixtures.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath)
+	cmd.Dir = repoRootDir()
+	output := string(runCommandSuccess(t, cmd))
+
+	if !strings.Contains(output, "\"workload\": \""+workloadPath+"\"") {
 		t.Fatalf("unexpected output: %s", output)
 	}
 }
@@ -973,6 +2028,49 @@ func TestListCompareLocalFixturesRejectsUnsafeWorkloadPathsGracefully(t *testing
 		})
 	}
 }
+func TestBuildCompareLocalIndexResolvesWorkloadsRelativeToManifestDir(t *testing.T) {
+	pythonBin := mustLookPath(t, "python3")
+	manifestDir := t.TempDir()
+	workloadDir := filepath.Join(manifestDir, "sub")
+	if err := os.MkdirAll(workloadDir, 0o755); err != nil {
+		t.Fatalf("mkdir workload dir: %v", err)
+	}
+	workloadPath := filepath.Join(workloadDir, "workload.xml")
+	if err := os.WriteFile(workloadPath, []byte("<workload name=\"fixture\"></workload>\n"), 0o644); err != nil {
+		t.Fatalf("write workload: %v", err)
+	}
+	manifestPath := filepath.Join(manifestDir, "compare-local-fixtures.txt")
+	if err := os.WriteFile(manifestPath, []byte("fixture sub/workload.xml\n"), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	outputDir := filepath.Join(manifestDir, "out")
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		t.Fatalf("mkdir output dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "fixture.json"), []byte("{\"stages\":1,\"works\":1,\"samples\":1,\"errors\":0}\n"), 0o644); err != nil {
+		t.Fatalf("write summary: %v", err)
+	}
+
+	scriptPath, err := filepath.Abs(filepath.Clean("../../scripts/build_compare_local_index.py"))
+	if err != nil {
+		t.Fatalf("abs script path: %v", err)
+	}
+	cmd := exec.Command(pythonBin, scriptPath, manifestPath, outputDir)
+	cmd.Dir = repoRootDir()
+	runCommandSuccess(t, cmd)
+
+	indexData := mustReadFile(t, filepath.Join(outputDir, "index.json"))
+	var payload struct {
+		Fixtures []struct {
+			Workload string `json:"workload"`
+		} `json:"fixtures"`
+	}
+	mustUnmarshalJSON(t, indexData, &payload)
+	if len(payload.Fixtures) != 1 || payload.Fixtures[0].Workload != filepath.ToSlash(workloadPath) {
+		t.Fatalf("unexpected payload: %#v", payload)
+	}
+}
+
 func TestBuildCompareLocalIndexCreatesMissingOutputDirForEmptyManifest(t *testing.T) {
 	pythonBin := mustLookPath(t, "python3")
 	manifestDir := t.TempDir()

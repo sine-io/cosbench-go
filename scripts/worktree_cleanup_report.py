@@ -15,7 +15,7 @@ from worktree_output import (
     markdown_text_section,
     parse_known_flags,
     run_script,
-    validate_base_ref,
+    resolve_base_ref,
 )
 
 def format_os_error(err: OSError) -> str:
@@ -29,16 +29,29 @@ def format_os_error(err: OSError) -> str:
     return " ".join(parts) or err.__class__.__name__
 
 
+def markdown_code(value: str) -> str:
+    longest_run = 0
+    current_run = 0
+    for ch in value:
+        if ch == "`":
+            current_run += 1
+            if current_run > longest_run:
+                longest_run = current_run
+        else:
+            current_run = 0
+    fence = "`" * (longest_run + 1)
+    return f"{fence}{value}{fence}"
+
+
 def main():
     configure_utf8_stdout()
     flags, args = parse_known_flags(sys.argv[1:], ("--json",))
     json_mode = flags["--json"]
     if json_mode and len(args) > 1:
-        raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
+        raise SystemExit(f"expected at most one base_ref argument in --json mode, got: {' '.join(args)}")
     if not json_mode and len(args) > 2:
-        raise SystemExit("usage: worktree_cleanup_report.py [--json] [base_ref] [output_path]")
-    base_ref = args[0] if args else "origin/main"
-    validate_base_ref(base_ref)
+        raise SystemExit(f"expected at most base_ref and output_path arguments, got: {' '.join(args)}")
+    base_ref = resolve_base_ref(args[0] if args else "")
     output_path = args[1] if len(args) > 1 else ""
     audit = load_json_script("worktree_audit.py", "--json", base_ref)
     prune_plan = load_json_script("worktree_prune_plan.py", "--json", base_ref)
@@ -74,7 +87,7 @@ def main():
             "prune_candidates": prune_candidates_view,
             "prune_plan": prune_plan,
         }
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
         return
 
     lines = [
@@ -82,9 +95,9 @@ def main():
         "",
         "## Summary",
         "",
-        f"- Generated at: `{report_generated_at}`",
-        f"- Base ref: `{summary['base_ref']}`",
-        f"- Current worktree: `{current_worktree}`",
+        f"- Generated at: {markdown_code(report_generated_at)}",
+        f"- Base ref: {markdown_code(summary['base_ref'])}",
+        f"- Current worktree: {markdown_code(current_worktree)}",
         f"- Total worktrees: {summary['total']}",
         f"- Merged: {summary['merged']}",
         f"- Integrated: {summary['integrated']}",

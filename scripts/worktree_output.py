@@ -59,10 +59,93 @@ def current_worktree():
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
+def current_branch():
+    proc = run_git("symbolic-ref", "--quiet", "--short", "HEAD")
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def remote_head_branch():
+    proc = run_git("symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD")
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def remote_ref_sort_key(ref):
+    remote, _, branch = ref.partition("/")
+    if remote == "upstream":
+        return (0, branch, ref)
+    return (1, remote, branch, ref)
+
+
+def remote_name_sort_key(remote):
+    if remote == "upstream":
+        return (0, remote)
+    return (1, remote)
+
+
+def remote_head_branches():
+    heads = []
+    origin_head = remote_head_branch()
+    if origin_head:
+        heads.append(origin_head)
+    proc = run_git("for-each-ref", "--format=%(symref:short)", "refs/remotes/*/HEAD")
+    if proc.returncode != 0:
+        return heads
+    discovered = []
+    for line in proc.stdout.splitlines():
+        target = line.strip()
+        if target and target not in heads and target not in discovered:
+            discovered.append(target)
+    heads.extend(sorted(discovered, key=remote_ref_sort_key))
+    return heads
+
+
+def remote_named_branches(*names):
+    branches = []
+    discovered_by_remote = {}
+    for name in names:
+        origin_branch = f"origin/{name}"
+        proc = run_git("rev-parse", "--verify", "--quiet", f"{origin_branch}^{{commit}}")
+        if proc.returncode == 0 and origin_branch not in branches:
+            branches.append(origin_branch)
+        proc = run_git("for-each-ref", "--format=%(refname:short)", f"refs/remotes/*/{name}")
+        if proc.returncode != 0:
+            continue
+        for line in proc.stdout.splitlines():
+            branch = line.strip()
+            if not branch or branch in branches:
+                continue
+            remote, _, _ = branch.partition("/")
+            if remote == "origin":
+                continue
+            discovered_by_remote.setdefault(remote, set()).add(branch)
+    for remote in sorted(discovered_by_remote, key=remote_name_sort_key):
+        for name in names:
+            branch = f"{remote}/{name}"
+            if branch in discovered_by_remote[remote] and branch not in branches:
+                branches.append(branch)
+    return branches
+
+
 def validate_base_ref(base_ref):
     proc = run_git("rev-parse", "--verify", "--quiet", f"{base_ref}^{{commit}}")
     if proc.returncode != 0:
         raise SystemExit(f"unknown base ref: {base_ref}")
+
+
+def resolve_base_ref(base_ref: str, default_ref: str = "origin/main"):
+    if base_ref:
+        validate_base_ref(base_ref)
+        return base_ref
+    branch = current_branch()
+    candidates = [*remote_head_branches(), default_ref, *remote_named_branches("main", "master", "trunk"), "main", "master", "trunk"]
+    if branch and branch not in candidates:
+        candidates.append(branch)
+    candidates.append("HEAD")
+    for candidate in candidates:
+        proc = run_git("rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}")
+        if proc.returncode == 0:
+            return candidate
+    raise SystemExit(f"unknown base ref: {default_ref}")
 
 
 def load_worktree_entries():
@@ -142,20 +225,30 @@ def build_prune_plan_row(path, branch, state, details, ahead, behind):
         "ahead": ahead,
         "behind": behind,
         "commands": [
-            f"git worktree remove '{path}'",
-            f"git branch -D {branch}",
+            f"git worktree remove {shlex.quote(path)}",
+            f"git branch -D {shlex.quote(branch)}",
         ],
     }
 
 
 def markdown_text_section(title, content):
+    longest_run = 0
+    current_run = 0
+    for ch in content:
+        if ch == "`":
+            current_run += 1
+            if current_run > longest_run:
+                longest_run = current_run
+        else:
+            current_run = 0
+    fence = "`" * max(3, longest_run+1)
     return [
         "",
         f"## {title}",
         "",
-        "```text",
+        f"{fence}text",
         content,
-        "```",
+        fence,
     ]
 
 

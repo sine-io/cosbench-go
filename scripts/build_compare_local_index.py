@@ -32,25 +32,43 @@ def format_os_error(err: OSError) -> str:
     return " ".join(parts) or err.__class__.__name__
 
 
+def markdown_code(value: str) -> str:
+    longest_run = 0
+    current_run = 0
+    for ch in value:
+        if ch == "`":
+            current_run += 1
+            if current_run > longest_run:
+                longest_run = current_run
+        else:
+            current_run = 0
+    fence = "`" * (longest_run + 1)
+    return f"{fence}{value}{fence}"
+
+
+def markdown_table_code(value: str) -> str:
+    return markdown_code(value.replace("|", "\\|"))
+
+
 def build_summary(payload, output_dir: Path):
     meta = payload["meta"]
     lines = [
         "## Compare Local",
         "",
-        f"Artifact directory: `{display_text(str(output_dir))}`",
+        f"Artifact directory: {markdown_code(display_text(str(output_dir)))}",
         "",
-        f"Filter: `{meta.get('filter', 'all')}`",
+        f"Filter: {markdown_code(meta.get('filter', 'all'))}",
         "",
         f"Fixture count: {meta.get('fixture_count', 0)}",
         "",
-        f"Generated at: `{meta.get('generated_at', '')}`",
+        f"Generated at: {markdown_code(meta.get('generated_at', ''))}",
         "",
         "| Fixture | Workload | Stages | Works | Samples | Errors | Summary |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for fixture in payload.get("fixtures", []):
         lines.append(
-            f"| `{fixture['name']}` | `{fixture['workload']}` | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | `{fixture['summary']}` |"
+            f"| {markdown_table_code(fixture['name'])} | {markdown_table_code(fixture['workload'])} | {fixture['stages']} | {fixture['works']} | {fixture['samples']} | {fixture['errors']} | {markdown_table_code(fixture['summary'])} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -74,7 +92,9 @@ def load_fixture_summary(output_dir: Path, summary_name: str, fixture_name: str)
     except UnicodeDecodeError as err:
         raise SystemExit(f"unable to decode compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
     except OSError as err:
-        raise SystemExit(f"unable to read compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
+        raise SystemExit(
+            f"unable to read compare-local summary for fixture {fixture_name}: {summary_display}: {format_os_error(err)}"
+        )
     except json.JSONDecodeError as err:
         raise SystemExit(f"invalid compare-local summary for fixture {fixture_name}: {summary_display}: {err}")
     if not isinstance(summary, dict):
@@ -109,8 +129,10 @@ def require_summary_int(summary, field: str, fixture_name: str, summary_path: Pa
 
 def main() -> int:
     configure_utf8_stdio()
+    if len(sys.argv) < 2:
+        raise SystemExit("missing manifest and output_dir arguments")
     if len(sys.argv) < 3:
-        raise SystemExit("usage: build_compare_local_index.py <manifest> <output_dir> [filter]")
+        raise SystemExit("missing output_dir argument")
 
     output_dir = Path(sys.argv[2])
     filter_args = sys.argv[3:]
@@ -120,9 +142,6 @@ def main() -> int:
     if len(filter_args) > 1:
         raise SystemExit(f"expected at most one filter argument, got: {' '.join(filter_args)}")
     selected = filter_args[0] if filter_args else ""
-    filter_label = normalize_filter(selected)
-    fixtures = []
-
     try:
         manifest_fixtures = read_manifest(sys.argv[1])
     except ManifestError as err:
@@ -131,8 +150,12 @@ def main() -> int:
         validate_filter(manifest_fixtures, selected)
     except FilterError as err:
         raise SystemExit(format_filter_error(manifest_fixtures, err))
+    selected_fixtures = select_fixtures(manifest_fixtures, selected)
+    normalized_filter = normalize_filter(selected)
+    filter_label = "all" if normalized_filter == "all" else ",".join(fixture["name"] for fixture in selected_fixtures)
+    fixtures = []
 
-    for fixture in select_fixtures(manifest_fixtures, selected):
+    for fixture in selected_fixtures:
         name = fixture["name"]
         workload = fixture["workload"]
         summary_name = f"{name}.json"
@@ -162,7 +185,7 @@ def main() -> int:
         output_dir.mkdir(parents=True, exist_ok=True)
     except OSError as err:
         raise SystemExit(f"unable to prepare compare-local output dir {display_text(str(output_dir))}: {format_os_error(err)}")
-    write_output_file(output_dir / "index.json", json.dumps(payload, indent=2) + "\n")
+    write_output_file(output_dir / "index.json", json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     write_output_file(output_dir / "summary.md", build_summary(payload, output_dir))
     return 0
 

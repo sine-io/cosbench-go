@@ -14,8 +14,8 @@ from worktree_output import (
     load_worktree_entries,
     parse_known_flags,
     print_text_header,
+    resolve_base_ref,
     should_include_audit_row,
-    validate_base_ref,
 )
 
 
@@ -40,7 +40,7 @@ def main():
         ("--json", "--merged-only", "--integrated-only", "--prune-only", "--stale-only"),
     )
     if len(args) > 1:
-        raise SystemExit("usage: worktree_audit.py [--json] [--merged-only|--integrated-only|--prune-only|--stale-only] [base_ref]")
+        raise SystemExit(f"expected at most one base_ref argument, got: {' '.join(args)}")
     json_mode = flags["--json"]
     merged_only = flags["--merged-only"]
     integrated_only = flags["--integrated-only"]
@@ -49,8 +49,7 @@ def main():
     selected_views = sum(1 for enabled in (merged_only, integrated_only, prune_only, stale_only) if enabled)
     if selected_views > 1:
         raise SystemExit("choose at most one of --merged-only, --integrated-only, --prune-only, or --stale-only")
-    base_ref = args[0] if args else "origin/main"
-    validate_base_ref(base_ref)
+    base_ref = resolve_base_ref(args[0] if args else "")
     current_worktree_path = current_worktree()
 
     rows = []
@@ -75,7 +74,7 @@ def main():
 
     if json_mode:
         summary = build_audit_summary(rows, base_ref, current_worktree_path)
-        print(json.dumps(build_single_view_payload(generated_at(), base_ref, current_worktree_path, "audit", summary, rows), indent=2))
+        print(json.dumps(build_single_view_payload(generated_at(), base_ref, current_worktree_path, "audit", summary, rows), indent=2, ensure_ascii=False))
         return
 
     print_text_header(audit_generated_at, base_ref, current_worktree_path)

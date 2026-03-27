@@ -13,7 +13,7 @@ from worktree_output import (
     load_json_script,
     parse_known_flags,
     print_text_header,
-    validate_base_ref,
+    resolve_base_ref,
 )
 
 
@@ -21,10 +21,9 @@ def main():
     configure_utf8_stdout()
     flags, args = parse_known_flags(sys.argv[1:], ("--json",))
     if len(args) > 1:
-        raise SystemExit("usage: worktree_prune_plan.py [--json] [base_ref]")
+        raise SystemExit(f"expected at most one base_ref argument, got: {' '.join(args)}")
     json_mode = flags["--json"]
-    base_ref = args[0] if args else "origin/main"
-    validate_base_ref(base_ref)
+    base_ref = resolve_base_ref(args[0] if args else "")
     current_worktree_path = current_worktree()
     payload = load_json_script("worktree_audit.py", "--json", base_ref)
     source_rows = payload.get("rows", payload)
@@ -55,6 +54,7 @@ def main():
             json.dumps(
                 build_single_view_payload(plan_generated_at, base_ref, current_worktree_path, "prune_plan", summary, rows),
                 indent=2,
+                ensure_ascii=False,
             )
         )
         return

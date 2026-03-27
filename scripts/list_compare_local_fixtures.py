@@ -16,8 +16,8 @@ from compare_local_manifest import (
 
 def main() -> int:
     configure_utf8_stdio()
-    if len(sys.argv) not in (2, 3, 4):
-        raise SystemExit("usage: list_compare_local_fixtures.py <manifest> [--names|--pairs] [filter]")
+    if len(sys.argv) < 2:
+        raise SystemExit("missing manifest argument")
 
     try:
         fixtures = read_manifest(sys.argv[1])
@@ -63,7 +63,7 @@ def main() -> int:
             print(f"{fixture['name']} {fixture['workload']}")
         return 0
 
-    print(json.dumps(fixtures, indent=2))
+    print(json.dumps(fixtures, indent=2, ensure_ascii=False))
     return 0
 
 
