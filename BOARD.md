@@ -1,66 +1,16 @@
 # COSBench-Go Kanban
 
-Last updated: 2026-03-26
+Last updated: 2026-03-27
 Owner: Ross
 
 ## Doing
 - Live-endpoint behavior comparison against legacy workloads
-- Storage-driver comparison notes against legacy Java behavior
-- Release/branch hygiene once the current migration slice is stable
-- Structured compare-local result outputs for local and manual workflow reuse
-- Compare-local fixture manifest cleanup
-- Compare-local output pruning cleanup
-- Compare-local output safety cleanup
-- Compare-local artifact index
-- Compare-local workflow summary
-- Compare-local artifact metrics
-- Compare-local fixture filter
-- Compare-local filter validation
-- Compare-local fixture listing
-- Compare-local JSON fixture listing
-- Compare-local filtered listing targets
-- Compare-local multi-fixture filter
-- Worktree audit helper
-- Worktree audit JSON output
-- Worktree audit integrated state
-- Worktree audit current marker
-- Worktree audit stale/prune counts
-- Worktree audit base-ref override
-- Worktree audit summary counts
-- Worktree audit sorting
-- Worktree audit stale view
-- Worktree prune plan JSON output
-- Worktree prune plan JSON summary
-- Worktree prune plan text metadata
-- Worktree cleanup report
-- Worktree cleanup report JSON output
-- Worktree cleanup report JSON views container
-- Worktree cleanup report summary counts
-- Worktree cleanup report summary metadata
-- Worktree prune plan
-- Worktree audit merged-only JSON output
-- Worktree audit integrated-only view
-- Worktree audit integrated-only JSON output
-- Worktree audit prune-candidates view
-- Worktree audit prune-candidates JSON output
-- Worktree JSON generated_at metadata
-- Worktree JSON views envelopes
-- Worktree JSON meta envelopes
-- Worktree audit text metadata
-- Worktree audit structured ahead/behind fields
-- Worktree audit merged-only view
-- Compare-local local summary artifact
-- Manual smoke-s3 workflow
-- Smoke workflow path-style choice
-- Smoke workflow summary and backend choice
-- Smoke workflow secret presence summary
-- Smoke workflow secret preflight
-- Smoke workflow output artifact
-- Smoke workflow always-summary
+- Environment provisioning for actual legacy live checks
+- Keep comparison evidence and migration boards current as new milestones land
 
 ## Next
 - Local workflow polish only if comparison ergonomics need more than `make compare-local`
-- Environment provisioning for actual legacy live checks
+- Additional XML or workflow compatibility coverage only if live legacy checks expose real gaps
 - Broader smoke/release automation only if the repository actually needs it
 
 ## Done
@@ -163,6 +113,9 @@ Owner: Ross
 - Representative S3/SIO workload fixtures added
 - `go vet` passing
 - Current unit tests passing
+- Duplicate compare-local unsafe-path test removed and `make validate` restored to green
+- Curated compare-local evidence refreshed on 2026-03-27
+- Local worktree cleanup completed; stale and prune-candidate counts reduced to zero
 - In-repo checklist / board established
 
 ## Deferred

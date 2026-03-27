@@ -1,6 +1,6 @@
 # COSBench-Go Migration Board
 
-Last updated: 2026-03-26
+Last updated: 2026-03-27
 Owner: Ross
 Status: In Progress
 
@@ -16,6 +16,8 @@ Status: In Progress
 - [x] Create a persistent migration checklist / board
 - [x] Track completed phases in-repo so sine can inspect progress anytime
 - [~] Keep this board updated at each meaningful milestone
+- [x] Refresh compare-local evidence after stability fixes land
+- [x] Collapse local worktree cleanup state back to a single active main worktree
 
 ---
 
