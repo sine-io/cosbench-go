@@ -10,6 +10,8 @@ Use the `Makefile` for the common paths:
 - `make test` runs the full test suite with `go test ./...`
 - `make build` compiles all packages and binaries with `go build ./...`
 - `make compare-local` runs the curated mock-backed comparison fixture set through the CLI
+- `make --no-print-directory smoke-ready` reports local and GitHub smoke readiness in human-readable form
+- `make --no-print-directory smoke-ready-json` reports the same readiness view as JSON
 - `make validate` runs `go vet`, tests, and a full build for CI-style verification
 - `make smoke-s3` runs the opt-in live endpoint smoke test for `internal/driver/s3`
 - `make tidy` syncs `go.mod` and `go.sum`
@@ -25,6 +27,8 @@ For local runs, use the package entrypoints directly:
 
 If `/snap/bin/go` is not your Go binary, override the Makefile variable, for example `GO=$(which go) make test`.
 Live smoke tests require `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`; without them the smoke suite skips.
+Use `make --no-print-directory smoke-ready` when you want a fast readiness summary before attempting live smoke coverage.
+Use `make --no-print-directory smoke-ready-json` when you want the same readiness state in machine-readable form.
 Repository CI runs `make validate`; keep smoke tests opt-in and out of the default CI path.
 In `-json` mode, stdout is reserved for machine-readable JSON.
 `make compare-local` is the fastest way to refresh local comparison evidence without live credentials.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -404,6 +405,77 @@ func TestWorktreeAuditTargetRuns(t *testing.T) {
 	}
 	if !strings.Contains(text, "\tyes\t") {
 		t.Fatalf("expected current row marker: %s", text)
+	}
+}
+
+func TestSmokeReadyTargetReportsOverallReadiness(t *testing.T) {
+	output := runMakeSuccess(
+		t,
+		"--no-print-directory",
+		"smoke-ready",
+		"SMOKE_READY_REPO=sine-io/cosbench-go",
+		"SMOKE_READY_MOCK_REPO_SECRETS=COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY",
+		"SMOKE_READY_MOCK_WORKFLOWS=Smoke S3",
+		"COSBENCH_SMOKE_ENDPOINT=http://127.0.0.1:9000",
+		"COSBENCH_SMOKE_ACCESS_KEY=ak",
+		"COSBENCH_SMOKE_SECRET_KEY=sk",
+	)
+
+	text := string(output)
+	if !strings.Contains(text, "Repository: `sine-io/cosbench-go`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if !strings.Contains(text, "Overall ready: `yes`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+	if !strings.Contains(text, "Smoke S3: `available`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
+}
+
+func TestSmokeReadyJSONTargetReportsBlockers(t *testing.T) {
+	output := runMakeSuccess(
+		t,
+		"--no-print-directory",
+		"smoke-ready-json",
+		"SMOKE_READY_REPO=sine-io/cosbench-go",
+		"SMOKE_READY_MOCK_REPO_SECRETS=",
+		"SMOKE_READY_MOCK_WORKFLOWS=Smoke S3",
+	)
+
+	var payload struct {
+		Repo       string `json:"repo"`
+		LocalEnv   map[string]bool `json:"local_env"`
+		RepoSecrets struct {
+			Present map[string]bool `json:"present"`
+		} `json:"repo_secrets"`
+		Workflows struct {
+			Present map[string]bool `json:"present"`
+		} `json:"workflows"`
+		Summary struct {
+			LocalReady    bool `json:"local_ready"`
+			WorkflowReady bool `json:"workflow_ready"`
+			Ready         bool `json:"ready"`
+		} `json:"summary"`
+		Blockers []string `json:"blockers"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\n%s", err, output)
+	}
+	if payload.Repo != "sine-io/cosbench-go" {
+		t.Fatalf("unexpected repo: %#v", payload)
+	}
+	if payload.Summary.Ready || payload.Summary.LocalReady || payload.Summary.WorkflowReady {
+		t.Fatalf("unexpected readiness: %#v", payload.Summary)
+	}
+	if !payload.Workflows.Present["Smoke S3"] {
+		t.Fatalf("unexpected workflows: %#v", payload.Workflows)
+	}
+	if payload.RepoSecrets.Present["COSBENCH_SMOKE_ENDPOINT"] {
+		t.Fatalf("unexpected repo secrets: %#v", payload.RepoSecrets)
+	}
+	if len(payload.Blockers) == 0 {
+		t.Fatalf("expected blockers: %#v", payload)
 	}
 }
 

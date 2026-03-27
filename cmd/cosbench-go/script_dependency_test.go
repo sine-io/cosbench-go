@@ -13,6 +13,7 @@ var scriptTestDependencies = []string{
 	"scripts/build_compare_local_index.py",
 	"scripts/compare_local_manifest.py",
 	"scripts/list_compare_local_fixtures.py",
+	"scripts/smoke_ready.py",
 	"scripts/validate_compare_local_filter.py",
 	"scripts/worktree_audit.py",
 	"scripts/worktree_cleanup_report.py",

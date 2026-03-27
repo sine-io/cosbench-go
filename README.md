@@ -30,6 +30,8 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 
 ## Smoke Tests
 - Live smoke coverage is opt-in and does not run by default in `go test ./...`
+- Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary
+- Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
