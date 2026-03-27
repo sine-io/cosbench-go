@@ -5,7 +5,7 @@ Owner: Ross
 
 ## Doing
 - Live-endpoint behavior comparison against legacy workloads
-- Environment provisioning for actual legacy live checks
+- Environment provisioning for actual legacy live checks; current blocker as of 2026-03-27: no local `COSBENCH_SMOKE_*` environment and no repository `COSBENCH_SMOKE_*` secrets are configured yet
 - Keep comparison evidence and migration boards current as new milestones land
 
 ## Next

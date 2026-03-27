@@ -18,6 +18,7 @@ Status: In Progress
 - [~] Keep this board updated at each meaningful milestone
 - [x] Refresh compare-local evidence after stability fixes land
 - [x] Collapse local worktree cleanup state back to a single active main worktree
+- [x] Record the current live-smoke environment blocker in repo docs and boards
 
 ---
 
