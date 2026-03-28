@@ -16,6 +16,9 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The remote split now includes persisted driver/mission state, registration/heartbeat/claim endpoints, a driver agent, combined-mode loopback execution, and a shared bearer token on driver write endpoints
 - The unified service now also includes driver-facing overview, missions, mission detail, workers, and logs pages under `/driver/...`
 - The repository now also includes a local `smoke-remote-local` path that runs one controller-only process, two driver-only processes, and local MinIO to validate remote work-unit execution end-to-end
+- Remote smoke coverage now spans `single`, `multistage`, and `recovery` scenarios, with `s3` and `sio` parity across the happy-path and recovery surfaces
+- The repository now includes dedicated manual workflows for remote happy-path and recovery smoke, plus separate non-blocking matrix workflows for happy-path and recovery verification on GitHub-hosted runners
+- `smoke-ready` and `smoke-ready-json` now summarize both workflow availability and the latest known remote smoke evidence state
 
 ## Local CLI
 - Run with any of these equivalent workload forms:
@@ -65,8 +68,11 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - A manual GitHub Actions workflow can run `make compare-local` on demand
 - A separate manual GitHub Actions workflow can run `make smoke-local` without external secrets to verify the local live-endpoint path on GitHub-hosted runners
 - A manual GitHub Actions workflow can run the remote multi-process MinIO smoke path on demand
+- A dedicated manual GitHub Actions workflow can run remote recovery smoke on demand for `s3` or `sio`
 - A separate non-blocking GitHub Actions workflow can run the full remote smoke matrix on a schedule or on demand
+- A separate non-blocking GitHub Actions workflow can run the full remote recovery matrix on a schedule or on demand
 - The matrix workflow now also emits one combined summary across all four supported combinations
+- The recovery matrix workflow also emits a combined summary and aggregate artifact across both recovery backends
 - GitHub-hosted runners no longer attempt real `make smoke-s3`; that path remains for local or private-network execution only
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`

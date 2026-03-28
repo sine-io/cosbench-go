@@ -17,8 +17,11 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - stage-level and operation-level result summaries
 - remote driver registration, heartbeat, scheduling, mission claim, mission reporting, and combined-mode loopback execution
 - local multi-process MinIO smoke for one controller-only and two driver-only processes
-- remote multi-process smoke parity across both `s3` and `sio`
-- local multistage remote smoke coverage for the S3 controller/driver split
+- local and remote happy-path smoke parity across both `s3` and `sio`
+- local recovery smoke parity across both `s3` and `sio`
+- dedicated manual GitHub workflows for remote happy-path and recovery smoke
+- non-blocking GitHub workflows for remote happy-path and recovery matrices, including aggregate summaries and aggregate artifacts
+- `smoke-ready` / `smoke-ready-json` reporting for local readiness, remote happy-path readiness, remote recovery readiness, and the latest known smoke workflow run state
 
 ## Closed for the Local v1 Boundary
 
@@ -45,8 +48,8 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 ## Main Remaining Risks
 
 1. Real-world XML variance may exceed the active fixture subset.
-2. The remote split is now real and multi-process smoke-backed, but broader production-grade scheduling and durability behavior still need deepening.
-3. SineIO-specific behavior may still diverge under larger or real-endpoint workloads even though the local remote smoke path now covers `sio`.
+2. The remote split is now real and backed by multi-process happy-path and recovery smoke, but broader production-grade scheduling and durability behavior still needs deeper validation.
+3. SineIO-specific behavior may still diverge under larger or real-endpoint workloads even though the local and remote smoke paths now cover `sio`.
 4. Behavior that looks correct under local mock runs may still diverge under real endpoint pressure.
 
 The migration is considered closed for this phase because the local-only gaps are resolved and the deferred items remain explicitly out of scope.
