@@ -98,6 +98,12 @@ To trigger the full real-endpoint smoke matrix:
 gh workflow run "Smoke S3 Matrix" --repo sine-io/cosbench-go
 ```
 
+To trigger a manual legacy live compare run:
+
+```bash
+gh workflow run "Legacy Live Compare" --repo sine-io/cosbench-go
+```
+
 To trigger the SIO variant:
 
 ```bash
