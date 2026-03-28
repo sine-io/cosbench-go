@@ -127,17 +127,63 @@ def load_legacy_workflow_details(repo, workflow_latest):
     if "SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON" in os.environ:
         return json.loads(os.environ["SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON"]), True, ""
     details = {}
+    latest = workflow_latest.get(LEGACY_LIVE_WORKFLOW) or {}
+    run_id = latest.get("database_id")
+    if run_id:
+        with tempfile.TemporaryDirectory(prefix="smoke-ready-legacy-live-") as tmpdir:
+            proc = run("gh", "run", "download", str(run_id), "--repo", repo, "-n", "legacy-live-compare-output", "-D", tmpdir)
+            if proc.returncode == 0:
+                result_path = os.path.join(tmpdir, "result.json")
+                if not os.path.exists(result_path):
+                    result_path = os.path.join(tmpdir, ".artifacts", "legacy-live-compare", "result.json")
+                payload = {}
+                if os.path.exists(result_path):
+                    with open(result_path, "r", encoding="utf-8") as f:
+                        payload["result"] = json.load(f)
+                if payload:
+                    details[LEGACY_LIVE_WORKFLOW] = payload
+            elif latest.get("status") == "completed":
+                return {}, False, (proc.stderr or proc.stdout).strip()
+    if LEGACY_LIVE_WORKFLOW not in details:
+        details[LEGACY_LIVE_WORKFLOW] = None
+
+    latest = workflow_latest.get(LEGACY_LIVE_MATRIX_WORKFLOW) or {}
+    run_id = latest.get("database_id")
+    if run_id:
+        with tempfile.TemporaryDirectory(prefix="smoke-ready-legacy-live-matrix-") as tmpdir:
+            proc = run(
+                "gh",
+                "run",
+                "download",
+                str(run_id),
+                "--repo",
+                repo,
+                "-n",
+                "legacy-live-compare-matrix-aggregate",
+                "-D",
+                tmpdir,
+            )
+            if proc.returncode == 0:
+                summary_path = os.path.join(tmpdir, "summary.json")
+                if os.path.exists(summary_path):
+                    with open(summary_path, "r", encoding="utf-8") as f:
+                        details[LEGACY_LIVE_MATRIX_WORKFLOW] = json.load(f)
+            elif latest.get("status") == "completed":
+                return {}, False, (proc.stderr or proc.stdout).strip()
+    if LEGACY_LIVE_MATRIX_WORKFLOW not in details:
+        details[LEGACY_LIVE_MATRIX_WORKFLOW] = None
+
     for name in (LEGACY_LIVE_WORKFLOW, LEGACY_LIVE_MATRIX_WORKFLOW):
-        latest = workflow_latest.get(name) or {}
-        run_id = latest.get("database_id")
-        if not run_id:
-            details[name] = None
-            continue
-        proc = run("gh", "run", "view", str(run_id), "--repo", repo, "--json", "jobs")
-        if proc.returncode != 0:
-            error = (proc.stderr or proc.stdout).strip()
-            return {}, False, error
-        details[name] = json.loads(proc.stdout or "{}")
+        if details.get(name) is None:
+            latest = workflow_latest.get(name) or {}
+            run_id = latest.get("database_id")
+            if not run_id:
+                continue
+            proc = run("gh", "run", "view", str(run_id), "--repo", repo, "--json", "jobs")
+            if proc.returncode != 0:
+                error = (proc.stderr or proc.stdout).strip()
+                return {}, False, error
+            details[name] = json.loads(proc.stdout or "{}")
     return details, True, ""
 
 
@@ -220,6 +266,9 @@ def classify_single_legacy_result(latest, detail):
         return "pending"
     if not detail:
         return "failed"
+    result = (detail.get("result") or {}).get("result", "")
+    if result in {"executed", "skipped", "failed"}:
+        return result
     for job in detail.get("jobs", []):
         step = step_state(job, LEGACY_STEP_NAME)
         if step["status"] or step["conclusion"]:
@@ -240,6 +289,26 @@ def classify_matrix_legacy_result(latest, detail):
         return "pending"
     if not detail:
         return "failed"
+    if "rows" in detail:
+        row_results = []
+        for row in detail.get("rows", []):
+            row_status = row.get("status", "")
+            if row_status in {"executed", "skipped", "failed"}:
+                row_results.append(row_status)
+            else:
+                row_results.append("failed")
+        if not row_results:
+            return "failed"
+        unique = set(row_results)
+        if unique == {"executed"}:
+            return "executed"
+        if unique == {"skipped"}:
+            return "skipped"
+        if unique == {"failed"}:
+            return "failed"
+        if "pending" in unique:
+            return "pending"
+        return "partial"
     row_results = []
     for job in detail.get("jobs", []):
         if not str(job.get("name", "")).startswith("legacy-live-compare-matrix ("):

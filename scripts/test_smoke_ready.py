@@ -107,35 +107,17 @@ def run_helper(*args, env_overrides=None):
                 ]
             },
             "Legacy Live Compare": {
-                "jobs": [
-                    {
-                        "name": "legacy-live-compare",
-                        "status": "completed",
-                        "conclusion": "success",
-                        "steps": [
-                            {"name": "Run legacy live compare", "status": "completed", "conclusion": "skipped"}
-                        ],
-                    }
-                ]
+                "result": {
+                    "result": "skipped",
+                    "fixture": "testdata/legacy/sio-config-sample.xml",
+                    "backend": "sio",
+                    "reason": "missing secrets",
+                }
             },
             "Legacy Live Compare Matrix": {
-                "jobs": [
-                    {
-                        "name": "legacy-live-compare-matrix (s3, testdata/legacy/s3-config-sample.xml)",
-                        "status": "completed",
-                        "conclusion": "success",
-                        "steps": [
-                            {"name": "Run legacy live compare", "status": "completed", "conclusion": "skipped"}
-                        ],
-                    },
-                    {
-                        "name": "legacy-live-compare-matrix (sio, testdata/legacy/sio-config-sample.xml)",
-                        "status": "completed",
-                        "conclusion": "success",
-                        "steps": [
-                            {"name": "Run legacy live compare", "status": "completed", "conclusion": "skipped"}
-                        ],
-                    },
+                "rows": [
+                    {"backend": "s3", "status": "skipped"},
+                    {"backend": "sio", "status": "skipped"},
                 ]
             },
         }
