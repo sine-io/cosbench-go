@@ -66,5 +66,7 @@ type Mission struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	ErrorMessage string      `json:"error_message,omitempty"`
+	ReceivedEventBatches  []string `json:"received_event_batches,omitempty"`
+	ReceivedSampleBatches []string `json:"received_sample_batches,omitempty"`
 	Lease     *MissionLease  `json:"lease,omitempty"`
 }

@@ -65,17 +65,31 @@ func (c *HTTPClient) ClaimMission(driverID string, leaseTTL time.Duration) (doma
 }
 
 func (c *HTTPClient) UploadEvents(missionID string, events []domain.JobEvent) error {
-	return c.postJSON("/api/driver/missions/"+missionID+"/events", events, nil)
+	return c.UploadEventsBatch(missionID, fmt.Sprintf("events-%d", time.Now().UnixNano()), events)
 }
 
 func (c *HTTPClient) UploadSamples(missionID string, samples []legacyexec.Sample) error {
-	return c.postJSON("/api/driver/missions/"+missionID+"/samples", samples, nil)
+	return c.UploadSamplesBatch(missionID, fmt.Sprintf("samples-%d", time.Now().UnixNano()), samples)
 }
 
 func (c *HTTPClient) CompleteMission(missionID string, status domain.MissionStatus, errorMessage string) error {
 	return c.postJSON("/api/driver/missions/"+missionID+"/complete", map[string]any{
 		"status":        status,
 		"error_message": errorMessage,
+	}, nil)
+}
+
+func (c *HTTPClient) UploadEventsBatch(missionID string, batchID string, events []domain.JobEvent) error {
+	return c.postJSON("/api/driver/missions/"+missionID+"/events", map[string]any{
+		"batch_id": batchID,
+		"events":   events,
+	}, nil)
+}
+
+func (c *HTTPClient) UploadSamplesBatch(missionID string, batchID string, samples []legacyexec.Sample) error {
+	return c.postJSON("/api/driver/missions/"+missionID+"/samples", map[string]any{
+		"batch_id": batchID,
+		"samples":  samples,
 	}, nil)
 }
 

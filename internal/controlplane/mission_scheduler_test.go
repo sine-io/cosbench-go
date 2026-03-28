@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sine-io/cosbench-go/internal/domain"
+	legacyexec "github.com/sine-io/cosbench-go/internal/domain/execution"
 	"github.com/sine-io/cosbench-go/internal/snapshot"
 )
 
@@ -150,5 +151,82 @@ func TestClaimMissionReclaimsExpiredLeaseButNotActiveLease(t *testing.T) {
 	}
 	if reclaimed.ID != claimed.ID || reclaimed.Lease == nil || reclaimed.Lease.DriverID != driverB.ID {
 		t.Fatalf("reclaimed = %#v", reclaimed)
+	}
+}
+
+func TestMissionReportingIsIdempotentPerBatch(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-idempotent">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+	mission, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(): mission=%#v ok=%v err=%v", mission, ok, err)
+	}
+
+	events := []domain.JobEvent{{OccurredAt: time.Now().UTC(), Level: domain.EventLevelInfo, Message: "dedupe-event"}}
+	if err := mgr.AppendMissionEventsBatch(mission.ID, "events-1", events); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.AppendMissionEventsBatch(mission.ID, "events-1", events); err != nil {
+		t.Fatal(err)
+	}
+
+	samples := []legacyexec.Sample{{Timestamp: time.Now().UTC(), OpType: "write", OpCount: 1, ByteCount: 1000, TotalTimeMs: 10}}
+	if err := mgr.AppendMissionSamplesBatch(mission.ID, "samples-1", samples); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.AppendMissionSamplesBatch(mission.ID, "samples-1", samples); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mgr.CompleteMission(mission.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.CompleteMission(mission.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	logs := mgr.GetJobEvents(job.ID)
+	count := 0
+	for _, event := range logs {
+		if event.Message == "dedupe-event" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("dedupe-event count = %d logs=%#v", count, logs)
+	}
+	result, ok := mgr.GetJobResult(job.ID)
+	if !ok {
+		t.Fatal("expected job result")
+	}
+	if result.Metrics.OperationCount != 1 || result.Metrics.ByteCount != 1000 {
+		t.Fatalf("result = %#v", result)
 	}
 }
