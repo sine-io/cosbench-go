@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-smoke-sio-two-driver" description="minimal remote multi-process sio smoke">
+  <storage type="sio" config="accesskey=minioadmin;secretkey=minioadmin;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+  <workflow>
+    <workstage name="main">
+      <work name="fanout" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=remote;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

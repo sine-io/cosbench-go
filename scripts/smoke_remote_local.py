@@ -17,7 +17,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_DIR = ROOT / ".artifacts" / "remote-smoke"
-FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-two-driver.xml"
+S3_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-two-driver.xml"
+SIO_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-sio-two-driver.xml"
 DEFAULT_MINIO = ROOT / ".artifacts" / "minio" / "bin" / "minio"
 DEFAULT_MINIO_DATA = ROOT / ".artifacts" / "remote-smoke" / "minio-data"
 DEFAULT_MINIO_URL = "https://dl.min.io/server/minio/release/linux-amd64/minio"
@@ -29,6 +30,7 @@ DEFAULT_MINIO_SECRET_KEY = "minioadmin"
 
 def build_summary(
     *,
+    backend,
     controller_url,
     driver_urls,
     job_id,
@@ -42,6 +44,7 @@ def build_summary(
 ):
     overall = "pass" if all(value == "pass" for value in checks.values()) else "fail"
     return {
+        "backend": backend,
         "controller_url": controller_url,
         "driver_urls": driver_urls,
         "job_id": job_id,
@@ -67,6 +70,7 @@ def build_failure_summary(failed_at, error):
 def render_summary_md(summary):
     lines = ["# Remote Smoke", ""]
     for key in [
+        "backend",
         "controller_url",
         "driver_urls",
         "job_id",
@@ -106,6 +110,7 @@ def run_mock():
         return None
     if mode == "success":
         summary = build_summary(
+            backend="s3",
             controller_url="http://127.0.0.1:19088",
             driver_urls=["http://127.0.0.1:18081", "http://127.0.0.1:18082"],
             job_id="job-1",
@@ -160,6 +165,15 @@ def wait_for_socket(host, port, timeout_seconds=20):
             except OSError:
                 time.sleep(0.1)
     raise RuntimeError(f"socket did not become ready on {host}:{port}")
+
+
+def fixture_for_backend(backend):
+    backend = backend.strip().lower()
+    if backend == "s3":
+        return S3_FIXTURE
+    if backend == "sio":
+        return SIO_FIXTURE
+    raise ValueError(f"unsupported backend: {backend}")
 
 
 def wait_for_http(url, timeout_seconds=20):
@@ -271,6 +285,8 @@ def load_json_rows(directory):
 
 
 def run_real():
+    backend = os.environ.get("SMOKE_REMOTE_LOCAL_BACKEND", "s3").strip().lower()
+    fixture = fixture_for_backend(backend)
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     controller_port = find_free_port()
     driver1_port = find_free_port()
@@ -358,7 +374,7 @@ def run_real():
         processes.append((driver2_proc, driver2_log))
         wait_for_http(driver2_url + "/")
 
-        job_id = submit_workload(controller_url, FIXTURE)
+        job_id = submit_workload(controller_url, fixture)
         status = post_empty(controller_url + f"/jobs/{job_id}/start")
         if status not in (200, 303):
             raise RuntimeError(f"unexpected start status: {status}")
@@ -385,6 +401,7 @@ def run_real():
         drivers_participated = len({item.get("lease", {}).get("driver_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}})
         units_claimed = len({item.get("work_unit_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}})
         summary = build_summary(
+            backend=backend,
             controller_url=controller_url,
             driver_urls=[driver1_url, driver2_url],
             job_id=job_id,
