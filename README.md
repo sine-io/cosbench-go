@@ -7,13 +7,13 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - XML workload compatibility for the active S3/SIO subset tracked in `testdata/`
 - Storage focus: **S3** and **SIO**
 - Web inspection, snapshot persistence, JSON export, and CSV export
-- Remote controller/driver split kept as a future seam, not a blocker for this phase
+- Remote controller/driver split is now available as an early protocol skeleton with `controller-only`, `driver-only`, and `combined` runtime modes
 
 ## Current Status
 - XML parsing, normalization, storage config, local execution, snapshots, and web flows are landed
 - The local-only v1 closure now includes stronger start-time preflight checks, modeled auth inheritance, real file-backed `filewrite` / `mfilewrite` behavior, prefetch/range read request shaping, and work-level reporting in exports and job detail views
 - The controller-facing closure now includes matrix, config, advanced-config, stage-detail, timeline, timeline CSV, Prometheus, and controller artifact endpoints under the unified Go service
-- Remote controller/driver split remains intentionally deferred
+- The remote split now includes persisted driver/mission state, registration/heartbeat/claim endpoints, a driver agent, and combined-mode loopback execution; broader scheduling and protocol depth still remain ahead
 
 ## Local CLI
 - Run with any of these equivalent workload forms:
