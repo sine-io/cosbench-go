@@ -1,0 +1,56 @@
+name: Remote Smoke Matrix
+
+"on":
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+jobs:
+  remote_smoke_matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: s3
+            scenario: single
+          - backend: s3
+            scenario: multistage
+          - backend: sio
+            scenario: single
+          - backend: sio
+            scenario: multistage
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Run remote smoke matrix row
+        run: SMOKE_REMOTE_LOCAL_BACKEND='${{ matrix.backend }}' SMOKE_REMOTE_LOCAL_SCENARIO='${{ matrix.scenario }}' GO=go make --no-print-directory smoke-remote-local
+
+      - name: Upload remote smoke artifact
+        if: always()
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: remote-smoke-${{ matrix.backend }}-${{ matrix.scenario }}
+          path: .artifacts/remote-smoke
+
+      - name: Write remote smoke summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f .artifacts/remote-smoke/summary.md ]; then
+            cat .artifacts/remote-smoke/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Remote Smoke Matrix"
+              echo
+              echo "Remote smoke helper failed before emitting .artifacts/remote-smoke/summary.md for backend=${{ matrix.backend }} scenario=${{ matrix.scenario }}."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
