@@ -36,7 +36,7 @@ jobs:
 
       - name: Upload remote smoke artifact
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: remote-smoke-${{ matrix.backend }}-${{ matrix.scenario }}
           path: .artifacts/remote-smoke
@@ -90,7 +90,7 @@ jobs:
 
       - name: Upload aggregated matrix artifact
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: remote-smoke-matrix-aggregate
           path: .artifacts/remote-smoke-matrix-aggregate

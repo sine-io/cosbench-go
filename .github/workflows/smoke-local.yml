@@ -25,7 +25,7 @@ jobs:
         run: cat smoke-local-output.txt >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload smoke artifact
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: smoke-local-output
           path: smoke-local-output.txt
