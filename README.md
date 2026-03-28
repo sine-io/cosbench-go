@@ -15,6 +15,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The controller-facing closure now includes matrix, config, advanced-config, stage-detail, timeline, timeline CSV, Prometheus, and controller artifact endpoints under the unified Go service
 - The remote split now includes persisted driver/mission state, registration/heartbeat/claim endpoints, a driver agent, combined-mode loopback execution, and a shared bearer token on driver write endpoints
 - The unified service now also includes driver-facing overview, missions, mission detail, workers, and logs pages under `/driver/...`
+- The repository now also includes a local `smoke-remote-local` path that runs one controller-only process, two driver-only processes, and local MinIO to validate remote work-unit execution end-to-end
 
 ## Local CLI
 - Run with any of these equivalent workload forms:
@@ -34,6 +35,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 ## Smoke Tests
 - Live smoke coverage is opt-in and does not run by default in `go test ./...`
 - Run `make --no-print-directory smoke-local` to start a temporary local MinIO endpoint and verify both the S3 smoke path and the SIO multipart smoke path end-to-end
+- Run `make --no-print-directory smoke-remote-local` to validate the remote controller/driver split against local MinIO with one controller-only and two driver-only processes
 - Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
@@ -47,6 +49,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
   - `COSBENCH_SMOKE_PATH_STYLE`
 - `COSBENCH_SMOKE_BUCKET_PREFIX`
 - If required env vars are missing, the smoke tests skip cleanly
+- `smoke-remote-local` writes controller, driver, and MinIO artifacts under `.artifacts/remote-smoke/`
 - Real `make smoke-s3` is now a local or private-network-only path. GitHub-hosted runners do not execute it because the repository does not have a public S3-compatible endpoint.
 - To trigger the manual GitHub smoke workflow with GitHub CLI:
   - `gh workflow run "Smoke Local" --repo sine-io/cosbench-go`
