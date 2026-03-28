@@ -50,6 +50,16 @@ def test_remote_recovery_smoke_fixture_has_delay_and_two_workers():
     assert 'duration=45s' in text
 
 
+def test_remote_sio_recovery_smoke_fixture_has_delay_and_two_workers():
+    fixture = pathlib.Path("testdata/workloads/remote-smoke-sio-recovery-two-driver.xml")
+    text = fixture.read_text(encoding="utf-8")
+    assert text.count("<workstage ") == 1
+    assert 'workers="2"' in text
+    assert 'storage type="sio"' in text
+    assert 'operation type="delay"' in text
+    assert 'duration=45s' in text
+
+
 def test_build_summary_json_shape():
     summary = smoke.build_summary(
         backend="s3",
@@ -121,6 +131,7 @@ def test_fixture_path_selection_by_backend_and_scenario():
     assert smoke.fixture_for_selection("s3", "multistage").name == "remote-smoke-s3-multistage-two-driver.xml"
     assert smoke.fixture_for_selection("sio", "multistage").name == "remote-smoke-sio-multistage-two-driver.xml"
     assert smoke.fixture_for_selection("s3", "recovery").name == "remote-smoke-s3-recovery-two-driver.xml"
+    assert smoke.fixture_for_selection("sio", "recovery").name == "remote-smoke-sio-recovery-two-driver.xml"
 
 
 def test_unknown_backend_is_rejected():
