@@ -205,6 +205,8 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["remote_recovery_latest_success"] is True
     assert summary["remote_happy_latest_result"] == "executed"
     assert summary["remote_recovery_latest_result"] == "executed"
+    assert summary["remote_happy_latest_source"] == "Remote Smoke Matrix"
+    assert summary["remote_recovery_latest_source"] == "Remote Smoke Recovery Matrix"
     assert "ready" in summary
 
 
@@ -239,6 +241,8 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Legacy Live Matrix Latest Result" in text
     assert "Remote Happy Latest Result" in text
     assert "Remote Recovery Latest Result" in text
+    assert "Remote Happy Latest Source" in text
+    assert "Remote Recovery Latest Source" in text
     assert "skipped" in text
     assert "Remote Happy Latest Success" in text
     assert "Remote Recovery Latest Success" in text
