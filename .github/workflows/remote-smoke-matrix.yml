@@ -54,3 +54,34 @@ jobs:
               echo "Remote smoke helper failed before emitting .artifacts/remote-smoke/summary.md for backend=${{ matrix.backend }} scenario=${{ matrix.scenario }}."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  aggregate:
+    if: always()
+    needs: remote_smoke_matrix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Download remote smoke artifacts
+        uses: actions/download-artifact@v6.0.0
+        with:
+          pattern: remote-smoke-*
+          path: .artifacts/remote-smoke-matrix
+
+      - name: Aggregate remote smoke matrix summaries
+        run: python3 ./scripts/aggregate_remote_smoke_matrix.py .artifacts/remote-smoke-matrix .artifacts/remote-smoke-matrix-aggregate
+
+      - name: Write aggregated matrix summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f .artifacts/remote-smoke-matrix-aggregate/summary.md ]; then
+            cat .artifacts/remote-smoke-matrix-aggregate/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Remote Smoke Matrix Summary"
+              echo
+              echo "Aggregate summary was not produced."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

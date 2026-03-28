@@ -13,3 +13,7 @@ def test_remote_smoke_matrix_workflow_shape():
     assert "SMOKE_REMOTE_LOCAL_BACKEND='${{ matrix.backend }}'" in workflow
     assert "SMOKE_REMOTE_LOCAL_SCENARIO='${{ matrix.scenario }}'" in workflow
     assert "remote-smoke-${{ matrix.backend }}-${{ matrix.scenario }}" in workflow
+    assert "aggregate:" in workflow
+    assert "needs: remote_smoke_matrix" in workflow
+    assert "pattern: remote-smoke-*" in workflow
+    assert "aggregate_remote_smoke_matrix.py" in workflow
