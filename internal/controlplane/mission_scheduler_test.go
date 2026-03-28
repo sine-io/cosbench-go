@@ -149,7 +149,7 @@ func TestClaimMissionReclaimsExpiredLeaseButNotActiveLease(t *testing.T) {
 	if !ok {
 		t.Fatal("expected reclaimed mission to be available")
 	}
-	if reclaimed.ID != claimed.ID || reclaimed.Lease == nil || reclaimed.Lease.DriverID != driverB.ID {
+	if reclaimed.ID == claimed.ID || reclaimed.WorkUnitID != claimed.WorkUnitID || reclaimed.Attempt != claimed.Attempt+1 || reclaimed.Lease == nil || reclaimed.Lease.DriverID != driverB.ID {
 		t.Fatalf("reclaimed = %#v", reclaimed)
 	}
 }
@@ -280,5 +280,194 @@ func TestClaimMissionRejectsStaleUnhealthyDriver(t *testing.T) {
 	claimed, ok, err := mgr.ClaimMission(freshDriver.ID, 30*time.Second)
 	if err != nil || !ok {
 		t.Fatalf("fresh driver claim: mission=%#v ok=%v err=%v", claimed, ok, err)
+	}
+}
+
+func TestClaimMissionDistributesDifferentUnitsAcrossDrivers(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverA, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverB, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-b", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="multi-driver-units">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="fanout" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	claimA, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-a): mission=%#v ok=%v err=%v", claimA, ok, err)
+	}
+	claimB, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-b): mission=%#v ok=%v err=%v", claimB, ok, err)
+	}
+	if claimA.WorkUnitID == "" || claimB.WorkUnitID == "" {
+		t.Fatalf("claims missing work unit ids: %#v %#v", claimA, claimB)
+	}
+	if claimA.WorkUnitID == claimB.WorkUnitID {
+		t.Fatalf("claims reused same work unit: %#v %#v", claimA, claimB)
+	}
+	if claimA.WorkUnit.Slice.WorkerIndex == claimB.WorkUnit.Slice.WorkerIndex {
+		t.Fatalf("claims reused same worker slice: %#v %#v", claimA, claimB)
+	}
+}
+
+func TestFailedWorkUnitRetriesUpToCeilingThenFailsJob(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="unit-retry-ceiling">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	var attempts []domain.MissionAttempt
+	for i := 1; i <= 3; i++ {
+		attempt, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second)
+		if err != nil || !ok {
+			t.Fatalf("ClaimMission attempt %d: mission=%#v ok=%v err=%v", i, attempt, ok, err)
+		}
+		if attempt.Attempt != i {
+			t.Fatalf("attempt number = %d want %d", attempt.Attempt, i)
+		}
+		attempts = append(attempts, attempt)
+		if err := mgr.CompleteMission(attempt.ID, domain.MissionStatusFailed, "boom"); err != nil {
+			t.Fatalf("CompleteMission attempt %d: %v", i, err)
+		}
+	}
+
+	if _, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second); err != nil || ok {
+		t.Fatalf("expected no more retries, ok=%v err=%v", ok, err)
+	}
+
+	allAttempts := mgr.ListMissionAttempts()
+	if len(allAttempts) != 3 {
+		t.Fatalf("all attempts = %#v", allAttempts)
+	}
+	result, ok := mgr.GetJobResult(job.ID)
+	if !ok || result.StageTotals[0].Status != domain.JobStatusFailed {
+		t.Fatalf("result = %#v", result)
+	}
+	loaded, ok := mgr.GetJob(job.ID)
+	if !ok || loaded.Status != domain.JobStatusFailed {
+		t.Fatalf("job = %#v", loaded)
+	}
+}
+
+func TestSuccessfulUnitsAggregateBackToWorkStageAndJob(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverA, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverB, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-b", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="unit-aggregate">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="fanout" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	claimA, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-a): mission=%#v ok=%v err=%v", claimA, ok, err)
+	}
+	claimB, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-b): mission=%#v ok=%v err=%v", claimB, ok, err)
+	}
+
+	sampleA := []legacyexec.Sample{{Timestamp: time.Now().UTC(), OpType: "write", OpCount: 1, ByteCount: 1000, TotalTimeMs: 10}}
+	sampleB := []legacyexec.Sample{{Timestamp: time.Now().UTC(), OpType: "write", OpCount: 1, ByteCount: 1000, TotalTimeMs: 20}}
+	if err := mgr.AppendMissionSamplesBatch(claimA.ID, "samples-a", sampleA); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.AppendMissionSamplesBatch(claimB.ID, "samples-b", sampleB); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.CompleteMission(claimA.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.CompleteMission(claimB.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	result, ok := mgr.GetJobResult(job.ID)
+	if !ok {
+		t.Fatal("expected job result")
+	}
+	if result.Metrics.OperationCount != 2 || result.Metrics.ByteCount != 2000 {
+		t.Fatalf("result = %#v", result)
+	}
+	if result.StageTotals[0].Status != domain.JobStatusSucceeded {
+		t.Fatalf("stage totals = %#v", result.StageTotals)
 	}
 }

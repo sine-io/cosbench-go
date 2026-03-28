@@ -19,6 +19,8 @@ import (
 type Engine struct {
 	Work    workload.Work
 	Storage ports.StorageAdapter
+	WorkerIndex int
+	WorkerCount int
 }
 
 type Result struct {
@@ -39,6 +41,11 @@ func (e *Engine) Run(ctx context.Context) Result {
 	workers := e.Work.Workers
 	if workers <= 0 {
 		workers = 1
+	}
+	targetWorkerCount := workers
+	if e.WorkerIndex > 0 && e.WorkerCount > 0 {
+		workers = 1
+		targetWorkerCount = e.WorkerCount
 	}
 	picker, err := NewWeightedOperationPicker(e.Work.Operations)
 	if err != nil {
@@ -78,7 +85,13 @@ func (e *Engine) Run(ctx context.Context) Result {
 				}
 				op := picker.Pick(r)
 				start := time.Now()
-				bytesN, err := executeOp(runCtx, e.Storage, storageConfig(e.Work.Storage, e.Work.Auth), op, workerID+1, workers, r)
+				targetIndex := workerID + 1
+				targetCount := targetWorkerCount
+				if e.WorkerIndex > 0 && e.WorkerCount > 0 {
+					targetIndex = e.WorkerIndex
+					targetCount = e.WorkerCount
+				}
+				bytesN, err := executeOp(runCtx, e.Storage, storageConfig(e.Work.Storage, e.Work.Auth), op, targetIndex, targetCount, r)
 				elapsed := time.Since(start)
 				s := Sample{Timestamp: start, OpType: op.Type, OpCount: 1, ByteCount: bytesN, TotalTimeMs: elapsed.Milliseconds()}
 				if err != nil {

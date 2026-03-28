@@ -36,6 +36,21 @@ func (e StageExecutor) RunWork(ctx context.Context, work domain.Work) WorkResult
 	return WorkResult{WorkName: work.Name, Summary: summary, Samples: result.Samples}
 }
 
+func (e StageExecutor) RunWorkUnit(ctx context.Context, unit domain.WorkUnit) WorkResult {
+	engine := &legacyexec.Engine{
+		Work:        unit.Work.ToLegacy(),
+		Storage:     e.Storage,
+		WorkerIndex: unit.Slice.WorkerIndex,
+		WorkerCount: unit.Slice.WorkerCount,
+	}
+	result := engine.Run(ctx)
+	summary := reporting.Summarize(result.Samples)
+	if result.Err != nil {
+		return WorkResult{WorkName: unit.WorkName, Summary: summary, Samples: result.Samples, Err: result.Err}
+	}
+	return WorkResult{WorkName: unit.WorkName, Summary: summary, Samples: result.Samples}
+}
+
 func (e StageExecutor) RunStage(ctx context.Context, stage domain.Stage) StageResult {
 	results := make([]WorkResult, 0, len(stage.Works))
 	parts := make([]domain.MetricsSummary, 0, len(stage.Works))

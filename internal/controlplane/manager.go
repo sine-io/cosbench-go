@@ -25,6 +25,7 @@ type Manager struct {
 	events    map[string][]domain.JobEvent
 	timelines map[string]domain.JobTimeline
 	drivers   map[string]domain.DriverNode
+	workUnits map[string]domain.WorkUnit
 	missions  map[string]domain.Mission
 	missionSamples map[string][]legacyexec.Sample
 	endpoints map[string]domain.EndpointConfig
@@ -39,6 +40,7 @@ func New(store *snapshot.Store) (*Manager, error) {
 		events:    map[string][]domain.JobEvent{},
 		timelines: map[string]domain.JobTimeline{},
 		drivers:   map[string]domain.DriverNode{},
+		workUnits: map[string]domain.WorkUnit{},
 		missions:  map[string]domain.Mission{},
 		missionSamples: map[string][]legacyexec.Sample{},
 		endpoints: map[string]domain.EndpointConfig{},
@@ -64,6 +66,13 @@ func (m *Manager) loadSnapshots() error {
 	}
 	for _, driver := range drivers {
 		m.drivers[driver.ID] = driver
+	}
+	workUnits, err := m.store.LoadWorkUnits()
+	if err != nil {
+		return err
+	}
+	for _, unit := range workUnits {
+		m.workUnits[unit.ID] = unit
 	}
 	missions, err := m.store.LoadMissions()
 	if err != nil {

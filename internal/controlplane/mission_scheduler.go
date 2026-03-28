@@ -10,6 +10,8 @@ import (
 	"github.com/sine-io/cosbench-go/internal/reporting"
 )
 
+const maxAttemptsPerWorkUnit = 3
+
 func (m *Manager) ScheduleJobStage(jobID string) ([]domain.Mission, error) {
 	job, ok := m.GetJob(jobID)
 	if !ok {
@@ -26,20 +28,37 @@ func (m *Manager) ScheduleJobStage(jobID string) ([]domain.Mission, error) {
 		storageType, rawConfig := resolveStorage(work.Storage, endpoint)
 		resolvedWork := work
 		resolvedWork.Storage = &domain.StorageSpec{Type: storageType, Config: rawConfig}
-		mission := domain.Mission{
-			ID:        newID("mission"),
-			JobID:     jobID,
-			StageName: stage.Name,
-			WorkName:  work.Name,
-			Work:      resolvedWork,
-			Status:    domain.MissionStatusCreated,
-			CreatedAt: now,
-			UpdatedAt: now,
+		unitCount := work.Workers
+		if unitCount <= 0 {
+			unitCount = 1
 		}
-		if err := m.PutMission(mission); err != nil {
-			return nil, err
+		for unitIndex := 1; unitIndex <= unitCount; unitIndex++ {
+			unitWork := sliceWork(resolvedWork, unitIndex, unitCount)
+			unit := domain.WorkUnit{
+				ID:        newID("unit"),
+				JobID:     jobID,
+				StageName: stage.Name,
+				WorkName:  work.Name,
+				UnitIndex: unitIndex,
+				UnitCount: unitCount,
+				Work:      unitWork,
+				Slice: domain.WorkUnitSlice{
+					WorkerIndex: unitIndex,
+					WorkerCount: unitCount,
+				},
+				Status:    domain.WorkUnitStatusPending,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}
+			if err := m.PutWorkUnit(unit); err != nil {
+				return nil, err
+			}
+			mission := m.createMissionAttemptLocked(unit, now, 1)
+			if err := m.PutMission(mission); err != nil {
+				return nil, err
+			}
+			missions = append(missions, mission)
 		}
-		missions = append(missions, mission)
 	}
 	return missions, nil
 }
@@ -64,7 +83,7 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 
 	candidates := make([]domain.Mission, 0, len(m.missions))
 	for _, mission := range m.missions {
-		if mission.Status == domain.MissionStatusCreated || mission.Status == domain.MissionStatusExpired {
+		if mission.Status == domain.MissionAttemptStatusPending {
 			candidates = append(candidates, mission)
 		}
 	}
@@ -86,6 +105,13 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 		ExpiresAt: now.Add(leaseTTL),
 	}
 	m.missions[mission.ID] = mission
+	if unit, ok := m.workUnits[mission.WorkUnitID]; ok {
+		unit.Status = domain.WorkUnitStatusClaimed
+		unit.UpdatedAt = now
+		m.workUnits[unit.ID] = unit
+		_ = m.store.SaveWorkUnit(unit)
+		mission.WorkUnit = unit
+	}
 	if err := m.store.SaveMission(mission); err != nil {
 		return domain.Mission{}, false, err
 	}
@@ -109,6 +135,17 @@ func (m *Manager) expireLeasesLocked(now time.Time) {
 		mission.Lease = nil
 		mission.UpdatedAt = now
 		m.missions[missionID] = mission
+		if unit, ok := m.workUnits[mission.WorkUnitID]; ok {
+			unit.Status = domain.WorkUnitStatusPending
+			unit.UpdatedAt = now
+			m.workUnits[unit.ID] = unit
+			_ = m.store.SaveWorkUnit(unit)
+			if mission.Attempt < maxAttemptsPerWorkUnit {
+				retry := m.createMissionAttemptLocked(unit, now, mission.Attempt+1)
+				m.missions[retry.ID] = retry
+				_ = m.store.SaveMission(retry)
+			}
+		}
 		delete(m.missionSamples, missionID)
 		_ = m.store.SaveMission(mission)
 		affectedJobs[mission.JobID] = struct{}{}
@@ -140,6 +177,12 @@ func (m *Manager) AppendMissionEventsBatch(missionID string, batchID string, eve
 		mission.ReceivedEventBatches = append(mission.ReceivedEventBatches, batchID)
 	}
 	m.missions[missionID] = mission
+	if unit, ok := m.workUnits[mission.WorkUnitID]; ok {
+		unit.Status = domain.WorkUnitStatusRunning
+		unit.UpdatedAt = mission.UpdatedAt
+		m.workUnits[unit.ID] = unit
+		_ = m.store.SaveWorkUnit(unit)
+	}
 	for _, event := range events {
 		event.JobID = mission.JobID
 		m.events[mission.JobID] = append(m.events[mission.JobID], event)
@@ -169,6 +212,12 @@ func (m *Manager) AppendMissionSamplesBatch(missionID string, batchID string, sa
 		mission.ReceivedSampleBatches = append(mission.ReceivedSampleBatches, batchID)
 	}
 	m.missions[missionID] = mission
+	if unit, ok := m.workUnits[mission.WorkUnitID]; ok {
+		unit.Status = domain.WorkUnitStatusRunning
+		unit.UpdatedAt = mission.UpdatedAt
+		m.workUnits[unit.ID] = unit
+		_ = m.store.SaveWorkUnit(unit)
+	}
 	m.missionSamples[missionID] = append(m.missionSamples[missionID], samples...)
 	return m.store.SaveMission(mission)
 }
@@ -187,6 +236,28 @@ func (m *Manager) CompleteMission(missionID string, status domain.MissionStatus,
 	mission.ErrorMessage = errorMessage
 	mission.UpdatedAt = time.Now().UTC()
 	m.missions[missionID] = mission
+	if unit, ok := m.workUnits[mission.WorkUnitID]; ok {
+		switch status {
+		case domain.MissionStatusSucceeded:
+			unit.Status = domain.WorkUnitStatusSucceeded
+		case domain.MissionStatusFailed:
+			if mission.Attempt >= maxAttemptsPerWorkUnit {
+				unit.Status = domain.WorkUnitStatusFailed
+			} else {
+				unit.Status = domain.WorkUnitStatusPending
+			}
+		default:
+			unit.Status = domain.WorkUnitStatusRunning
+		}
+		unit.UpdatedAt = mission.UpdatedAt
+		m.workUnits[unit.ID] = unit
+		_ = m.store.SaveWorkUnit(unit)
+		if status == domain.MissionStatusFailed && mission.Attempt < maxAttemptsPerWorkUnit {
+			retry := m.createMissionAttemptLocked(unit, mission.UpdatedAt, mission.Attempt+1)
+			m.missions[retry.ID] = retry
+			_ = m.store.SaveMission(retry)
+		}
+	}
 	if err := m.store.SaveMission(mission); err != nil {
 		return err
 	}
@@ -218,34 +289,44 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) {
 		stageAnyRunning := false
 
 		for _, work := range stage.Works {
-			mission, ok := findMissionForWork(m.missions, jobID, stage.Name, work.Name)
-			if !ok {
+			units := listWorkUnitsLocked(m.workUnits, jobID, stage.Name, work.Name)
+			if len(units) == 0 {
 				stageAllSucceeded = false
 				continue
 			}
-			stageAnyStarted = true
-			samples := append([]legacyexec.Sample(nil), m.missionSamples[mission.ID]...)
-			summary := reporting.Summarize(samples)
-			stageParts = append(stageParts, summary)
-			workSummaries = append(workSummaries, domain.WorkSummary{
-				Name:         work.Name,
-				ErrorMessage: mission.ErrorMessage,
-				Metrics:      summary,
-			})
-			stageSamples = append(stageSamples, samples...)
-			jobSamples = append(jobSamples, samples...)
-
-			switch mission.Status {
-			case domain.MissionStatusSucceeded:
-			case domain.MissionStatusFailed:
-				stageAnyFailed = true
-				anyFailed = true
-				stageAllSucceeded = false
-			case domain.MissionStatusClaimed, domain.MissionStatusRunning:
-				stageAnyRunning = true
-				anyRunning = true
-				stageAllSucceeded = false
-			default:
+			workSamples := make([]legacyexec.Sample, 0)
+			workSummary := domain.WorkSummary{Name: work.Name}
+			workAllSucceeded := len(units) > 0
+			for _, unit := range units {
+				attempt, ok := latestAttemptForUnitLocked(m.missions, unit.ID)
+				if ok {
+					stageAnyStarted = true
+					samples := append([]legacyexec.Sample(nil), m.missionSamples[attempt.ID]...)
+					workSamples = append(workSamples, samples...)
+					stageSamples = append(stageSamples, samples...)
+					jobSamples = append(jobSamples, samples...)
+					if attempt.ErrorMessage != "" {
+						workSummary.ErrorMessage = attempt.ErrorMessage
+					}
+				}
+				switch unit.Status {
+				case domain.WorkUnitStatusSucceeded:
+				case domain.WorkUnitStatusFailed:
+					stageAnyFailed = true
+					anyFailed = true
+					workAllSucceeded = false
+				case domain.WorkUnitStatusClaimed, domain.WorkUnitStatusRunning:
+					stageAnyRunning = true
+					anyRunning = true
+					workAllSucceeded = false
+				default:
+					workAllSucceeded = false
+				}
+			}
+			workSummary.Metrics = reporting.Summarize(workSamples)
+			stageParts = append(stageParts, workSummary.Metrics)
+			workSummaries = append(workSummaries, workSummary)
+			if !workAllSucceeded && workSummary.Metrics.OperationCount == 0 {
 				stageAllSucceeded = false
 			}
 		}
@@ -307,6 +388,50 @@ func findMissionForWork(missions map[string]domain.Mission, jobID, stageName, wo
 	return domain.Mission{}, false
 }
 
+func sliceWork(work domain.Work, unitIndex, unitCount int) domain.Work {
+	sliced := work
+	sliced.Workers = 1
+	if work.TotalOps > 0 {
+		sliced.TotalOps = splitShare(work.TotalOps, unitIndex, unitCount)
+	}
+	if work.TotalBytes > 0 {
+		sliced.TotalBytes = int64(splitShareInt64(work.TotalBytes, unitIndex, unitCount))
+	}
+	return sliced
+}
+
+func splitShare(total int, unitIndex, unitCount int) int {
+	if unitCount <= 0 {
+		return total
+	}
+	base := total / unitCount
+	remainder := total % unitCount
+	share := base
+	if unitIndex <= remainder {
+		share++
+	}
+	if share < 0 {
+		return 0
+	}
+	return share
+}
+
+func splitShareInt64(total int64, unitIndex, unitCount int) int64 {
+	if unitCount <= 0 {
+		return total
+	}
+	base := total / int64(unitCount)
+	remainder := total % int64(unitCount)
+	share := base
+	if int64(unitIndex) <= remainder {
+		share++
+	}
+	if share < 0 {
+		return 0
+	}
+	return share
+}
+
 func containsBatchID(items []string, batchID string) bool {
 	for _, item := range items {
 		if item == batchID {
@@ -314,4 +439,20 @@ func containsBatchID(items []string, batchID string) bool {
 		}
 	}
 	return false
+}
+
+func (m *Manager) createMissionAttemptLocked(unit domain.WorkUnit, now time.Time, attempt int) domain.Mission {
+	return domain.Mission{
+		ID:         newID("mission"),
+		WorkUnitID: unit.ID,
+		WorkUnit:   unit,
+		JobID:      unit.JobID,
+		StageName:  unit.StageName,
+		WorkName:   unit.WorkName,
+		Work:       unit.Work,
+		Attempt:    attempt,
+		Status:     domain.MissionAttemptStatusPending,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
 }

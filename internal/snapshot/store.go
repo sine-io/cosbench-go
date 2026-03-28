@@ -21,6 +21,7 @@ func New(root string) (*Store, error) {
 		filepath.Join(root, "drivers"),
 		filepath.Join(root, "jobs"),
 		filepath.Join(root, "missions"),
+		filepath.Join(root, "work_units"),
 		filepath.Join(root, "results"),
 		filepath.Join(root, "events"),
 		filepath.Join(root, "endpoints"),
@@ -44,6 +45,10 @@ func (s *Store) SaveDriverNode(driver domain.DriverNode) error {
 
 func (s *Store) SaveMission(mission domain.Mission) error {
 	return writeJSON(filepath.Join(s.root, "missions", mission.ID+".json"), mission)
+}
+
+func (s *Store) SaveWorkUnit(unit domain.WorkUnit) error {
+	return writeJSON(filepath.Join(s.root, "work_units", unit.ID+".json"), unit)
 }
 
 func (s *Store) SaveResult(result domain.JobResult) error {
@@ -87,6 +92,15 @@ func (s *Store) LoadMissions() ([]domain.Mission, error) {
 	}
 	sort.Slice(missions, func(i, j int) bool { return missions[i].UpdatedAt.After(missions[j].UpdatedAt) })
 	return missions, nil
+}
+
+func (s *Store) LoadWorkUnits() ([]domain.WorkUnit, error) {
+	var units []domain.WorkUnit
+	if err := readAllJSON(filepath.Join(s.root, "work_units"), &units); err != nil {
+		return nil, err
+	}
+	sort.Slice(units, func(i, j int) bool { return units[i].UpdatedAt.Before(units[j].UpdatedAt) })
+	return units, nil
 }
 
 func (s *Store) LoadEndpoints() ([]domain.EndpointConfig, error) {
