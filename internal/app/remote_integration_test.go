@@ -147,3 +147,121 @@ func TestDriverOnlyModeProcessesControllerMissions(t *testing.T) {
 	result, _ := controllerApp.Manager.GetJobResult(job.ID)
 	t.Fatalf("expected driver-only mode to process remote mission, got %#v", result)
 }
+
+func TestCombinedModeProgressesAcrossMultipleStages(t *testing.T) {
+	viewDir, err := filepath.Abs(filepath.Join("..", "..", "web", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	application, err := New(Config{DataDir: t.TempDir(), ViewDir: viewDir, Mode: ModeCombined, DriverSharedToken: "shared-token"})
+	if err != nil {
+		t.Fatalf("New(): %v", err)
+	}
+
+	job, err := application.Manager.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="combined-multistage">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="stage-a">
+      <work name="main-a" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="stage-b">
+      <work name="main-b" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(2,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := application.Manager.StartJob(context.Background(), job.ID); err != nil {
+		t.Fatalf("StartJob(): %v", err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := application.ProcessCombinedMission(context.Background()); err != nil {
+			t.Fatalf("ProcessCombinedMission(): %v", err)
+		}
+		result, ok := application.Manager.GetJobResult(job.ID)
+		if ok && result.Metrics.OperationCount == 2 {
+			loaded, _ := application.Manager.GetJob(job.ID)
+			if loaded.Status == domain.JobStatusSucceeded && len(loaded.Stages) == 2 && loaded.Stages[0].Status == domain.JobStatusSucceeded && loaded.Stages[1].Status == domain.JobStatusSucceeded {
+				return
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	result, _ := application.Manager.GetJobResult(job.ID)
+	t.Fatalf("expected combined-mode multistage result, got %#v", result)
+}
+
+func TestDriverOnlyModeProgressesAcrossMultipleStages(t *testing.T) {
+	viewDir, err := filepath.Abs(filepath.Join("..", "..", "web", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	controllerApp, err := New(Config{DataDir: t.TempDir(), ViewDir: viewDir, Mode: ModeControllerOnly, DriverSharedToken: "shared-token"})
+	if err != nil {
+		t.Fatalf("New(controller): %v", err)
+	}
+	server := httptest.NewServer(controllerApp.Handler)
+	defer server.Close()
+
+	driverApp, err := New(Config{
+		DataDir:           t.TempDir(),
+		ViewDir:           viewDir,
+		Mode:              ModeDriverOnly,
+		DriverSharedToken: "shared-token",
+		ControllerURL:     server.URL,
+		DriverName:        "driver-multistage",
+	})
+	if err != nil {
+		t.Fatalf("New(driver): %v", err)
+	}
+	bgCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := driverApp.StartBackground(bgCtx); err != nil {
+		t.Fatalf("StartBackground(): %v", err)
+	}
+
+	job, err := controllerApp.Manager.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="driver-only-multistage">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="stage-a">
+      <work name="main-a" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="stage-b">
+      <work name="main-b" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(2,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := controllerApp.Manager.StartJob(context.Background(), job.ID); err != nil {
+		t.Fatalf("StartJob(): %v", err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		result, ok := controllerApp.Manager.GetJobResult(job.ID)
+		if ok && result.Metrics.OperationCount == 2 {
+			loaded, _ := controllerApp.Manager.GetJob(job.ID)
+			if loaded.Status == domain.JobStatusSucceeded && len(loaded.Stages) == 2 && loaded.Stages[0].Status == domain.JobStatusSucceeded && loaded.Stages[1].Status == domain.JobStatusSucceeded {
+				return
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	result, _ := controllerApp.Manager.GetJobResult(job.ID)
+	t.Fatalf("expected driver-only multistage result, got %#v", result)
+}

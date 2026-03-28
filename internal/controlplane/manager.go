@@ -157,6 +157,7 @@ func (m *Manager) CreateJobFromXML(raw []byte, endpointID string) (domain.Job, e
 		Workload:   workload,
 		RawXML:     string(raw),
 		CreatedAt:  time.Now().UTC(),
+		ActiveStageIndex: 0,
 		Stages:     domain.NewStageStates(workload),
 		EndpointID: endpointID,
 	}
@@ -209,6 +210,7 @@ func (m *Manager) StartJob(ctx context.Context, jobID string) error {
 	runCtx, cancel := context.WithCancel(ctx)
 	job.Status = domain.JobStatusRunning
 	job.StartedAt = &now
+	job.ActiveStageIndex = 0
 	m.jobs[jobID] = job
 	m.running[jobID] = cancel
 	m.appendEventLocked(jobID, domain.EventLevelInfo, "job started")
