@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -45,3 +46,24 @@ def test_render_markdown_includes_row_statuses():
     assert "executed" in markdown
     assert "sio" in markdown
     assert "missing" in markdown
+
+
+def test_aggregate_script_accepts_structured_row_statuses(tmp_path):
+    root = tmp_path / "downloads"
+    write_output(root / "smoke-s3-s3" / "smoke-s3-output.txt", "s3 success")
+    write_summary(root / "smoke-s3-s3" / "summary.json", {"result": "executed"})
+    write_output(root / "smoke-s3-sio" / "smoke-s3-output.txt", "sio skipped")
+    write_summary(root / "smoke-s3-sio" / "summary.json", {"result": "skipped"})
+
+    output = tmp_path / "aggregate"
+    subprocess.run(
+        ["python3", "scripts/aggregate_smoke_s3_matrix.py", str(root), str(output)],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    payload = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    assert payload["overall"] == "pass"
+    assert payload["rows"][0]["status"] == "executed"
+    assert payload["rows"][1]["status"] == "skipped"
