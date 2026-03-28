@@ -11,7 +11,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 
 ## Current Status
 - XML parsing, normalization, storage config, local execution, snapshots, and web flows are landed
-- The local-only v1 closure now includes stronger start-time preflight checks, real file-backed multipart behavior, and work-level reporting in exports and job detail views
+- The local-only v1 closure now includes stronger start-time preflight checks, modeled auth inheritance, real file-backed `filewrite` / `mfilewrite` behavior, prefetch/range read request shaping, and work-level reporting in exports and job detail views
 - Remote controller/driver split remains intentionally deferred
 
 ## Local CLI
