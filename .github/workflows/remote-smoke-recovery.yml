@@ -27,6 +27,17 @@ jobs:
           name: remote-smoke-recovery-output
           path: .artifacts/remote-smoke
 
+      - name: Build remote smoke recovery summary artifact
+        if: always()
+        run: python3 ./scripts/build_remote_smoke_recovery_summary.py .artifacts/remote-smoke .artifacts/remote-smoke-recovery-summary
+
+      - name: Upload remote smoke recovery summary artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: remote-smoke-recovery-summary
+          path: .artifacts/remote-smoke-recovery-summary
+
       - name: Write remote smoke summary
         if: always()
         shell: bash
