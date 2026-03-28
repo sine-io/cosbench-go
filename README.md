@@ -67,7 +67,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`
 - A manual GitHub Actions workflow can run `make smoke-remote-local` and upload `.artifacts/remote-smoke/`
-- The same manual workflow now accepts a `backend` input (`s3` or `sio`)
+- The same manual workflow now accepts `backend` and `scenario` inputs
 
 To trigger the manual remote smoke workflow with GitHub CLI:
 
@@ -79,6 +79,12 @@ To trigger the SIO variant:
 
 ```bash
 gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go -f backend=sio
+```
+
+To trigger the multistage S3 variant:
+
+```bash
+gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go -f backend=s3 -f scenario=multistage
 ```
 
 ## Legacy Comparison
