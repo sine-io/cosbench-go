@@ -2,6 +2,11 @@ name: Remote Smoke Local
 
 "on":
   workflow_dispatch:
+    inputs:
+      backend:
+        description: Backend to run through the remote smoke helper
+        required: false
+        default: "s3"
 
 jobs:
   remote_smoke:
@@ -18,7 +23,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Run remote multi-process smoke
-        run: GO=go make --no-print-directory smoke-remote-local
+        run: SMOKE_REMOTE_LOCAL_BACKEND='${{ inputs.backend }}' GO=go make --no-print-directory smoke-remote-local
 
       - name: Upload remote smoke artifact
         if: always()

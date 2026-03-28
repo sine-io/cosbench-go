@@ -12,8 +12,17 @@ def test_remote_smoke_fixture_has_two_workers():
     assert 'operation type="write"' in text
 
 
+def test_remote_sio_smoke_fixture_has_two_workers():
+    fixture = pathlib.Path("testdata/workloads/remote-smoke-sio-two-driver.xml")
+    text = fixture.read_text(encoding="utf-8")
+    assert 'workers="2"' in text
+    assert 'storage type="sio"' in text
+    assert 'operation type="write"' in text
+
+
 def test_build_summary_json_shape():
     summary = smoke.build_summary(
+        backend="s3",
         controller_url="http://127.0.0.1:19088",
         driver_urls=["http://127.0.0.1:18081", "http://127.0.0.1:18082"],
         job_id="job-1",
@@ -28,6 +37,7 @@ def test_build_summary_json_shape():
     assert summary["controller_url"] == "http://127.0.0.1:19088"
     assert summary["driver_urls"] == ["http://127.0.0.1:18081", "http://127.0.0.1:18082"]
     assert summary["job_id"] == "job-1"
+    assert summary["backend"] == "s3"
     assert summary["overall"] == "pass"
     json.dumps(summary)
 
@@ -37,3 +47,17 @@ def test_build_failure_summary_for_missing_process():
     assert summary["overall"] == "fail"
     assert summary["failed_at"] == "controller"
     assert "controller failed to start" in summary["error"]
+
+
+def test_fixture_path_selection_by_backend():
+    assert smoke.fixture_for_backend("s3").name == "remote-smoke-s3-two-driver.xml"
+    assert smoke.fixture_for_backend("sio").name == "remote-smoke-sio-two-driver.xml"
+
+
+def test_unknown_backend_is_rejected():
+    try:
+        smoke.fixture_for_backend("swift")
+    except ValueError as err:
+        assert "unsupported backend" in str(err)
+    else:
+        raise AssertionError("expected unsupported backend error")
