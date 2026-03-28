@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sine-io/cosbench-go/internal/controlplane"
 	"github.com/sine-io/cosbench-go/internal/domain"
@@ -138,5 +139,79 @@ func TestAgentProcessOneReturnsFalseWhenNoMissionExists(t *testing.T) {
 	}
 	if processed {
 		t.Fatal("expected no mission to be processed")
+	}
+}
+
+func TestAgentProcessOneCanReclaimExpiredMissionLease(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := controlplane.New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="agent-expiry">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	missions, err := mgr.ScheduleJobStage(job.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "expired-owner", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	claimed, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(): mission=%#v ok=%v err=%v", claimed, ok, err)
+	}
+	claimed.Status = domain.MissionStatusRunning
+	claimed.Lease.ExpiresAt = time.Now().UTC().Add(-time.Second)
+	claimed.UpdatedAt = time.Now().UTC().Add(-time.Second)
+	if err := mgr.PutMission(claimed); err != nil {
+		t.Fatal(err)
+	}
+	if len(missions) != 1 {
+		t.Fatalf("missions = %#v", missions)
+	}
+
+	root, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	agent := &Agent{
+		Client: &HTTPClient{BaseURL: server.URL},
+		Name:   "driver-reclaimer",
+		Mode:   domain.DriverModeDriver,
+	}
+	processed, err := agent.ProcessOne(context.Background())
+	if err != nil {
+		t.Fatalf("ProcessOne(): %v", err)
+	}
+	if !processed {
+		t.Fatal("expected expired mission to be reclaimed and processed")
+	}
+	reloaded, ok := mgr.GetMission(claimed.ID)
+	if !ok || reloaded.Status != domain.MissionStatusSucceeded {
+		t.Fatalf("reloaded mission = %#v", reloaded)
 	}
 }

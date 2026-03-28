@@ -70,3 +70,32 @@ func TestDriverReadModelsExposeOverviewMissionsWorkersAndLogs(t *testing.T) {
 		t.Fatal("expected driver logs")
 	}
 }
+
+func TestDriverOverviewMarksStaleHeartbeatAsUnhealthy(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-stale", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	staleAt := time.Now().UTC().Add(-2 * driverHeartbeatTimeout)
+	driver.LastHeartbeatAt = &staleAt
+	driver.Status = domain.DriverStatusHealthy
+	if err := mgr.PutDriverNode(driver); err != nil {
+		t.Fatal(err)
+	}
+
+	overview, ok := mgr.GetDriverOverview(driver.ID)
+	if !ok {
+		t.Fatal("expected overview")
+	}
+	if overview.Driver.Status != domain.DriverStatusUnhealthy {
+		t.Fatalf("overview = %#v", overview)
+	}
+}

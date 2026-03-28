@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"sort"
+	"time"
 
 	"github.com/sine-io/cosbench-go/internal/domain"
 )
@@ -14,12 +15,13 @@ func (m *Manager) PutDriverNode(driver domain.DriverNode) error {
 }
 
 func (m *Manager) ListDriverNodes() []domain.DriverNode {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.mu.Lock()
+	m.refreshDriverHealthLocked(time.Now().UTC())
 	items := make([]domain.DriverNode, 0, len(m.drivers))
 	for _, driver := range m.drivers {
 		items = append(items, driver)
 	}
+	m.mu.Unlock()
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].RegisteredAt.Equal(items[j].RegisteredAt) {
 			return items[i].ID > items[j].ID

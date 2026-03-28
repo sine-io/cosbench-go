@@ -152,23 +152,29 @@ func (h *Handler) driverMissionRoute(w http.ResponseWriter, r *http.Request) {
 	missionID, action := parts[0], parts[1]
 	switch action {
 	case "events":
-		var events []domain.JobEvent
-		if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
+		var payload struct {
+			BatchID string            `json:"batch_id"`
+			Events  []domain.JobEvent `json:"events"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := h.manager.AppendMissionEvents(missionID, events); err != nil {
+		if err := h.manager.AppendMissionEventsBatch(missionID, payload.BatchID, payload.Events); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	case "samples":
-		var samples []legacyexec.Sample
-		if err := json.NewDecoder(r.Body).Decode(&samples); err != nil {
+		var payload struct {
+			BatchID string              `json:"batch_id"`
+			Samples []legacyexec.Sample `json:"samples"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := h.manager.AppendMissionSamples(missionID, samples); err != nil {
+		if err := h.manager.AppendMissionSamplesBatch(missionID, payload.BatchID, payload.Samples); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

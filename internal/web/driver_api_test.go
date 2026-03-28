@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	legacyexec "github.com/sine-io/cosbench-go/internal/domain/execution"
 	"github.com/sine-io/cosbench-go/internal/domain"
 )
 
@@ -189,5 +190,117 @@ func TestDriverAPIReadEndpoints(t *testing.T) {
 	}
 	if len(logs) == 0 {
 		t.Fatal("expected driver logs")
+	}
+}
+
+func TestDriverReportingEndpointsAreIdempotent(t *testing.T) {
+	h := newTestHandler(t)
+
+	registerBody, _ := json.Marshal(map[string]any{
+		"name": "driver-idempotent",
+		"mode": string(domain.DriverModeDriver),
+	})
+	registerRec := httptest.NewRecorder()
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/driver/register", bytes.NewReader(registerBody))
+	registerReq.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(registerRec, registerReq)
+	if registerRec.Code != http.StatusOK {
+		t.Fatalf("register status = %d body=%s", registerRec.Code, registerRec.Body.String())
+	}
+	var driver domain.DriverNode
+	if err := json.Unmarshal(registerRec.Body.Bytes(), &driver); err != nil {
+		t.Fatalf("register unmarshal: %v", err)
+	}
+
+	job, err := h.manager.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="driver-idempotent-job">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.manager.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+	mission, ok, err := h.manager.ClaimMission(driver.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(): mission=%#v ok=%v err=%v", mission, ok, err)
+	}
+
+	eventPayload, _ := json.Marshal(map[string]any{
+		"batch_id": "events-1",
+		"events": []domain.JobEvent{{
+			OccurredAt: time.Now().UTC(),
+			Level:      domain.EventLevelInfo,
+			Message:    "driver-http-event",
+		}},
+	})
+	for range 2 {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/driver/missions/"+mission.ID+"/events", bytes.NewReader(eventPayload))
+		req.Header.Set("Content-Type", "application/json")
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("event status = %d body=%s", rec.Code, rec.Body.String())
+		}
+	}
+
+	samplePayload, _ := json.Marshal(map[string]any{
+		"batch_id": "samples-1",
+		"samples": []legacyexec.Sample{{
+			Timestamp:   time.Now().UTC(),
+			OpType:      "write",
+			OpCount:     1,
+			ByteCount:   1000,
+			TotalTimeMs: 10,
+		}},
+	})
+	for range 2 {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/driver/missions/"+mission.ID+"/samples", bytes.NewReader(samplePayload))
+		req.Header.Set("Content-Type", "application/json")
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("sample status = %d body=%s", rec.Code, rec.Body.String())
+		}
+	}
+
+	completePayload, _ := json.Marshal(map[string]any{
+		"status":        domain.MissionStatusSucceeded,
+		"error_message": "",
+	})
+	for range 2 {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/driver/missions/"+mission.ID+"/complete", bytes.NewReader(completePayload))
+		req.Header.Set("Content-Type", "application/json")
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("complete status = %d body=%s", rec.Code, rec.Body.String())
+		}
+	}
+
+	logs := h.manager.GetJobEvents(job.ID)
+	count := 0
+	for _, event := range logs {
+		if event.Message == "driver-http-event" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("driver-http-event count = %d logs=%#v", count, logs)
+	}
+	result, ok := h.manager.GetJobResult(job.ID)
+	if !ok {
+		t.Fatal("expected result")
+	}
+	if result.Metrics.OperationCount != 1 || result.Metrics.ByteCount != 1000 {
+		t.Fatalf("result = %#v", result)
 	}
 }

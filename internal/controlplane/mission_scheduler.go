@@ -48,12 +48,19 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 	if leaseTTL <= 0 {
 		leaseTTL = 30 * time.Second
 	}
-	if _, ok := m.GetDriverNode(driverID); !ok {
-		return domain.Mission{}, false, errors.New("driver not found")
-	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	now := time.Now().UTC()
+	m.expireLeasesLocked(now)
+	m.refreshDriverHealthLocked(now)
+	driver, ok := m.drivers[driverID]
+	if !ok {
+		return domain.Mission{}, false, errors.New("driver not found")
+	}
+	if driver.Status != domain.DriverStatusHealthy {
+		return domain.Mission{}, false, errors.New("driver is not healthy")
+	}
 
 	candidates := make([]domain.Mission, 0, len(m.missions))
 	for _, mission := range m.missions {
@@ -70,7 +77,6 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 	if len(candidates) == 0 {
 		return domain.Mission{}, false, nil
 	}
-	now := time.Now().UTC()
 	mission := candidates[0]
 	mission.Status = domain.MissionStatusClaimed
 	mission.UpdatedAt = now
@@ -86,17 +92,53 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 	return mission, true, nil
 }
 
+func (m *Manager) expireLeasesLocked(now time.Time) {
+	affectedJobs := map[string]struct{}{}
+	for missionID, mission := range m.missions {
+		if mission.Lease == nil {
+			continue
+		}
+		if mission.Status != domain.MissionStatusClaimed && mission.Status != domain.MissionStatusRunning {
+			continue
+		}
+		if mission.Lease.ExpiresAt.After(now) {
+			continue
+		}
+		mission.Status = domain.MissionStatusExpired
+		mission.ErrorMessage = "mission lease expired"
+		mission.Lease = nil
+		mission.UpdatedAt = now
+		m.missions[missionID] = mission
+		delete(m.missionSamples, missionID)
+		_ = m.store.SaveMission(mission)
+		affectedJobs[mission.JobID] = struct{}{}
+	}
+	for jobID := range affectedJobs {
+		m.refreshJobFromMissionsLocked(jobID)
+	}
+}
+
 func (m *Manager) AppendMissionEvents(missionID string, events []domain.JobEvent) error {
+	return m.AppendMissionEventsBatch(missionID, newID("event-batch"), events)
+}
+
+func (m *Manager) AppendMissionEventsBatch(missionID string, batchID string, events []domain.JobEvent) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	mission, ok := m.missions[missionID]
 	if !ok {
 		return errors.New("mission not found")
 	}
+	if batchID != "" && containsBatchID(mission.ReceivedEventBatches, batchID) {
+		return nil
+	}
 	if mission.Status == domain.MissionStatusClaimed {
 		mission.Status = domain.MissionStatusRunning
 	}
 	mission.UpdatedAt = time.Now().UTC()
+	if batchID != "" {
+		mission.ReceivedEventBatches = append(mission.ReceivedEventBatches, batchID)
+	}
 	m.missions[missionID] = mission
 	for _, event := range events {
 		event.JobID = mission.JobID
@@ -106,16 +148,26 @@ func (m *Manager) AppendMissionEvents(missionID string, events []domain.JobEvent
 }
 
 func (m *Manager) AppendMissionSamples(missionID string, samples []legacyexec.Sample) error {
+	return m.AppendMissionSamplesBatch(missionID, newID("sample-batch"), samples)
+}
+
+func (m *Manager) AppendMissionSamplesBatch(missionID string, batchID string, samples []legacyexec.Sample) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	mission, ok := m.missions[missionID]
 	if !ok {
 		return errors.New("mission not found")
 	}
+	if batchID != "" && containsBatchID(mission.ReceivedSampleBatches, batchID) {
+		return nil
+	}
 	if mission.Status == domain.MissionStatusClaimed {
 		mission.Status = domain.MissionStatusRunning
 	}
 	mission.UpdatedAt = time.Now().UTC()
+	if batchID != "" {
+		mission.ReceivedSampleBatches = append(mission.ReceivedSampleBatches, batchID)
+	}
 	m.missions[missionID] = mission
 	m.missionSamples[missionID] = append(m.missionSamples[missionID], samples...)
 	return m.store.SaveMission(mission)
@@ -127,6 +179,9 @@ func (m *Manager) CompleteMission(missionID string, status domain.MissionStatus,
 	mission, ok := m.missions[missionID]
 	if !ok {
 		return errors.New("mission not found")
+	}
+	if mission.Status == domain.MissionStatusSucceeded || mission.Status == domain.MissionStatusFailed {
+		return nil
 	}
 	mission.Status = status
 	mission.ErrorMessage = errorMessage
@@ -250,4 +305,13 @@ func findMissionForWork(missions map[string]domain.Mission, jobID, stageName, wo
 		}
 	}
 	return domain.Mission{}, false
+}
+
+func containsBatchID(items []string, batchID string) bool {
+	for _, item := range items {
+		if item == batchID {
+			return true
+		}
+	}
+	return false
 }
