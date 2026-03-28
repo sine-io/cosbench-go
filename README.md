@@ -92,6 +92,12 @@ To trigger the manual real-endpoint smoke workflow:
 gh workflow run "Smoke S3" --repo sine-io/cosbench-go
 ```
 
+To trigger the full real-endpoint smoke matrix:
+
+```bash
+gh workflow run "Smoke S3 Matrix" --repo sine-io/cosbench-go
+```
+
 To trigger the SIO variant:
 
 ```bash
