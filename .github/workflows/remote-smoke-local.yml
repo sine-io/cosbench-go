@@ -1,0 +1,42 @@
+name: Remote Smoke Local
+
+"on":
+  workflow_dispatch:
+
+jobs:
+  remote_smoke:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Run remote multi-process smoke
+        run: GO=go make --no-print-directory smoke-remote-local
+
+      - name: Upload remote smoke artifact
+        if: always()
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: remote-smoke-output
+          path: .artifacts/remote-smoke
+
+      - name: Write remote smoke summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f .artifacts/remote-smoke/summary.md ]; then
+            cat .artifacts/remote-smoke/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Remote Smoke"
+              echo
+              echo "Remote smoke helper failed before emitting .artifacts/remote-smoke/summary.md."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
