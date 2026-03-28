@@ -17,7 +17,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run local moto smoke
+      - name: Run local MinIO smoke
         run: GO=go make smoke-local | tee smoke-local-output.txt
 
       - name: Write smoke summary

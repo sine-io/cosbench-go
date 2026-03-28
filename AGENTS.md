@@ -12,7 +12,7 @@ Use the `Makefile` for the common paths:
 - `make compare-local` runs the curated mock-backed comparison fixture set through the CLI
 - `make --no-print-directory smoke-ready` reports local and GitHub smoke readiness in human-readable form
 - `make --no-print-directory smoke-ready-json` reports the same readiness view as JSON
-- `make --no-print-directory smoke-local` starts a temporary local moto endpoint and runs the S3 and SIO smoke paths against it
+- `make --no-print-directory smoke-local` starts a temporary local MinIO endpoint and runs the S3 and SIO smoke paths against it
 - `make validate` runs `go vet`, tests, and a full build for CI-style verification
 - `make smoke-s3` runs the opt-in live endpoint smoke test for `internal/driver/s3`
 - `make tidy` syncs `go.mod` and `go.sum`
@@ -62,7 +62,7 @@ Set `WORKTREE_AUDIT_BASE_REF=<ref>` when you want the audit and prune helpers to
 `make --no-print-directory worktree-cleanup-report` combines the main audit, integrated view, stale view, prune-candidates view, and prune plan into a single Markdown report, and its summary now includes generation time, current-worktree context, and integrated/stale/prune-candidate counts.
 `make --no-print-directory worktree-cleanup-report-json` exposes the same combined cleanup report in machine-readable form with a consistent top-level `meta` object and a preferred `views` container for all section payloads.
 A manual GitHub Actions workflow also exists for `make compare-local`; use it when you want remote automation without live credentials.
-A manual GitHub Actions workflow also exists for `make smoke-local`; use it when you want remote proof that the local moto-backed smoke path still works without external secrets.
+A manual GitHub Actions workflow also exists for `make smoke-local`; use it when you want remote proof that the local MinIO-backed smoke path still works without external secrets.
 That manual workflow now uploads the compare output as a downloadable artifact.
 That workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`.
 Use `-quiet` when you want the CLI to suppress progress output entirely.

@@ -33,13 +33,13 @@ gh workflow list --repo sine-io/cosbench-go
 Treat the environment as ready when at least one of these is true:
 
 - the local shell already exposes the required `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`
-- the repository has the manual `Smoke Local` workflow available and you only need remote proof that the smoke path still works against a temporary local moto endpoint
+- the repository has the manual `Smoke Local` workflow available and you only need remote proof that the smoke path still works against a temporary local MinIO endpoint
 
 Current readiness snapshot as of 2026-03-27:
 
 - local shell: required `COSBENCH_SMOKE_*` variables not present
 - repository workflow availability: manual `Smoke Local` workflow exists for GitHub-hosted proof without external credentials
-- local live-endpoint evidence: a temporary moto server at `http://127.0.0.1:9000` passed `make smoke-s3` on 2026-03-27 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
+- local live-endpoint evidence: a temporary MinIO server passed `make smoke-s3` on 2026-03-27 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 

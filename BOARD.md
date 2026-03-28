@@ -108,7 +108,7 @@ Owner: Ross
 - Smoke workflow output artifact landed
 - Smoke workflow always-summary landed
 - Smoke readiness helper landed (`make smoke-ready` / `make smoke-ready-json`)
-- Local moto smoke helper landed (`make smoke-local`)
+- Local MinIO smoke helper landed (`make smoke-local`)
 - Manual smoke-local workflow landed
 - GitHub-hosted smoke strategy narrowed to `Smoke Local`; real `Smoke S3` now treated as local/private-network-only
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
@@ -121,7 +121,7 @@ Owner: Ross
 - Curated compare-local evidence refreshed on 2026-03-27
 - Local worktree cleanup completed; stale and prune-candidate counts reduced to zero
 - Manual `Compare Local` workflow verified green on 2026-03-27 (`23641740849`) after GitHub Actions runtime upgrades
-- Local moto-backed smoke evidence captured on 2026-03-27 for `s3` object lifecycle and `sio` multipart lifecycle
+- Local MinIO-backed smoke evidence captured on 2026-03-27 for `s3` object lifecycle and `sio` multipart lifecycle
 - In-repo checklist / board established
 
 ## Deferred
