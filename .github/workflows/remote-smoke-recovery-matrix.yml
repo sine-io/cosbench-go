@@ -1,0 +1,97 @@
+name: Remote Smoke Recovery Matrix
+
+"on":
+  workflow_dispatch:
+  schedule:
+    - cron: "47 3 * * *"
+
+jobs:
+  remote_smoke_recovery_matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: s3
+            scenario: recovery
+          - backend: sio
+            scenario: recovery
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Run remote recovery matrix row
+        run: SMOKE_REMOTE_LOCAL_BACKEND='${{ matrix.backend }}' SMOKE_REMOTE_LOCAL_SCENARIO='${{ matrix.scenario }}' GO=go make --no-print-directory smoke-remote-local
+
+      - name: Build remote smoke recovery summary artifact
+        if: always()
+        run: python3 ./scripts/build_remote_smoke_recovery_summary.py .artifacts/remote-smoke .artifacts/remote-smoke-recovery-summary
+
+      - name: Upload remote recovery summary artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: remote-smoke-recovery-${{ matrix.backend }}
+          path: .artifacts/remote-smoke-recovery-summary
+
+      - name: Write remote recovery summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f .artifacts/remote-smoke/summary.md ]; then
+            cat .artifacts/remote-smoke/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Remote Smoke Recovery Matrix"
+              echo
+              echo "Remote recovery smoke helper failed before emitting .artifacts/remote-smoke/summary.md for backend=${{ matrix.backend }}."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  aggregate:
+    if: always()
+    needs: remote_smoke_recovery_matrix
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Download remote smoke recovery artifacts
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: remote-smoke-recovery-*
+          path: .artifacts/remote-smoke-recovery-matrix
+
+      - name: Aggregate remote smoke recovery summaries
+        run: python3 ./scripts/aggregate_remote_smoke_recovery_matrix.py .artifacts/remote-smoke-recovery-matrix .artifacts/remote-smoke-recovery-matrix-aggregate
+
+      - name: Write aggregated recovery matrix summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f .artifacts/remote-smoke-recovery-matrix-aggregate/summary.md ]; then
+            cat .artifacts/remote-smoke-recovery-matrix-aggregate/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Remote Smoke Recovery Matrix Summary"
+              echo
+              echo "Aggregate summary was not produced."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload aggregated recovery matrix artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: remote-smoke-recovery-matrix-aggregate
+          path: .artifacts/remote-smoke-recovery-matrix-aggregate
+          if-no-files-found: ignore
