@@ -262,3 +262,64 @@ func TestAgentFailsProtectedWritesWithoutSharedToken(t *testing.T) {
 		t.Fatal("expected protected write failure without shared token")
 	}
 }
+
+func TestAgentProcessesOnlyClaimedWorkerSlice(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := controlplane.New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="agent-unit-slice">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="3" totalOps="3">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,3);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatalf("ScheduleJobStage(): %v", err)
+	}
+
+	root, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"), "shared-token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	agent := &Agent{
+		Client: &HTTPClient{BaseURL: server.URL, SharedToken: "shared-token"},
+		Name:   "driver-slice",
+		Mode:   domain.DriverModeDriver,
+	}
+	processed, err := agent.ProcessOne(context.Background())
+	if err != nil {
+		t.Fatalf("ProcessOne(): %v", err)
+	}
+	if !processed {
+		t.Fatal("expected a unit to be processed")
+	}
+
+	result, ok := mgr.GetJobResult(job.ID)
+	if !ok {
+		t.Fatal("expected job result")
+	}
+	if result.Metrics.OperationCount != 1 {
+		t.Fatalf("expected one-op unit execution, got %#v", result)
+	}
+}

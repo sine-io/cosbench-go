@@ -47,3 +47,35 @@ func (m *Manager) ListMissionAttempts() []domain.MissionAttempt {
 	})
 	return items
 }
+
+func listWorkUnitsLocked(units map[string]domain.WorkUnit, jobID, stageName, workName string) []domain.WorkUnit {
+	items := make([]domain.WorkUnit, 0)
+	for _, unit := range units {
+		if unit.JobID != jobID || unit.StageName != stageName || unit.WorkName != workName {
+			continue
+		}
+		items = append(items, unit)
+	}
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].UnitIndex == items[j].UnitIndex {
+			return items[i].ID < items[j].ID
+		}
+		return items[i].UnitIndex < items[j].UnitIndex
+	})
+	return items
+}
+
+func latestAttemptForUnitLocked(attempts map[string]domain.Mission, workUnitID string) (domain.MissionAttempt, bool) {
+	var latest domain.MissionAttempt
+	found := false
+	for _, attempt := range attempts {
+		if attempt.WorkUnitID != workUnitID {
+			continue
+		}
+		if !found || attempt.Attempt > latest.Attempt || (attempt.Attempt == latest.Attempt && attempt.UpdatedAt.After(latest.UpdatedAt)) {
+			latest = attempt
+			found = true
+		}
+	}
+	return latest, found
+}
