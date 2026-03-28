@@ -1,0 +1,80 @@
+name: Legacy Live Compare
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixture:
+        description: Legacy fixture to render and execute
+        required: false
+        default: "testdata/legacy/sio-config-sample.xml"
+      backend:
+        description: Backend to run through the rendered workload
+        required: false
+        default: "sio"
+      region:
+        description: Optional region override
+        required: false
+        default: ""
+      path_style:
+        description: Optional path-style access override
+        required: false
+        default: "true"
+
+jobs:
+  legacy-live-compare:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      COSBENCH_SMOKE_ENDPOINT: ${{ secrets.COSBENCH_SMOKE_ENDPOINT }}
+      COSBENCH_SMOKE_ACCESS_KEY: ${{ secrets.COSBENCH_SMOKE_ACCESS_KEY }}
+      COSBENCH_SMOKE_SECRET_KEY: ${{ secrets.COSBENCH_SMOKE_SECRET_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Render legacy fixture
+        run: |
+          mkdir -p .artifacts/legacy-live-compare
+          python3 ./scripts/render_legacy_live_compare_workload.py \
+            '${{ inputs.fixture }}' \
+            .artifacts/legacy-live-compare/rendered-workload.xml \
+            '${{ inputs.backend }}' \
+            "$COSBENCH_SMOKE_ENDPOINT" \
+            "$COSBENCH_SMOKE_ACCESS_KEY" \
+            "$COSBENCH_SMOKE_SECRET_KEY" \
+            '${{ inputs.region }}' \
+            '${{ inputs.path_style }}'
+
+      - name: Run legacy live compare
+        run: |
+          GO=go go run ./cmd/cosbench-go .artifacts/legacy-live-compare/rendered-workload.xml -backend '${{ inputs.backend }}' -json -quiet -summary-file .artifacts/legacy-live-compare/summary.json \
+            > .artifacts/legacy-live-compare/run.log 2>&1
+
+      - name: Write legacy compare summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# Legacy Live Compare"
+            echo
+            echo "- fixture: \`${{ inputs.fixture }}\`"
+            echo "- backend: \`${{ inputs.backend }}\`"
+            if [ -f .artifacts/legacy-live-compare/summary.json ]; then
+              echo
+              echo '```json'
+              cat .artifacts/legacy-live-compare/summary.json
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload legacy live compare artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: legacy-live-compare-output
+          path: .artifacts/legacy-live-compare
