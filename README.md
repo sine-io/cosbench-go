@@ -50,6 +50,8 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Real-endpoint smoke signals now also distinguish workflow availability from the latest real smoke result (`executed`, `skipped`, or `failed`)
 - `Smoke S3` and `Smoke S3 Matrix` now also publish structured summary artifacts in addition to their raw text output
 - `smoke-ready` now consumes those structured `Smoke S3` summary artifacts first and only falls back to raw text parsing for older artifacts
+- The latest verified GitHub-hosted `Smoke S3` run is `23695743149`, and it uploaded both `smoke-s3-output.txt` and `.artifacts/smoke-s3-summary/summary.json` with `{"result":"skipped"}`
+- The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23695743153`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
