@@ -14,9 +14,10 @@ func main() {
 	dataDir := flag.String("data-dir", "data", "snapshot data directory")
 	viewDir := flag.String("view-dir", "web/templates", "html template directory")
 	mode := flag.String("mode", string(app.ModeCombined), "runtime mode: controller-only, driver-only, combined")
+	driverSharedToken := flag.String("driver-shared-token", "", "shared bearer token for /api/driver write endpoints; falls back to COSBENCH_DRIVER_SHARED_TOKEN")
 	flag.Parse()
 
-	application, err := app.New(app.Config{DataDir: *dataDir, ViewDir: *viewDir, Mode: app.Mode(*mode)})
+	application, err := app.New(app.Config{DataDir: *dataDir, ViewDir: *viewDir, Mode: app.Mode(*mode), DriverSharedToken: *driverSharedToken})
 	if err != nil {
 		log.Fatalf("bootstrap server: %v", err)
 	}

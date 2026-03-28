@@ -61,6 +61,9 @@ func (h *Handler) driverRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if !h.requireDriverWriteAuth(w, r) {
+		return
+	}
 	var input struct {
 		Name string          `json:"name"`
 		Mode domain.DriverMode `json:"mode"`
@@ -80,6 +83,9 @@ func (h *Handler) driverRegister(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) driverHeartbeat(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !h.requireDriverWriteAuth(w, r) {
 		return
 	}
 	var input struct {
@@ -106,6 +112,9 @@ func (h *Handler) driverHeartbeat(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) driverClaimMission(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !h.requireDriverWriteAuth(w, r) {
 		return
 	}
 	var input struct {
@@ -143,6 +152,9 @@ func (h *Handler) driverMissionRoute(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !h.requireDriverWriteAuth(w, r) {
 		return
 	}
 	if len(parts) != 2 {

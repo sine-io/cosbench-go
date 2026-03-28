@@ -13,7 +13,7 @@ import (
 )
 
 func TestDriverAPIRegisterHeartbeatAndClaim(t *testing.T) {
-	h := newTestHandler(t)
+	h := newTestHandlerWithToken(t, "shared-token")
 
 	registerBody, _ := json.Marshal(map[string]any{
 		"name": "driver-a",
@@ -22,6 +22,7 @@ func TestDriverAPIRegisterHeartbeatAndClaim(t *testing.T) {
 	registerRec := httptest.NewRecorder()
 	registerReq := httptest.NewRequest(http.MethodPost, "/api/driver/register", bytes.NewReader(registerBody))
 	registerReq.Header.Set("Content-Type", "application/json")
+	registerReq.Header.Set("Authorization", "Bearer shared-token")
 	h.ServeHTTP(registerRec, registerReq)
 	if registerRec.Code != http.StatusOK {
 		t.Fatalf("register status = %d body=%s", registerRec.Code, registerRec.Body.String())
@@ -42,6 +43,7 @@ func TestDriverAPIRegisterHeartbeatAndClaim(t *testing.T) {
 	heartbeatRec := httptest.NewRecorder()
 	heartbeatReq := httptest.NewRequest(http.MethodPost, "/api/driver/heartbeat", bytes.NewReader(heartbeatBody))
 	heartbeatReq.Header.Set("Content-Type", "application/json")
+	heartbeatReq.Header.Set("Authorization", "Bearer shared-token")
 	h.ServeHTTP(heartbeatRec, heartbeatReq)
 	if heartbeatRec.Code != http.StatusOK {
 		t.Fatalf("heartbeat status = %d body=%s", heartbeatRec.Code, heartbeatRec.Body.String())
@@ -72,6 +74,7 @@ func TestDriverAPIRegisterHeartbeatAndClaim(t *testing.T) {
 	claimRec := httptest.NewRecorder()
 	claimReq := httptest.NewRequest(http.MethodPost, "/api/driver/missions/claim", bytes.NewReader(claimBody))
 	claimReq.Header.Set("Content-Type", "application/json")
+	claimReq.Header.Set("Authorization", "Bearer shared-token")
 	h.ServeHTTP(claimRec, claimReq)
 	if claimRec.Code != http.StatusOK {
 		t.Fatalf("claim status = %d body=%s", claimRec.Code, claimRec.Body.String())
@@ -85,8 +88,42 @@ func TestDriverAPIRegisterHeartbeatAndClaim(t *testing.T) {
 	}
 }
 
+func TestDriverAPIWriteEndpointsRejectMissingWrongAndUnsetToken(t *testing.T) {
+	registerBody, _ := json.Marshal(map[string]any{
+		"name": "driver-a",
+		"mode": string(domain.DriverModeDriver),
+	})
+
+	unsetHandler := newTestHandlerWithToken(t, "")
+	unsetRec := httptest.NewRecorder()
+	unsetReq := httptest.NewRequest(http.MethodPost, "/api/driver/register", bytes.NewReader(registerBody))
+	unsetReq.Header.Set("Content-Type", "application/json")
+	unsetHandler.ServeHTTP(unsetRec, unsetReq)
+	if unsetRec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unset token status = %d body=%s", unsetRec.Code, unsetRec.Body.String())
+	}
+
+	protectedHandler := newTestHandlerWithToken(t, "shared-token")
+	missingRec := httptest.NewRecorder()
+	missingReq := httptest.NewRequest(http.MethodPost, "/api/driver/register", bytes.NewReader(registerBody))
+	missingReq.Header.Set("Content-Type", "application/json")
+	protectedHandler.ServeHTTP(missingRec, missingReq)
+	if missingRec.Code != http.StatusUnauthorized {
+		t.Fatalf("missing token status = %d body=%s", missingRec.Code, missingRec.Body.String())
+	}
+
+	wrongRec := httptest.NewRecorder()
+	wrongReq := httptest.NewRequest(http.MethodPost, "/api/driver/register", bytes.NewReader(registerBody))
+	wrongReq.Header.Set("Content-Type", "application/json")
+	wrongReq.Header.Set("Authorization", "Bearer wrong-token")
+	protectedHandler.ServeHTTP(wrongRec, wrongReq)
+	if wrongRec.Code != http.StatusForbidden {
+		t.Fatalf("wrong token status = %d body=%s", wrongRec.Code, wrongRec.Body.String())
+	}
+}
+
 func TestDriverAPIReadEndpoints(t *testing.T) {
-	h := newTestHandler(t)
+	h := newTestHandlerWithToken(t, "shared-token")
 
 	registerBody, _ := json.Marshal(map[string]any{
 		"name": "driver-read",
@@ -95,6 +132,7 @@ func TestDriverAPIReadEndpoints(t *testing.T) {
 	registerRec := httptest.NewRecorder()
 	registerReq := httptest.NewRequest(http.MethodPost, "/api/driver/register", bytes.NewReader(registerBody))
 	registerReq.Header.Set("Content-Type", "application/json")
+	registerReq.Header.Set("Authorization", "Bearer shared-token")
 	h.ServeHTTP(registerRec, registerReq)
 	if registerRec.Code != http.StatusOK {
 		t.Fatalf("register status = %d body=%s", registerRec.Code, registerRec.Body.String())
@@ -194,7 +232,7 @@ func TestDriverAPIReadEndpoints(t *testing.T) {
 }
 
 func TestDriverReportingEndpointsAreIdempotent(t *testing.T) {
-	h := newTestHandler(t)
+	h := newTestHandlerWithToken(t, "shared-token")
 
 	registerBody, _ := json.Marshal(map[string]any{
 		"name": "driver-idempotent",
@@ -203,6 +241,7 @@ func TestDriverReportingEndpointsAreIdempotent(t *testing.T) {
 	registerRec := httptest.NewRecorder()
 	registerReq := httptest.NewRequest(http.MethodPost, "/api/driver/register", bytes.NewReader(registerBody))
 	registerReq.Header.Set("Content-Type", "application/json")
+	registerReq.Header.Set("Authorization", "Bearer shared-token")
 	h.ServeHTTP(registerRec, registerReq)
 	if registerRec.Code != http.StatusOK {
 		t.Fatalf("register status = %d body=%s", registerRec.Code, registerRec.Body.String())
@@ -246,6 +285,7 @@ func TestDriverReportingEndpointsAreIdempotent(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/driver/missions/"+mission.ID+"/events", bytes.NewReader(eventPayload))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer shared-token")
 		h.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("event status = %d body=%s", rec.Code, rec.Body.String())
@@ -266,6 +306,7 @@ func TestDriverReportingEndpointsAreIdempotent(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/driver/missions/"+mission.ID+"/samples", bytes.NewReader(samplePayload))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer shared-token")
 		h.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("sample status = %d body=%s", rec.Code, rec.Body.String())
@@ -280,6 +321,7 @@ func TestDriverReportingEndpointsAreIdempotent(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/api/driver/missions/"+mission.ID+"/complete", bytes.NewReader(completePayload))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer shared-token")
 		h.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("complete status = %d body=%s", rec.Code, rec.Body.String())

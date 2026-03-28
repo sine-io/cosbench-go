@@ -46,7 +46,7 @@ func TestAgentProcessesClaimedMissionAndReportsBack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"))
+	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"), "shared-token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestAgentProcessesClaimedMissionAndReportsBack(t *testing.T) {
 	defer server.Close()
 
 	agent := &Agent{
-		Client: &HTTPClient{BaseURL: server.URL},
+		Client: &HTTPClient{BaseURL: server.URL, SharedToken: "shared-token"},
 		Name:   "driver-a",
 		Mode:   domain.DriverModeDriver,
 	}
@@ -121,7 +121,7 @@ func TestAgentProcessOneReturnsFalseWhenNoMissionExists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"))
+	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"), "shared-token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestAgentProcessOneReturnsFalseWhenNoMissionExists(t *testing.T) {
 	defer server.Close()
 
 	agent := &Agent{
-		Client: &HTTPClient{BaseURL: server.URL},
+		Client: &HTTPClient{BaseURL: server.URL, SharedToken: "shared-token"},
 		Name:   "driver-idle",
 		Mode:   domain.DriverModeDriver,
 	}
@@ -191,7 +191,7 @@ func TestAgentProcessOneCanReclaimExpiredMissionLease(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"))
+	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"), "shared-token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestAgentProcessOneCanReclaimExpiredMissionLease(t *testing.T) {
 	defer server.Close()
 
 	agent := &Agent{
-		Client: &HTTPClient{BaseURL: server.URL},
+		Client: &HTTPClient{BaseURL: server.URL, SharedToken: "shared-token"},
 		Name:   "driver-reclaimer",
 		Mode:   domain.DriverModeDriver,
 	}
@@ -213,5 +213,52 @@ func TestAgentProcessOneCanReclaimExpiredMissionLease(t *testing.T) {
 	reloaded, ok := mgr.GetMission(claimed.ID)
 	if !ok || reloaded.Status != domain.MissionStatusSucceeded {
 		t.Fatalf("reloaded mission = %#v", reloaded)
+	}
+}
+
+func TestAgentFailsProtectedWritesWithoutSharedToken(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := controlplane.New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="agent-auth">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+	root, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := web.NewHandler(mgr, filepath.Join(root, "web", "templates"), "shared-token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	agent := &Agent{
+		Client: &HTTPClient{BaseURL: server.URL},
+		Name:   "driver-unauthorized",
+		Mode:   domain.DriverModeDriver,
+	}
+	if _, err := agent.ProcessOne(context.Background()); err == nil {
+		t.Fatal("expected protected write failure without shared token")
 	}
 }

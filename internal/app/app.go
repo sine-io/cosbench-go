@@ -3,7 +3,9 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sine-io/cosbench-go/internal/controlplane"
 	driveragent "github.com/sine-io/cosbench-go/internal/driver/agent"
@@ -15,12 +17,14 @@ type Config struct {
 	DataDir string
 	ViewDir string
 	Mode    Mode
+	DriverSharedToken string
 }
 
 type App struct {
 	Mode         Mode
 	Manager      *controlplane.Manager
 	Handler      http.Handler
+	DriverSharedToken string
 	loopbackAgent *driveragent.Agent
 }
 
@@ -37,6 +41,10 @@ func New(cfg Config) (*App, error) {
 	if viewDir == "" {
 		viewDir = filepath.Join("web", "templates")
 	}
+	driverSharedToken := strings.TrimSpace(cfg.DriverSharedToken)
+	if driverSharedToken == "" {
+		driverSharedToken = strings.TrimSpace(os.Getenv("COSBENCH_DRIVER_SHARED_TOKEN"))
+	}
 	store, err := snapshot.New(dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot store: %w", err)
@@ -45,9 +53,9 @@ func New(cfg Config) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("controlplane: %w", err)
 	}
-	handler, err := web.NewHandler(manager, viewDir)
+	handler, err := web.NewHandler(manager, viewDir, driverSharedToken)
 	if err != nil {
 		return nil, err
 	}
-	return &App{Mode: mode, Manager: manager, Handler: handler}, nil
+	return &App{Mode: mode, Manager: manager, Handler: handler, DriverSharedToken: driverSharedToken}, nil
 }
