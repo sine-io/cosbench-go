@@ -16,6 +16,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - JSON and CSV export
 - stage-level and operation-level result summaries
 - remote driver registration, heartbeat, scheduling, mission claim, mission reporting, and combined-mode loopback execution
+- local multi-process MinIO smoke for one controller-only and two driver-only processes
 
 ## Closed for the Local v1 Boundary
 
@@ -42,7 +43,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 ## Main Remaining Risks
 
 1. Real-world XML variance may exceed the active fixture subset.
-2. The remote split is now real but still shallow; broader scheduling, retries, and worker liveness behavior need deeper hardening.
+2. The remote split is now real and multi-process smoke-backed, but broader production-grade scheduling and durability behavior still need deepening.
 3. SineIO-specific behavior may still diverge under larger or real-endpoint workloads.
 4. Behavior that looks correct under local mock runs may still diverge under real endpoint pressure.
 
