@@ -59,9 +59,17 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The default CI path does not run `make smoke-s3`; live endpoint checks remain opt-in
 - A manual GitHub Actions workflow can run `make compare-local` on demand
 - A separate manual GitHub Actions workflow can run `make smoke-local` without external secrets to verify the local live-endpoint path on GitHub-hosted runners
+- A manual GitHub Actions workflow can run the remote multi-process MinIO smoke path on demand
 - GitHub-hosted runners no longer attempt real `make smoke-s3`; that path remains for local or private-network execution only
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`
+- A manual GitHub Actions workflow can run `make smoke-remote-local` and upload `.artifacts/remote-smoke/`
+
+To trigger the manual remote smoke workflow with GitHub CLI:
+
+```bash
+gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go
+```
 
 ## Legacy Comparison
 - The current comparison checklist and runbook live in `docs/legacy-comparison-matrix.md`
