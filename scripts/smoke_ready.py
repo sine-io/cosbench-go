@@ -12,7 +12,13 @@ REQUIRED_SECRETS = [
     "COSBENCH_SMOKE_ACCESS_KEY",
     "COSBENCH_SMOKE_SECRET_KEY",
 ]
-SMOKE_WORKFLOW_NAME = "Smoke Local"
+WORKFLOW_NAMES = [
+    "Smoke Local",
+    "Remote Smoke Local",
+    "Remote Smoke Matrix",
+    "Remote Smoke Recovery",
+    "Remote Smoke Recovery Matrix",
+]
 DEFAULT_REPO = "sine-io/cosbench-go"
 
 
@@ -80,9 +86,11 @@ def build_payload():
     workflow_names, workflows_accessible, workflows_error = load_workflow_names(repo)
 
     repo_secret_presence = {name: name in repo_secret_names for name in REQUIRED_SECRETS}
-    workflow_presence = {SMOKE_WORKFLOW_NAME: SMOKE_WORKFLOW_NAME in workflow_names}
-    workflow_ready = workflows_accessible and workflow_presence[SMOKE_WORKFLOW_NAME]
-    ready = local_ready or workflow_ready
+    workflow_presence = {name: name in workflow_names for name in WORKFLOW_NAMES}
+    local_workflow_ready = workflows_accessible and workflow_presence["Smoke Local"]
+    remote_happy_ready = workflows_accessible and workflow_presence["Remote Smoke Local"] and workflow_presence["Remote Smoke Matrix"]
+    remote_recovery_ready = workflows_accessible and workflow_presence["Remote Smoke Recovery"] and workflow_presence["Remote Smoke Recovery Matrix"]
+    ready = local_ready or local_workflow_ready
 
     blockers = []
     if repo_error:
@@ -93,8 +101,8 @@ def build_payload():
             blockers.append(f"missing local smoke env: {', '.join(missing_local)}")
         if not workflows_accessible and workflows_error:
             blockers.append(f"unable to query workflows: {workflows_error}")
-        elif not workflow_presence[SMOKE_WORKFLOW_NAME]:
-            blockers.append(f"required workflow missing: {SMOKE_WORKFLOW_NAME}")
+        elif not workflow_presence["Smoke Local"]:
+            blockers.append("required workflow missing: Smoke Local")
 
     return {
         "generated_at": generated_at(),
@@ -112,8 +120,10 @@ def build_payload():
             "present": workflow_presence,
         },
         "summary": {
-            "local_ready": local_ready,
-            "workflow_ready": workflow_ready,
+            "local_env_ready": local_ready,
+            "local_workflow_ready": local_workflow_ready,
+            "remote_happy_ready": remote_happy_ready,
+            "remote_recovery_ready": remote_recovery_ready,
             "ready": ready,
         },
         "blockers": blockers,
@@ -158,12 +168,15 @@ def print_text(payload):
         print(f"- query: `error`")
         print(f"- error: `{payload['workflows']['error']}`")
     else:
-        print(f"- {SMOKE_WORKFLOW_NAME}: `{available_missing(payload['workflows']['present'][SMOKE_WORKFLOW_NAME])}`")
+        for name in WORKFLOW_NAMES:
+            print(f"- {name}: `{available_missing(payload['workflows']['present'][name])}`")
     print()
     print("## Summary")
     print()
-    print(f"- Local ready: `{yes_no(payload['summary']['local_ready'])}`")
-    print(f"- Workflow ready: `{yes_no(payload['summary']['workflow_ready'])}`")
+    print(f"- Local Env Ready: `{yes_no(payload['summary']['local_env_ready'])}`")
+    print(f"- Local Workflow Ready: `{yes_no(payload['summary']['local_workflow_ready'])}`")
+    print(f"- Remote Happy Ready: `{yes_no(payload['summary']['remote_happy_ready'])}`")
+    print(f"- Remote Recovery Ready: `{yes_no(payload['summary']['remote_recovery_ready'])}`")
     print(f"- Overall ready: `{yes_no(payload['summary']['ready'])}`")
     print()
     print("## Blockers")
