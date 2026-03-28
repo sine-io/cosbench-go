@@ -39,9 +39,39 @@ type DriverWorkerState struct {
 	ActiveMissionCount int    `json:"active_mission_count"`
 }
 
+type WorkUnitStatus string
+
+const (
+	WorkUnitStatusPending   WorkUnitStatus = "pending"
+	WorkUnitStatusClaimed   WorkUnitStatus = "claimed"
+	WorkUnitStatusRunning   WorkUnitStatus = "running"
+	WorkUnitStatusSucceeded WorkUnitStatus = "succeeded"
+	WorkUnitStatusFailed    WorkUnitStatus = "failed"
+)
+
+type WorkUnitSlice struct {
+	WorkerIndex int `json:"worker_index"`
+	WorkerCount int `json:"worker_count"`
+}
+
+type WorkUnit struct {
+	ID        string         `json:"id"`
+	JobID     string         `json:"job_id"`
+	StageName string         `json:"stage_name"`
+	WorkName  string         `json:"work_name"`
+	UnitIndex int            `json:"unit_index"`
+	UnitCount int            `json:"unit_count"`
+	Work      Work           `json:"work"`
+	Slice     WorkUnitSlice  `json:"slice"`
+	Status    WorkUnitStatus `json:"status"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+}
+
 type MissionStatus string
 
 const (
+	MissionAttemptStatusPending   MissionStatus = "pending"
 	MissionStatusCreated   MissionStatus = "created"
 	MissionStatusClaimed   MissionStatus = "claimed"
 	MissionStatusRunning   MissionStatus = "running"
@@ -56,12 +86,15 @@ type MissionLease struct {
 	ExpiresAt time.Time  `json:"expires_at"`
 }
 
-type Mission struct {
+type MissionAttempt struct {
 	ID        string         `json:"id"`
+	WorkUnitID string        `json:"work_unit_id"`
+	WorkUnit  WorkUnit       `json:"work_unit"`
 	JobID     string         `json:"job_id"`
 	StageName string         `json:"stage_name"`
 	WorkName  string         `json:"work_name"`
 	Work      Work           `json:"work"`
+	Attempt   int            `json:"attempt"`
 	Status    MissionStatus  `json:"status"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -70,3 +103,5 @@ type Mission struct {
 	ReceivedSampleBatches []string `json:"received_sample_batches,omitempty"`
 	Lease     *MissionLease  `json:"lease,omitempty"`
 }
+
+type Mission = MissionAttempt

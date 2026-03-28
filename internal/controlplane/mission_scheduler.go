@@ -26,20 +26,48 @@ func (m *Manager) ScheduleJobStage(jobID string) ([]domain.Mission, error) {
 		storageType, rawConfig := resolveStorage(work.Storage, endpoint)
 		resolvedWork := work
 		resolvedWork.Storage = &domain.StorageSpec{Type: storageType, Config: rawConfig}
-		mission := domain.Mission{
-			ID:        newID("mission"),
-			JobID:     jobID,
-			StageName: stage.Name,
-			WorkName:  work.Name,
-			Work:      resolvedWork,
-			Status:    domain.MissionStatusCreated,
-			CreatedAt: now,
-			UpdatedAt: now,
+		unitCount := work.Workers
+		if unitCount <= 0 {
+			unitCount = 1
 		}
-		if err := m.PutMission(mission); err != nil {
-			return nil, err
+		for unitIndex := 1; unitIndex <= unitCount; unitIndex++ {
+			unit := domain.WorkUnit{
+				ID:        newID("unit"),
+				JobID:     jobID,
+				StageName: stage.Name,
+				WorkName:  work.Name,
+				UnitIndex: unitIndex,
+				UnitCount: unitCount,
+				Work:      resolvedWork,
+				Slice: domain.WorkUnitSlice{
+					WorkerIndex: unitIndex,
+					WorkerCount: unitCount,
+				},
+				Status:    domain.WorkUnitStatusPending,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}
+			if err := m.PutWorkUnit(unit); err != nil {
+				return nil, err
+			}
+			mission := domain.Mission{
+				ID:         newID("mission"),
+				WorkUnitID: unit.ID,
+				WorkUnit:   unit,
+				JobID:      jobID,
+				StageName:  stage.Name,
+				WorkName:   work.Name,
+				Work:       resolvedWork,
+				Attempt:    1,
+				Status:     domain.MissionAttemptStatusPending,
+				CreatedAt:  now,
+				UpdatedAt:  now,
+			}
+			if err := m.PutMission(mission); err != nil {
+				return nil, err
+			}
+			missions = append(missions, mission)
 		}
-		missions = append(missions, mission)
 	}
 	return missions, nil
 }
@@ -64,7 +92,7 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 
 	candidates := make([]domain.Mission, 0, len(m.missions))
 	for _, mission := range m.missions {
-		if mission.Status == domain.MissionStatusCreated || mission.Status == domain.MissionStatusExpired {
+		if mission.Status == domain.MissionAttemptStatusPending || mission.Status == domain.MissionStatusExpired {
 			candidates = append(candidates, mission)
 		}
 	}
@@ -86,6 +114,13 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 		ExpiresAt: now.Add(leaseTTL),
 	}
 	m.missions[mission.ID] = mission
+	if unit, ok := m.workUnits[mission.WorkUnitID]; ok {
+		unit.Status = domain.WorkUnitStatusClaimed
+		unit.UpdatedAt = now
+		m.workUnits[unit.ID] = unit
+		_ = m.store.SaveWorkUnit(unit)
+		mission.WorkUnit = unit
+	}
 	if err := m.store.SaveMission(mission); err != nil {
 		return domain.Mission{}, false, err
 	}

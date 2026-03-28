@@ -282,3 +282,57 @@ func TestClaimMissionRejectsStaleUnhealthyDriver(t *testing.T) {
 		t.Fatalf("fresh driver claim: mission=%#v ok=%v err=%v", claimed, ok, err)
 	}
 }
+
+func TestClaimMissionDistributesDifferentUnitsAcrossDrivers(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverA, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverB, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-b", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="multi-driver-units">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="fanout" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	claimA, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-a): mission=%#v ok=%v err=%v", claimA, ok, err)
+	}
+	claimB, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-b): mission=%#v ok=%v err=%v", claimB, ok, err)
+	}
+	if claimA.WorkUnitID == "" || claimB.WorkUnitID == "" {
+		t.Fatalf("claims missing work unit ids: %#v %#v", claimA, claimB)
+	}
+	if claimA.WorkUnitID == claimB.WorkUnitID {
+		t.Fatalf("claims reused same work unit: %#v %#v", claimA, claimB)
+	}
+	if claimA.WorkUnit.Slice.WorkerIndex == claimB.WorkUnit.Slice.WorkerIndex {
+		t.Fatalf("claims reused same worker slice: %#v %#v", claimA, claimB)
+	}
+}
