@@ -109,6 +109,12 @@ To trigger the dedicated recovery workflow:
 gh workflow run "Remote Smoke Recovery" --repo sine-io/cosbench-go
 ```
 
+To trigger the SIO recovery variant through the dedicated recovery workflow:
+
+```bash
+gh workflow run "Remote Smoke Recovery" --repo sine-io/cosbench-go -f backend=sio
+```
+
 To trigger the SIO recovery variant through the parameterized workflow:
 
 ```bash

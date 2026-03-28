@@ -2,6 +2,11 @@ name: Remote Smoke Recovery
 
 "on":
   workflow_dispatch:
+    inputs:
+      backend:
+        description: Backend to run through the remote recovery smoke helper
+        required: false
+        default: "s3"
 
 jobs:
   remote_smoke_recovery:
@@ -18,7 +23,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Run remote recovery smoke
-        run: SMOKE_REMOTE_LOCAL_BACKEND=s3 SMOKE_REMOTE_LOCAL_SCENARIO=recovery GO=go make --no-print-directory smoke-remote-local
+        run: SMOKE_REMOTE_LOCAL_BACKEND='${{ inputs.backend }}' SMOKE_REMOTE_LOCAL_SCENARIO=recovery GO=go make --no-print-directory smoke-remote-local
 
       - name: Upload remote smoke artifact
         if: always()
