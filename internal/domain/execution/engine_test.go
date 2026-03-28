@@ -105,6 +105,32 @@ func TestExecuteOpMFileWriteUsesLocalFileContents(t *testing.T) {
 	}
 }
 
+func TestExecuteOpFileWriteUsesLocalFileContents(t *testing.T) {
+	storage := &stubStorage{}
+	path := t.TempDir() + "/payload.bin"
+	if err := os.WriteFile(path, []byte("payload"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	n, err := executeOp(context.Background(), storage, "", workload.Operation{
+		Type:   "filewrite",
+		Ratio:  100,
+		Config: "containers=c(1);objects=c(1);files=" + path,
+	}, 1, 1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != int64(len("payload")) {
+		t.Fatalf("bytes = %d", n)
+	}
+	if !bytes.Equal(storage.putPayload, []byte("payload")) {
+		t.Fatalf("put payload = %q", storage.putPayload)
+	}
+	if storage.putSize != int64(len("payload")) {
+		t.Fatalf("put size = %d", storage.putSize)
+	}
+}
+
 func TestExecuteOpDelayWaits(t *testing.T) {
 	start := time.Now()
 	if _, err := executeOp(context.Background(), &stubStorage{}, "", workload.Operation{
@@ -182,6 +208,16 @@ func TestExecuteOpRestoreUsesStorageLevelRestoreDaysByDefault(t *testing.T) {
 	}
 	if storage.restoreDays != 7 {
 		t.Fatalf("restoreDays = %d", storage.restoreDays)
+	}
+}
+
+func TestResolvedStorageConfigIncludesAuthAndStorageConfig(t *testing.T) {
+	raw := storageConfig(&workload.StorageSpec{Type: "sio", Config: "endpoint=http://storage"}, &workload.AuthSpec{Type: "basic", Config: "username=work;password=secret"})
+	if !strings.Contains(raw, "endpoint=http://storage") {
+		t.Fatalf("missing storage config in %q", raw)
+	}
+	if !strings.Contains(raw, "username=work;password=secret") {
+		t.Fatalf("missing auth config in %q", raw)
 	}
 }
 

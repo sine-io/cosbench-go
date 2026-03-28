@@ -233,6 +233,41 @@ func TestStartJobRejectsUnreadableMFileWriteInputDuringPreflight(t *testing.T) {
 	}
 }
 
+func TestStartJobRejectsUnreadableFileWriteInputDuringPreflight(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="bad-filewrite">
+  <storage type="sio" config="accesskey=test;secretkey=test;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <auth type="basic" config="username=work;password=secret" />
+        <operation type="filewrite" ratio="100" config="containers=c(1);objects=c(1);files=/definitely/missing/filewrite.bin" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = mgr.StartJob(context.Background(), job.ID)
+	if err == nil || !strings.Contains(err.Error(), "filewrite.bin") {
+		t.Fatalf("unexpected preflight error: %v", err)
+	}
+	loaded, _ := mgr.GetJob(job.ID)
+	if loaded.Status != domain.JobStatusCreated {
+		t.Fatalf("job status = %s", loaded.Status)
+	}
+}
+
 func TestManagerCanCancelRunningJob(t *testing.T) {
 	store, err := snapshot.New(t.TempDir())
 	if err != nil {

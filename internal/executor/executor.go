@@ -51,10 +51,7 @@ func (e StageExecutor) RunStage(ctx context.Context, stage domain.Stage) StageRe
 
 func ValidateWork(work domain.Work) error {
 	legacy := work.ToLegacy()
-	storageRaw := ""
-	if legacy.Storage != nil {
-		storageRaw = legacy.Storage.Config
-	}
+	storageRaw := legacyexec.ResolvedStorageConfig(legacy.Storage, legacy.Auth)
 	for _, op := range legacy.Operations {
 		if err := legacyexec.ValidateOperation(op, storageRaw); err != nil {
 			return err
