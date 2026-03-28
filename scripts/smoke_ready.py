@@ -609,6 +609,8 @@ def build_payload():
             "remote_recovery_latest_success": remote_recovery_latest_success,
             "remote_happy_latest_result": remote_happy_latest_result,
             "remote_recovery_latest_result": remote_recovery_latest_result,
+            "remote_happy_latest_source": remote_happy_latest_name or "none",
+            "remote_recovery_latest_source": remote_recovery_latest_name or "none",
             "ready": ready,
         },
         "blockers": blockers,
@@ -696,6 +698,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Success: `{yes_no(payload['summary']['remote_recovery_latest_success'])}`")
     print(f"- Remote Happy Latest Result: `{payload['summary']['remote_happy_latest_result']}`")
     print(f"- Remote Recovery Latest Result: `{payload['summary']['remote_recovery_latest_result']}`")
+    print(f"- Remote Happy Latest Source: `{payload['summary']['remote_happy_latest_source']}`")
+    print(f"- Remote Recovery Latest Source: `{payload['summary']['remote_recovery_latest_source']}`")
     print(f"- Overall ready: `{yes_no(payload['summary']['ready'])}`")
     print()
     print("## Blockers")
