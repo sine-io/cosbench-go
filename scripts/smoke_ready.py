@@ -157,9 +157,18 @@ def load_real_endpoint_details(repo, workflow_latest):
             proc = run("gh", "run", "download", str(smoke_s3_id), "--repo", repo, "-n", "smoke-s3-output", "-D", tmpdir)
             if proc.returncode == 0:
                 output_path = os.path.join(tmpdir, "smoke-s3-output.txt")
+                summary_path = os.path.join(tmpdir, "summary.json")
+                if not os.path.exists(summary_path):
+                    summary_path = os.path.join(tmpdir, ".artifacts", "smoke-s3-summary", "summary.json")
+                payload = {}
                 if os.path.exists(output_path):
                     with open(output_path, "r", encoding="utf-8") as f:
-                        details[SMOKE_S3_WORKFLOW] = {"output": f.read()}
+                        payload["output"] = f.read()
+                if os.path.exists(summary_path):
+                    with open(summary_path, "r", encoding="utf-8") as f:
+                        payload["summary"] = json.load(f)
+                if payload:
+                    details[SMOKE_S3_WORKFLOW] = payload
             elif smoke_s3.get("status") == "completed":
                 return {}, False, (proc.stderr or proc.stdout).strip()
     else:
@@ -273,6 +282,20 @@ def smoke_output_result(latest, output):
     return "failed"
 
 
+def smoke_summary_result(latest, detail):
+    if not latest:
+        return "none"
+    if latest.get("status") != "completed":
+        return "pending"
+    if not detail:
+        return "failed"
+    summary = detail.get("summary") or {}
+    result = summary.get("result", "")
+    if result in {"executed", "skipped", "failed"}:
+        return result
+    return smoke_output_result(latest, detail.get("output", ""))
+
+
 def smoke_matrix_result(latest, detail):
     if not latest:
         return "none"
@@ -284,6 +307,9 @@ def smoke_matrix_result(latest, detail):
     for row in detail.get("rows", []):
         output = row.get("output", "")
         row_status = row.get("status", "")
+        if row_status in {"executed", "skipped", "failed"}:
+            row_results.append(row_status)
+            continue
         if row_status != "present":
             row_results.append("failed")
             continue
@@ -322,7 +348,7 @@ def build_payload():
     legacy_live_matrix_ready = workflows_accessible and workflow_presence["Legacy Live Compare Matrix"]
     remote_happy_ready = workflows_accessible and workflow_presence["Remote Smoke Local"] and workflow_presence["Remote Smoke Matrix"]
     remote_recovery_ready = workflows_accessible and workflow_presence["Remote Smoke Recovery"] and workflow_presence["Remote Smoke Recovery Matrix"]
-    real_endpoint_latest_result = smoke_output_result(workflow_latest.get(SMOKE_S3_WORKFLOW), (real_endpoint_details.get(SMOKE_S3_WORKFLOW) or {}).get("output", ""))
+    real_endpoint_latest_result = smoke_summary_result(workflow_latest.get(SMOKE_S3_WORKFLOW), real_endpoint_details.get(SMOKE_S3_WORKFLOW))
     real_endpoint_matrix_latest_result = smoke_matrix_result(workflow_latest.get(SMOKE_S3_MATRIX_WORKFLOW), real_endpoint_details.get(SMOKE_S3_MATRIX_WORKFLOW))
     legacy_live_latest_result = classify_single_legacy_result(workflow_latest.get(LEGACY_LIVE_WORKFLOW), legacy_details.get(LEGACY_LIVE_WORKFLOW))
     legacy_live_matrix_latest_result = classify_matrix_legacy_result(workflow_latest.get(LEGACY_LIVE_MATRIX_WORKFLOW), legacy_details.get(LEGACY_LIVE_MATRIX_WORKFLOW))
