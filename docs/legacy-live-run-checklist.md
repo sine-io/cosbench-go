@@ -43,7 +43,7 @@ Current readiness snapshot as of 2026-03-29:
 - local shell: required `COSBENCH_SMOKE_*` variables not present
 - repository workflow availability: manual `Smoke Local`, `Smoke S3`, `Smoke S3 Matrix`, `Legacy Live Compare`, and `Legacy Live Compare Matrix` workflows exist
 - local live-endpoint evidence: a temporary MinIO server passed `make smoke-s3` on 2026-03-28 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
-- GitHub-hosted evidence: the latest `Smoke S3` run now maps to `real_endpoint_latest_result=skipped`, and the latest `Smoke S3 Matrix` run now maps to `real_endpoint_matrix_latest_result=skipped`, because their smoke tests were skipped when `COSBENCH_SMOKE_*` repository secrets were absent. `Legacy Live Compare` run `23693647646` and `Legacy Live Compare Matrix` run `23694053504` likewise completed cleanly with `skipped` legacy result states instead of failing with empty rendered config
+- GitHub-hosted evidence: the latest `Smoke S3` run (`23695743149`) now maps to `real_endpoint_latest_result=skipped` and ships a structured `summary.json`; the latest `Smoke S3 Matrix` run (`23695743153`) now maps to `real_endpoint_matrix_latest_result=skipped` and ships an aggregate structured summary with both rows marked `skipped`, because their smoke tests were skipped when `COSBENCH_SMOKE_*` repository secrets were absent. `Legacy Live Compare` run `23693647646` and `Legacy Live Compare Matrix` run `23694053504` likewise completed cleanly with `skipped` legacy result states instead of failing with empty rendered config
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 
