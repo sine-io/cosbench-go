@@ -43,7 +43,7 @@ Current readiness snapshot as of 2026-03-29:
 - local shell: required `COSBENCH_SMOKE_*` variables not present
 - repository workflow availability: manual `Smoke Local`, `Smoke S3`, `Smoke S3 Matrix`, `Legacy Live Compare`, and `Legacy Live Compare Matrix` workflows exist
 - local live-endpoint evidence: a temporary MinIO server passed `make smoke-s3` on 2026-03-28 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
-- GitHub-hosted evidence: the latest `Smoke S3` run (`23695743149`) now maps to `real_endpoint_latest_result=skipped` and ships a structured `summary.json`; the latest `Smoke S3 Matrix` run (`23695743153`) now maps to `real_endpoint_matrix_latest_result=skipped` and ships an aggregate structured summary with both rows marked `skipped`, because their smoke tests were skipped when `COSBENCH_SMOKE_*` repository secrets were absent. `Legacy Live Compare` run `23693647646` and `Legacy Live Compare Matrix` run `23694053504` likewise completed cleanly with `skipped` legacy result states instead of failing with empty rendered config
+- GitHub-hosted evidence: the latest `Smoke S3` run (`23695743149`) now maps to `real_endpoint_latest_result=skipped` and ships a structured `summary.json`; the latest `Smoke S3 Matrix` run (`23695743153`) now maps to `real_endpoint_matrix_latest_result=skipped` and ships an aggregate structured summary with both rows marked `skipped`, because their smoke tests were skipped when `COSBENCH_SMOKE_*` repository secrets were absent. `Legacy Live Compare` run `23696226320` now ships a normalized `result.json`, and `Legacy Live Compare Matrix` run `23696226307` now ships an aggregate structured summary; both still report `skipped` rather than a real live execution result when secrets are absent
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 
@@ -67,7 +67,7 @@ If you only need remote evidence that the local live-endpoint smoke path is stil
 If you want to use `Legacy Live Compare` or `Legacy Live Compare Matrix`, treat them as workload-level follow-ons to this smoke precheck:
 
 - when repository live secrets are present, it renders the chosen legacy fixture and runs it against the selected backend
-- when repository live secrets are absent, they now record `skipped` in their artifacts, job summaries, and `smoke-ready` legacy result fields; treat that as an environment blocker, not as fixture failure
+- when repository live secrets are absent, they now record `skipped` in their artifacts, job summaries, normalized legacy `result.json` / aggregate summaries, and `smoke-ready` legacy result fields; treat that as an environment blocker, not as fixture failure
 
 Example GitHub workflow trigger:
 
