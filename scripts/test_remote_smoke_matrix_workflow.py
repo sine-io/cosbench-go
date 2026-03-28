@@ -17,3 +17,5 @@ def test_remote_smoke_matrix_workflow_shape():
     assert "needs: remote_smoke_matrix" in workflow
     assert "pattern: remote-smoke-*" in workflow
     assert "aggregate_remote_smoke_matrix.py" in workflow
+    aggregate_section = workflow.split("aggregate:", 1)[1]
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in aggregate_section
