@@ -79,7 +79,7 @@ def main(argv):
     download_dir = Path(argv[1])
     output_dir = Path(argv[2])
     rows = aggregate_rows(download_dir)
-    if not any(row["status"] == "present" for row in rows):
+    if not any(row["status"] in {"executed", "skipped", "failed", "present"} for row in rows):
         raise SystemExit("no smoke-s3 outputs found")
     output_dir.mkdir(parents=True, exist_ok=True)
     payload = build_payload(rows)
