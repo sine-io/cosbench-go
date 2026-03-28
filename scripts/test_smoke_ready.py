@@ -21,52 +21,96 @@ def run_helper(*args, env_overrides=None):
     env["SMOKE_READY_MOCK_WORKFLOW_RUNS_JSON"] = json.dumps(
         {
             "Smoke Local": {
+                "databaseId": 1001,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:00:00Z",
                 "url": "https://example.test/smoke-local",
             },
             "Smoke S3": {
+                "databaseId": 1002,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:05:00Z",
                 "url": "https://example.test/smoke-s3",
             },
             "Legacy Live Compare": {
+                "databaseId": 1003,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:07:00Z",
                 "url": "https://example.test/legacy-live-compare",
             },
             "Legacy Live Compare Matrix": {
+                "databaseId": 1004,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:08:00Z",
                 "url": "https://example.test/legacy-live-compare-matrix",
             },
             "Remote Smoke Local": {
+                "databaseId": 1005,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:10:00Z",
                 "url": "https://example.test/remote-smoke-local",
             },
             "Remote Smoke Matrix": {
+                "databaseId": 1006,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:20:00Z",
                 "url": "https://example.test/remote-smoke-matrix",
             },
             "Remote Smoke Recovery": {
+                "databaseId": 1007,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:30:00Z",
                 "url": "https://example.test/remote-smoke-recovery",
             },
             "Remote Smoke Recovery Matrix": {
+                "databaseId": 1008,
                 "status": "completed",
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:40:00Z",
                 "url": "https://example.test/remote-smoke-recovery-matrix",
+            },
+        }
+    )
+    env["SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON"] = json.dumps(
+        {
+            "Legacy Live Compare": {
+                "jobs": [
+                    {
+                        "name": "legacy-live-compare",
+                        "status": "completed",
+                        "conclusion": "success",
+                        "steps": [
+                            {"name": "Run legacy live compare", "status": "completed", "conclusion": "skipped"}
+                        ],
+                    }
+                ]
+            },
+            "Legacy Live Compare Matrix": {
+                "jobs": [
+                    {
+                        "name": "legacy-live-compare-matrix (s3, testdata/legacy/s3-config-sample.xml)",
+                        "status": "completed",
+                        "conclusion": "success",
+                        "steps": [
+                            {"name": "Run legacy live compare", "status": "completed", "conclusion": "skipped"}
+                        ],
+                    },
+                    {
+                        "name": "legacy-live-compare-matrix (sio, testdata/legacy/sio-config-sample.xml)",
+                        "status": "completed",
+                        "conclusion": "success",
+                        "steps": [
+                            {"name": "Run legacy live compare", "status": "completed", "conclusion": "skipped"}
+                        ],
+                    },
+                ]
             },
         }
     )
@@ -111,8 +155,10 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert "legacy_live_ready" in summary
     assert "legacy_live_matrix_ready" in summary
     assert "real_endpoint_latest_success" in summary
-    assert "legacy_live_latest_success" in summary
-    assert "legacy_live_matrix_latest_success" in summary
+    assert summary["legacy_live_latest_success"] is False
+    assert summary["legacy_live_matrix_latest_success"] is False
+    assert summary["legacy_live_latest_result"] == "skipped"
+    assert summary["legacy_live_matrix_latest_result"] == "skipped"
     assert "remote_happy_latest_success" in summary
     assert "remote_recovery_latest_success" in summary
     assert "ready" in summary
@@ -140,5 +186,8 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Real Endpoint Latest Success" in text
     assert "Legacy Live Latest Success" in text
     assert "Legacy Live Matrix Latest Success" in text
+    assert "Legacy Live Latest Result" in text
+    assert "Legacy Live Matrix Latest Result" in text
+    assert "skipped" in text
     assert "Remote Happy Latest Success" in text
     assert "Remote Recovery Latest Success" in text
