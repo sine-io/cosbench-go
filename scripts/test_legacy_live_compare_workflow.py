@@ -12,8 +12,10 @@ def test_legacy_live_compare_workflow_shape():
     assert "should_run" in workflow
     assert "if: steps.preflight.outputs.should_run == 'true'" in workflow
     assert "render_legacy_live_compare_workload.py" in workflow
+    assert "summarize_legacy_live_compare.py" in workflow
     assert "go run ./cmd/cosbench-go" in workflow
     assert "-json -quiet -summary-file" in workflow
     assert ".artifacts/legacy-live-compare/summary.json" in workflow
+    assert ".artifacts/legacy-live-compare/result.json" in workflow
     assert ".artifacts/legacy-live-compare/run.log" in workflow
     assert "legacy-live-compare-output" in workflow

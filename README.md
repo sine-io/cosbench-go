@@ -113,6 +113,8 @@ gh workflow run "Legacy Live Compare" --repo sine-io/cosbench-go
 
 If the repository does not have `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY` configured, `Legacy Live Compare` now records a clean `skipped` result instead of failing with an empty rendered storage config.
 
+`Legacy Live Compare` and `Legacy Live Compare Matrix` now also publish normalized structured result summaries in addition to the raw CLI summary JSON.
+
 To trigger the representative two-row legacy live compare matrix:
 
 ```bash

@@ -11,7 +11,9 @@ def write_summary(path: Path, payload: dict):
 def test_aggregate_legacy_live_compare_matrix(tmp_path: Path):
     root = tmp_path / "downloads"
     write_summary(root / "legacy-live-compare-s3" / "summary.json", {"operations": 12})
+    write_summary(root / "legacy-live-compare-s3" / "result.json", {"result": "executed"})
     write_summary(root / "legacy-live-compare-sio" / "summary.json", {"status": "skipped", "reason": "missing secrets"})
+    write_summary(root / "legacy-live-compare-sio" / "result.json", {"result": "skipped", "reason": "missing secrets"})
 
     output = tmp_path / "aggregate"
     subprocess.run(
