@@ -8,6 +8,7 @@ def test_smoke_s3_matrix_workflow_shape():
     assert "- backend: s3" in workflow
     assert "- backend: sio" in workflow
     assert "GO=go make smoke-s3" in workflow
+    assert "summarize_smoke_s3_output.py" in workflow
     assert "aggregate:" in workflow
     assert "aggregate_smoke_s3_matrix.py" in workflow
     assert "smoke-s3-${{ matrix.backend }}" in workflow

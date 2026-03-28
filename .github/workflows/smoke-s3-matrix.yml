@@ -46,16 +46,34 @@ jobs:
       - name: Run smoke s3 matrix row
         run: GO=go make smoke-s3 | tee smoke-s3-output.txt
 
+      - name: Summarize smoke s3 matrix row
+        if: always()
+        run: |
+          mkdir -p .artifacts/smoke-s3-summary
+          python3 ./scripts/summarize_smoke_s3_output.py \
+            smoke-s3-output.txt \
+            .artifacts/smoke-s3-summary/summary.json
+
       - name: Upload smoke s3 output
         if: always()
         uses: actions/upload-artifact@v7.0.0
         with:
           name: smoke-s3-${{ matrix.backend }}
-          path: smoke-s3-output.txt
+          path: |
+            smoke-s3-output.txt
+            .artifacts/smoke-s3-summary/summary.json
 
       - name: Write smoke summary
         if: always()
-        run: cat smoke-s3-output.txt >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        run: |
+          cat smoke-s3-output.txt >> "$GITHUB_STEP_SUMMARY"
+          if [ -f .artifacts/smoke-s3-summary/summary.json ]; then
+            echo >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat .artifacts/smoke-s3-summary/summary.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   aggregate:
     if: always()
