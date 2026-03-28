@@ -23,6 +23,9 @@ WORKFLOW_NAMES = [
     "Remote Smoke Recovery Matrix",
 ]
 DEFAULT_REPO = "sine-io/cosbench-go"
+LEGACY_LIVE_WORKFLOW = "Legacy Live Compare"
+LEGACY_LIVE_MATRIX_WORKFLOW = "Legacy Live Compare Matrix"
+LEGACY_STEP_NAME = "Run legacy live compare"
 
 
 def generated_at():
@@ -96,7 +99,7 @@ def load_workflow_latest_runs(repo):
             "--limit",
             "1",
             "--json",
-            "status,conclusion,createdAt,url",
+            "databaseId,status,conclusion,createdAt,url",
         )
         if proc.returncode != 0:
             error = (proc.stderr or proc.stdout).strip()
@@ -105,6 +108,7 @@ def load_workflow_latest_runs(repo):
         if rows:
             row = rows[0]
             latest[name] = {
+                "database_id": row.get("databaseId"),
                 "status": row.get("status", ""),
                 "conclusion": row.get("conclusion", ""),
                 "created_at": row.get("createdAt", ""),
@@ -115,6 +119,89 @@ def load_workflow_latest_runs(repo):
     return latest, True, ""
 
 
+def load_legacy_workflow_details(repo, workflow_latest):
+    if "SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON" in os.environ:
+        return json.loads(os.environ["SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON"]), True, ""
+    details = {}
+    for name in (LEGACY_LIVE_WORKFLOW, LEGACY_LIVE_MATRIX_WORKFLOW):
+        latest = workflow_latest.get(name) or {}
+        run_id = latest.get("database_id")
+        if not run_id:
+            details[name] = None
+            continue
+        proc = run("gh", "run", "view", str(run_id), "--repo", repo, "--json", "jobs")
+        if proc.returncode != 0:
+            error = (proc.stderr or proc.stdout).strip()
+            return {}, False, error
+        details[name] = json.loads(proc.stdout or "{}")
+    return details, True, ""
+
+
+def step_state(job, step_name):
+    for step in job.get("steps", []):
+        if step.get("name") == step_name:
+            return {
+                "status": step.get("status", ""),
+                "conclusion": step.get("conclusion", ""),
+            }
+    return {"status": "", "conclusion": ""}
+
+
+def classify_single_legacy_result(latest, detail):
+    if not latest:
+        return "none"
+    if latest.get("status") != "completed":
+        return "pending"
+    if not detail:
+        return "failed"
+    for job in detail.get("jobs", []):
+        step = step_state(job, LEGACY_STEP_NAME)
+        if step["status"] or step["conclusion"]:
+            if step["status"] != "completed":
+                return "pending"
+            if step["conclusion"] == "success":
+                return "executed"
+            if step["conclusion"] == "skipped":
+                return "skipped"
+            return "failed"
+    return "failed"
+
+
+def classify_matrix_legacy_result(latest, detail):
+    if not latest:
+        return "none"
+    if latest.get("status") != "completed":
+        return "pending"
+    if not detail:
+        return "failed"
+    row_results = []
+    for job in detail.get("jobs", []):
+        if not str(job.get("name", "")).startswith("legacy-live-compare-matrix ("):
+            continue
+        step = step_state(job, LEGACY_STEP_NAME)
+        if step["status"] != "completed":
+            row_results.append("pending")
+            continue
+        if step["conclusion"] == "success":
+            row_results.append("executed")
+        elif step["conclusion"] == "skipped":
+            row_results.append("skipped")
+        else:
+            row_results.append("failed")
+    if not row_results:
+        return "failed"
+    unique = set(row_results)
+    if unique == {"executed"}:
+        return "executed"
+    if unique == {"skipped"}:
+        return "skipped"
+    if unique == {"failed"}:
+        return "failed"
+    if "pending" in unique:
+        return "pending"
+    return "partial"
+
+
 def build_payload():
     repo, repo_error = resolve_repo()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
@@ -123,6 +210,7 @@ def build_payload():
     repo_secret_names, repo_secrets_accessible, repo_secrets_error = load_repo_secret_names(repo)
     workflow_names, workflows_accessible, workflows_error = load_workflow_names(repo)
     workflow_latest, workflow_runs_accessible, workflow_runs_error = load_workflow_latest_runs(repo)
+    legacy_details, legacy_details_accessible, legacy_details_error = load_legacy_workflow_details(repo, workflow_latest)
 
     repo_secret_presence = {name: name in repo_secret_names for name in REQUIRED_SECRETS}
     workflow_presence = {name: name in workflow_names for name in WORKFLOW_NAMES}
@@ -132,9 +220,11 @@ def build_payload():
     legacy_live_matrix_ready = workflows_accessible and workflow_presence["Legacy Live Compare Matrix"]
     remote_happy_ready = workflows_accessible and workflow_presence["Remote Smoke Local"] and workflow_presence["Remote Smoke Matrix"]
     remote_recovery_ready = workflows_accessible and workflow_presence["Remote Smoke Recovery"] and workflow_presence["Remote Smoke Recovery Matrix"]
+    legacy_live_latest_result = classify_single_legacy_result(workflow_latest.get(LEGACY_LIVE_WORKFLOW), legacy_details.get(LEGACY_LIVE_WORKFLOW))
+    legacy_live_matrix_latest_result = classify_matrix_legacy_result(workflow_latest.get(LEGACY_LIVE_MATRIX_WORKFLOW), legacy_details.get(LEGACY_LIVE_MATRIX_WORKFLOW))
     real_endpoint_latest_success = (workflow_latest.get("Smoke S3") or {}).get("conclusion") == "success"
-    legacy_live_latest_success = (workflow_latest.get("Legacy Live Compare") or {}).get("conclusion") == "success"
-    legacy_live_matrix_latest_success = (workflow_latest.get("Legacy Live Compare Matrix") or {}).get("conclusion") == "success"
+    legacy_live_latest_success = legacy_live_latest_result == "executed"
+    legacy_live_matrix_latest_success = legacy_live_matrix_latest_result == "executed"
     remote_happy_latest_success = any(
         (workflow_latest.get(name) or {}).get("conclusion") == "success"
         for name in ("Remote Smoke Local", "Remote Smoke Matrix")
@@ -158,6 +248,8 @@ def build_payload():
             blockers.append("required workflow missing: Smoke Local")
     if workflows_accessible and not workflow_runs_accessible and workflow_runs_error:
         blockers.append(f"unable to query workflow runs: {workflow_runs_error}")
+    if workflow_runs_accessible and not legacy_details_accessible and legacy_details_error:
+        blockers.append(f"unable to query legacy workflow details: {legacy_details_error}")
 
     return {
         "generated_at": generated_at(),
@@ -188,6 +280,8 @@ def build_payload():
             "real_endpoint_latest_success": real_endpoint_latest_success,
             "legacy_live_latest_success": legacy_live_latest_success,
             "legacy_live_matrix_latest_success": legacy_live_matrix_latest_success,
+            "legacy_live_latest_result": legacy_live_latest_result,
+            "legacy_live_matrix_latest_result": legacy_live_matrix_latest_result,
             "remote_happy_latest_success": remote_happy_latest_success,
             "remote_recovery_latest_success": remote_recovery_latest_success,
             "ready": ready,
@@ -267,6 +361,8 @@ def print_text(payload):
     print(f"- Real Endpoint Latest Success: `{yes_no(payload['summary']['real_endpoint_latest_success'])}`")
     print(f"- Legacy Live Latest Success: `{yes_no(payload['summary']['legacy_live_latest_success'])}`")
     print(f"- Legacy Live Matrix Latest Success: `{yes_no(payload['summary']['legacy_live_matrix_latest_success'])}`")
+    print(f"- Legacy Live Latest Result: `{payload['summary']['legacy_live_latest_result']}`")
+    print(f"- Legacy Live Matrix Latest Result: `{payload['summary']['legacy_live_matrix_latest_result']}`")
     print(f"- Remote Happy Latest Success: `{yes_no(payload['summary']['remote_happy_latest_success'])}`")
     print(f"- Remote Recovery Latest Success: `{yes_no(payload['summary']['remote_recovery_latest_success'])}`")
     print(f"- Overall ready: `{yes_no(payload['summary']['ready'])}`")
