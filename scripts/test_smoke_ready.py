@@ -9,6 +9,7 @@ def run_helper(*args, env_overrides=None):
     env["SMOKE_READY_MOCK_WORKFLOWS"] = ",".join(
         [
             "Smoke Local",
+            "Smoke S3",
             "Remote Smoke Local",
             "Remote Smoke Matrix",
             "Remote Smoke Recovery",
@@ -22,6 +23,12 @@ def run_helper(*args, env_overrides=None):
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:00:00Z",
                 "url": "https://example.test/smoke-local",
+            },
+            "Smoke S3": {
+                "status": "completed",
+                "conclusion": "success",
+                "created_at": "2026-03-29T00:05:00Z",
+                "url": "https://example.test/smoke-s3",
             },
             "Remote Smoke Local": {
                 "status": "completed",
@@ -66,12 +73,14 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     payload = json.loads(proc.stdout)
     present = payload["workflows"]["present"]
     assert present["Smoke Local"] is True
+    assert present["Smoke S3"] is True
     assert present["Remote Smoke Local"] is True
     assert present["Remote Smoke Matrix"] is True
     assert present["Remote Smoke Recovery"] is True
     assert present["Remote Smoke Recovery Matrix"] is True
     latest = payload["workflows"]["latest"]
     assert latest["Smoke Local"]["conclusion"] == "success"
+    assert latest["Smoke S3"]["created_at"] == "2026-03-29T00:05:00Z"
     assert latest["Remote Smoke Local"]["status"] == "completed"
     assert latest["Remote Smoke Matrix"]["created_at"] == "2026-03-29T00:20:00Z"
     assert latest["Remote Smoke Recovery"]["url"] == "https://example.test/remote-smoke-recovery"
@@ -81,6 +90,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert "local_workflow_ready" in summary
     assert "remote_happy_ready" in summary
     assert "remote_recovery_ready" in summary
+    assert "real_endpoint_latest_success" in summary
     assert "remote_happy_latest_success" in summary
     assert "remote_recovery_latest_success" in summary
     assert "ready" in summary
@@ -90,6 +100,7 @@ def test_smoke_ready_text_reports_remote_categories():
     proc = run_helper()
     text = proc.stdout
     assert "Smoke Local" in text
+    assert "Smoke S3" in text
     assert "Remote Smoke Local" in text
     assert "Remote Smoke Matrix" in text
     assert "Remote Smoke Recovery" in text
@@ -100,5 +111,6 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Local Workflow Ready" in text
     assert "Remote Happy Ready" in text
     assert "Remote Recovery Ready" in text
+    assert "Real Endpoint Latest Success" in text
     assert "Remote Happy Latest Success" in text
     assert "Remote Recovery Latest Success" in text
