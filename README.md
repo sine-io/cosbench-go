@@ -61,6 +61,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Real `make smoke-s3` is now a local or private-network-only path. GitHub-hosted runners do not execute it because the repository does not have a public S3-compatible endpoint.
 - To trigger the manual GitHub smoke workflow with GitHub CLI:
   - `gh workflow run "Smoke Local" --repo sine-io/cosbench-go`
+  - `gh workflow run "Smoke S3" --repo sine-io/cosbench-go`
 
 ## CI
 - Repository CI runs `make validate` on `push` and `pull_request`
@@ -83,6 +84,12 @@ To trigger the manual remote smoke workflow with GitHub CLI:
 
 ```bash
 gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go
+```
+
+To trigger the manual real-endpoint smoke workflow:
+
+```bash
+gh workflow run "Smoke S3" --repo sine-io/cosbench-go
 ```
 
 To trigger the SIO variant:
