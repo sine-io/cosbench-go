@@ -89,19 +89,20 @@ def run_helper(*args, env_overrides=None):
     env["SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON"] = json.dumps(
         {
             "Smoke S3": {
-                "output": "go test ./internal/driver/s3 -run Smoke -v\n=== RUN   TestSmokeObjectLifecycle\n    smoke_test.go:63: set COSBENCH_SMOKE_ENDPOINT, COSBENCH_SMOKE_ACCESS_KEY, and COSBENCH_SMOKE_SECRET_KEY to run live smoke tests\n--- SKIP: TestSmokeObjectLifecycle (0.00s)\n=== RUN   TestSmokeSIOMultipartLifecycle\n    smoke_test.go:128: set COSBENCH_SMOKE_ENDPOINT, COSBENCH_SMOKE_ACCESS_KEY, and COSBENCH_SMOKE_SECRET_KEY to run live smoke tests\n--- SKIP: TestSmokeSIOMultipartLifecycle (0.00s)\nPASS\n",
+                "summary": {"result": "skipped"},
+                "output": "",
             },
             "Smoke S3 Matrix": {
                 "rows": [
                     {
                         "backend": "s3",
-                        "status": "present",
-                        "output": "go test ./internal/driver/s3 -run Smoke -v\n--- SKIP: TestSmokeObjectLifecycle (0.00s)\n--- SKIP: TestSmokeSIOMultipartLifecycle (0.00s)\nPASS\n",
+                        "status": "skipped",
+                        "output": "",
                     },
                     {
                         "backend": "sio",
-                        "status": "present",
-                        "output": "go test ./internal/driver/s3 -run Smoke -v\n--- SKIP: TestSmokeObjectLifecycle (0.00s)\n--- SKIP: TestSmokeSIOMultipartLifecycle (0.00s)\nPASS\n",
+                        "status": "skipped",
+                        "output": "",
                     },
                 ]
             },
