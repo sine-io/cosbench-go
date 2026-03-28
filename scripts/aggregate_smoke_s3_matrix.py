@@ -19,17 +19,35 @@ def find_output_path(root: Path, backend: str):
     return None
 
 
+def find_summary_path(root: Path, backend: str):
+    candidates = [
+        root / f"smoke-s3-{backend}" / "summary.json",
+        root / f"smoke-s3-{backend}" / backend / "summary.json",
+        root / f"smoke-s3-{backend}" / ".artifacts" / "smoke-s3-summary" / "summary.json",
+        root / f"smoke-s3-{backend}" / backend / ".artifacts" / "smoke-s3-summary" / "summary.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def aggregate_rows(root: Path, expected_rows=EXPECTED_ROWS):
     rows = []
     for backend in expected_rows:
         output_path = find_output_path(root, backend)
+        summary_path = find_summary_path(root, backend)
         if output_path is None:
             rows.append({"backend": backend, "status": "missing"})
             continue
+        status = "present"
+        if summary_path is not None:
+            payload = json.loads(summary_path.read_text(encoding="utf-8"))
+            status = payload.get("result", "present")
         rows.append(
             {
                 "backend": backend,
-                "status": "present",
+                "status": status,
                 "output": output_path.read_text(encoding="utf-8"),
             }
         )
@@ -51,7 +69,7 @@ def render_markdown(rows):
 def build_payload(rows):
     return {
         "rows": rows,
-        "overall": "pass" if all(row["status"] == "present" for row in rows) else "partial",
+        "overall": "pass" if all(row["status"] in {"executed", "skipped"} for row in rows) else "partial",
     }
 
 
