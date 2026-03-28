@@ -54,6 +54,8 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	now := time.Now().UTC()
+	m.expireLeasesLocked(now)
 
 	candidates := make([]domain.Mission, 0, len(m.missions))
 	for _, mission := range m.missions {
@@ -70,7 +72,6 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 	if len(candidates) == 0 {
 		return domain.Mission{}, false, nil
 	}
-	now := time.Now().UTC()
 	mission := candidates[0]
 	mission.Status = domain.MissionStatusClaimed
 	mission.UpdatedAt = now
@@ -84,6 +85,32 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 		return domain.Mission{}, false, err
 	}
 	return mission, true, nil
+}
+
+func (m *Manager) expireLeasesLocked(now time.Time) {
+	affectedJobs := map[string]struct{}{}
+	for missionID, mission := range m.missions {
+		if mission.Lease == nil {
+			continue
+		}
+		if mission.Status != domain.MissionStatusClaimed && mission.Status != domain.MissionStatusRunning {
+			continue
+		}
+		if mission.Lease.ExpiresAt.After(now) {
+			continue
+		}
+		mission.Status = domain.MissionStatusExpired
+		mission.ErrorMessage = "mission lease expired"
+		mission.Lease = nil
+		mission.UpdatedAt = now
+		m.missions[missionID] = mission
+		delete(m.missionSamples, missionID)
+		_ = m.store.SaveMission(mission)
+		affectedJobs[mission.JobID] = struct{}{}
+	}
+	for jobID := range affectedJobs {
+		m.refreshJobFromMissionsLocked(jobID)
+	}
 }
 
 func (m *Manager) AppendMissionEvents(missionID string, events []domain.JobEvent) error {

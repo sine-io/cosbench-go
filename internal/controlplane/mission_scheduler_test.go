@@ -81,3 +81,74 @@ func TestManagerRegistersDriversSchedulesMissionsAndClaimsWork(t *testing.T) {
 		t.Fatalf("claimB = %#v", claimB)
 	}
 }
+
+func TestClaimMissionReclaimsExpiredLeaseButNotActiveLease(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	driverA, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverB, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-b", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-expiry">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	missions, err := mgr.ScheduleJobStage(job.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(missions) != 1 {
+		t.Fatalf("missions = %#v", missions)
+	}
+
+	claimed, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-a): mission=%#v ok=%v err=%v", claimed, ok, err)
+	}
+	unexpired, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil {
+		t.Fatalf("ClaimMission(driver-b/unexpired): %v", err)
+	}
+	if ok {
+		t.Fatalf("expected no claim while lease active, got %#v", unexpired)
+	}
+
+	claimed.Status = domain.MissionStatusRunning
+	claimed.Lease.ExpiresAt = time.Now().UTC().Add(-time.Second)
+	claimed.UpdatedAt = time.Now().UTC().Add(-time.Second)
+	if err := mgr.PutMission(claimed); err != nil {
+		t.Fatalf("PutMission(): %v", err)
+	}
+
+	reclaimed, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil {
+		t.Fatalf("ClaimMission(driver-b/reclaimed): %v", err)
+	}
+	if !ok {
+		t.Fatal("expected reclaimed mission to be available")
+	}
+	if reclaimed.ID != claimed.ID || reclaimed.Lease == nil || reclaimed.Lease.DriverID != driverB.ID {
+		t.Fatalf("reclaimed = %#v", reclaimed)
+	}
+}

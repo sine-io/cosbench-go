@@ -40,6 +40,7 @@ func (m *Manager) GetDriverNode(id string) (domain.DriverNode, bool) {
 func (m *Manager) RecordDriverHeartbeat(id string, at time.Time) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.expireLeasesLocked(at)
 	driver, ok := m.drivers[id]
 	if !ok {
 		return errors.New("driver not found")
