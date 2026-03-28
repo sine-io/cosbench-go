@@ -279,6 +279,35 @@ func TestDriverPagesRender(t *testing.T) {
 	}
 }
 
+func TestDriverLogsPageAndSharedNavigation(t *testing.T) {
+	h := newTestHandler(t)
+	driver, _ := createDriverPageFixture(t, h.manager)
+
+	logsRec := httptest.NewRecorder()
+	logsReq := httptest.NewRequest(http.MethodGet, "/driver/logs", nil)
+	h.ServeHTTP(logsRec, logsReq)
+	if logsRec.Code != http.StatusOK {
+		t.Fatalf("logs status = %d body=%s", logsRec.Code, logsRec.Body.String())
+	}
+	logsBody := logsRec.Body.String()
+	if !strings.Contains(logsBody, "Driver Logs") || !strings.Contains(logsBody, driver.Name) {
+		t.Fatalf("logs body = %s", logsBody)
+	}
+
+	for _, path := range []string{"/", "/endpoints"} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status = %d body=%s", path, rec.Code, rec.Body.String())
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, "/driver") || !strings.Contains(body, "/controller/matrix") {
+			t.Fatalf("%s body missing shared nav: %s", path, body)
+		}
+	}
+}
+
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	store, err := snapshot.New(t.TempDir())

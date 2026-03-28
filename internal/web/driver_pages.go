@@ -75,6 +75,22 @@ func (h *Handler) driverWorkersPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) driverLogsPage(w http.ResponseWriter, r *http.Request) {
+	driver, ok := h.defaultDriver()
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	overview, _ := h.manager.GetDriverOverview(driver.ID)
+	logs := h.manager.GetDriverLogs(driver.ID)
+	h.render(w, "driver_logs.html", pageData{
+		Title:          "Driver Logs",
+		DriverOverview: overview,
+		DriverLogs:     logs,
+		RequestPath:    r.URL.Path,
+	})
+}
+
 func (h *Handler) defaultDriver() (domain.DriverNode, bool) {
 	drivers := h.manager.ListDriverNodes()
 	if len(drivers) == 0 {
