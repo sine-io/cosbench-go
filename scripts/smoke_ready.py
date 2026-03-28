@@ -15,6 +15,7 @@ REQUIRED_SECRETS = [
 WORKFLOW_NAMES = [
     "Smoke Local",
     "Smoke S3",
+    "Smoke S3 Matrix",
     "Legacy Live Compare",
     "Legacy Live Compare Matrix",
     "Remote Smoke Local",
@@ -216,6 +217,7 @@ def build_payload():
     workflow_presence = {name: name in workflow_names for name in WORKFLOW_NAMES}
     local_workflow_ready = workflows_accessible and workflow_presence["Smoke Local"]
     real_endpoint_ready = workflows_accessible and workflow_presence["Smoke S3"]
+    real_endpoint_matrix_ready = workflows_accessible and workflow_presence["Smoke S3 Matrix"]
     legacy_live_ready = workflows_accessible and workflow_presence["Legacy Live Compare"]
     legacy_live_matrix_ready = workflows_accessible and workflow_presence["Legacy Live Compare Matrix"]
     remote_happy_ready = workflows_accessible and workflow_presence["Remote Smoke Local"] and workflow_presence["Remote Smoke Matrix"]
@@ -223,6 +225,7 @@ def build_payload():
     legacy_live_latest_result = classify_single_legacy_result(workflow_latest.get(LEGACY_LIVE_WORKFLOW), legacy_details.get(LEGACY_LIVE_WORKFLOW))
     legacy_live_matrix_latest_result = classify_matrix_legacy_result(workflow_latest.get(LEGACY_LIVE_MATRIX_WORKFLOW), legacy_details.get(LEGACY_LIVE_MATRIX_WORKFLOW))
     real_endpoint_latest_success = (workflow_latest.get("Smoke S3") or {}).get("conclusion") == "success"
+    real_endpoint_matrix_latest_success = (workflow_latest.get("Smoke S3 Matrix") or {}).get("conclusion") == "success"
     legacy_live_latest_success = legacy_live_latest_result == "executed"
     legacy_live_matrix_latest_success = legacy_live_matrix_latest_result == "executed"
     remote_happy_latest_success = any(
@@ -273,11 +276,13 @@ def build_payload():
             "local_env_ready": local_ready,
             "local_workflow_ready": local_workflow_ready,
             "real_endpoint_ready": real_endpoint_ready,
+            "real_endpoint_matrix_ready": real_endpoint_matrix_ready,
             "legacy_live_ready": legacy_live_ready,
             "legacy_live_matrix_ready": legacy_live_matrix_ready,
             "remote_happy_ready": remote_happy_ready,
             "remote_recovery_ready": remote_recovery_ready,
             "real_endpoint_latest_success": real_endpoint_latest_success,
+            "real_endpoint_matrix_latest_success": real_endpoint_matrix_latest_success,
             "legacy_live_latest_success": legacy_live_latest_success,
             "legacy_live_matrix_latest_success": legacy_live_matrix_latest_success,
             "legacy_live_latest_result": legacy_live_latest_result,
@@ -354,11 +359,13 @@ def print_text(payload):
     print(f"- Local Env Ready: `{yes_no(payload['summary']['local_env_ready'])}`")
     print(f"- Local Workflow Ready: `{yes_no(payload['summary']['local_workflow_ready'])}`")
     print(f"- Real Endpoint Ready: `{yes_no(payload['summary']['real_endpoint_ready'])}`")
+    print(f"- Real Endpoint Matrix Ready: `{yes_no(payload['summary']['real_endpoint_matrix_ready'])}`")
     print(f"- Legacy Live Ready: `{yes_no(payload['summary']['legacy_live_ready'])}`")
     print(f"- Legacy Live Matrix Ready: `{yes_no(payload['summary']['legacy_live_matrix_ready'])}`")
     print(f"- Remote Happy Ready: `{yes_no(payload['summary']['remote_happy_ready'])}`")
     print(f"- Remote Recovery Ready: `{yes_no(payload['summary']['remote_recovery_ready'])}`")
     print(f"- Real Endpoint Latest Success: `{yes_no(payload['summary']['real_endpoint_latest_success'])}`")
+    print(f"- Real Endpoint Matrix Latest Success: `{yes_no(payload['summary']['real_endpoint_matrix_latest_success'])}`")
     print(f"- Legacy Live Latest Success: `{yes_no(payload['summary']['legacy_live_latest_success'])}`")
     print(f"- Legacy Live Matrix Latest Success: `{yes_no(payload['summary']['legacy_live_matrix_latest_success'])}`")
     print(f"- Legacy Live Latest Result: `{payload['summary']['legacy_live_latest_result']}`")
