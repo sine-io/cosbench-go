@@ -29,7 +29,6 @@ Status: In Progress
 - [x] Add CI-friendly Make targets for validate / test / build
 - [x] Add repository-local CI automation for `make validate`
 - [x] Add manual workflow automation for `make compare-local`
-- [x] Add manual workflow automation for `make smoke-s3`
 - [x] Add a GitHub job summary and explicit backend choice for the manual smoke workflow
 - [x] Constrain the smoke workflow `path_style` input to explicit choices
 - [x] Show required smoke secret presence in the manual smoke workflow summary

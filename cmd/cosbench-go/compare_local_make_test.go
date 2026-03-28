@@ -414,8 +414,8 @@ func TestSmokeReadyTargetReportsOverallReadiness(t *testing.T) {
 		"--no-print-directory",
 		"smoke-ready",
 		"SMOKE_READY_REPO=sine-io/cosbench-go",
-		"SMOKE_READY_MOCK_REPO_SECRETS=COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY",
-		"SMOKE_READY_MOCK_WORKFLOWS=Smoke S3",
+		"SMOKE_READY_MOCK_REPO_SECRETS=",
+		"SMOKE_READY_MOCK_WORKFLOWS=Smoke Local",
 		"COSBENCH_SMOKE_ENDPOINT=http://127.0.0.1:9000",
 		"COSBENCH_SMOKE_ACCESS_KEY=ak",
 		"COSBENCH_SMOKE_SECRET_KEY=sk",
@@ -428,7 +428,7 @@ func TestSmokeReadyTargetReportsOverallReadiness(t *testing.T) {
 	if !strings.Contains(text, "Overall ready: `yes`") {
 		t.Fatalf("unexpected output: %s", text)
 	}
-	if !strings.Contains(text, "Smoke S3: `available`") {
+	if !strings.Contains(text, "Smoke Local: `available`") {
 		t.Fatalf("unexpected output: %s", text)
 	}
 }
@@ -440,15 +440,12 @@ func TestSmokeReadyJSONTargetReportsBlockers(t *testing.T) {
 		"smoke-ready-json",
 		"SMOKE_READY_REPO=sine-io/cosbench-go",
 		"SMOKE_READY_MOCK_REPO_SECRETS=",
-		"SMOKE_READY_MOCK_WORKFLOWS=Smoke S3",
+		"SMOKE_READY_MOCK_WORKFLOWS=",
 	)
 
 	var payload struct {
 		Repo       string `json:"repo"`
 		LocalEnv   map[string]bool `json:"local_env"`
-		RepoSecrets struct {
-			Present map[string]bool `json:"present"`
-		} `json:"repo_secrets"`
 		Workflows struct {
 			Present map[string]bool `json:"present"`
 		} `json:"workflows"`
@@ -468,11 +465,8 @@ func TestSmokeReadyJSONTargetReportsBlockers(t *testing.T) {
 	if payload.Summary.Ready || payload.Summary.LocalReady || payload.Summary.WorkflowReady {
 		t.Fatalf("unexpected readiness: %#v", payload.Summary)
 	}
-	if !payload.Workflows.Present["Smoke S3"] {
+	if payload.Workflows.Present["Smoke Local"] {
 		t.Fatalf("unexpected workflows: %#v", payload.Workflows)
-	}
-	if payload.RepoSecrets.Present["COSBENCH_SMOKE_ENDPOINT"] {
-		t.Fatalf("unexpected repo secrets: %#v", payload.RepoSecrets)
 	}
 	if len(payload.Blockers) == 0 {
 		t.Fatalf("expected blockers: %#v", payload)

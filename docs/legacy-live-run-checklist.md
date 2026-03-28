@@ -27,29 +27,18 @@ make --no-print-directory smoke-local
 make --no-print-directory smoke-ready
 make --no-print-directory smoke-ready-json
 env | rg '^COSBENCH_SMOKE_'
-gh secret list --repo sine-io/cosbench-go
 gh workflow list --repo sine-io/cosbench-go
-```
-
-If you are preparing repository-side execution, set the required secrets explicitly:
-
-```bash
-printf '%s' "$COSBENCH_SMOKE_ENDPOINT" | gh secret set COSBENCH_SMOKE_ENDPOINT --repo sine-io/cosbench-go
-printf '%s' "$COSBENCH_SMOKE_ACCESS_KEY" | gh secret set COSBENCH_SMOKE_ACCESS_KEY --repo sine-io/cosbench-go
-printf '%s' "$COSBENCH_SMOKE_SECRET_KEY" | gh secret set COSBENCH_SMOKE_SECRET_KEY --repo sine-io/cosbench-go
 ```
 
 Treat the environment as ready when at least one of these is true:
 
 - the local shell already exposes the required `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`
-- the repository has the same three GitHub Actions secrets configured and the manual `Smoke S3` workflow is available
+- the repository has the manual `Smoke Local` workflow available and you only need remote proof that the smoke path still works against a temporary local moto endpoint
 
 Current readiness snapshot as of 2026-03-27:
 
 - local shell: required `COSBENCH_SMOKE_*` variables not present
-- repository secrets: no `COSBENCH_SMOKE_*` secrets configured
-- workflow availability: manual `Smoke S3` workflow exists and is ready once secrets are added
-- GitHub Actions evidence: manual run `23641346921` failed at `Validate smoke secrets` and confirmed `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY` were all unset
+- repository workflow availability: manual `Smoke Local` workflow exists for GitHub-hosted proof without external credentials
 - local live-endpoint evidence: a temporary moto server at `http://127.0.0.1:9000` passed `make smoke-s3` on 2026-03-27 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
@@ -62,24 +51,19 @@ First confirm that the current Go adapter path can talk to the target endpoint:
 GO=$(which go || echo /snap/bin/go) make smoke-s3
 ```
 
-If local credentials are awkward to inject but repository secrets are available, you can also trigger the manual GitHub Actions smoke workflow and use its job summary plus uploaded `smoke-s3-output` artifact as the recorded precheck evidence.
+If you only need remote evidence that the local live-endpoint smoke path is still healthy on GitHub-hosted runners, trigger the manual `Smoke Local` workflow and use its job summary plus uploaded `smoke-local-output` artifact as the recorded precheck evidence.
 
 Example GitHub workflow trigger:
 
 ```bash
-gh workflow run "Smoke S3" --repo sine-io/cosbench-go \
-  -f backend=s3 \
-  -f region= \
-  -f path_style= \
-  -f bucket_prefix=
+gh workflow run "Smoke Local" --repo sine-io/cosbench-go
 ```
 
 Record:
 
 - whether smoke passed or failed
-- which backend was used
+- whether the evidence came from local real-endpoint smoke or from the GitHub-hosted `Smoke Local` workflow
 - any endpoint-specific setup quirks
-- whether the run happened locally or through the manual GitHub Actions workflow
 
 If this fails, stop and fix credentials/connectivity before workload-level comparison.
 

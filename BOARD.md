@@ -5,7 +5,7 @@ Owner: Ross
 
 ## Doing
 - Live-endpoint behavior comparison against legacy workloads
-- Environment provisioning for actual legacy live checks; current blocker as of 2026-03-27: no local `COSBENCH_SMOKE_*` environment and no repository `COSBENCH_SMOKE_*` secrets are configured yet, confirmed by failed `Smoke S3` preflight run `23641346921`
+- Environment provisioning for actual legacy live checks; current blocker as of 2026-03-28: no public or otherwise GitHub-reachable S3-compatible endpoint is available for repository-side `Smoke S3`, so real endpoint smoke remains a local or private-network task
 - Keep comparison evidence and migration boards current as new milestones land
 
 ## Next
@@ -110,6 +110,7 @@ Owner: Ross
 - Smoke readiness helper landed (`make smoke-ready` / `make smoke-ready-json`)
 - Local moto smoke helper landed (`make smoke-local`)
 - Manual smoke-local workflow landed
+- GitHub-hosted smoke strategy narrowed to `Smoke Local`; real `Smoke S3` now treated as local/private-network-only
 - Local CLI ergonomics landed (`-f`, positional path, pure JSON stdout)
 - Local comparison command landed for curated mock-backed fixtures
 - Legacy live-run checklist landed

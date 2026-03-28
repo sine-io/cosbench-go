@@ -44,25 +44,16 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
   - `COSBENCH_SMOKE_PATH_STYLE`
 - `COSBENCH_SMOKE_BUCKET_PREFIX`
 - If required env vars are missing, the smoke tests skip cleanly
-- To provision repository-side smoke secrets with GitHub CLI:
-  - `printf '%s' "$COSBENCH_SMOKE_ENDPOINT" | gh secret set COSBENCH_SMOKE_ENDPOINT --repo sine-io/cosbench-go`
-  - `printf '%s' "$COSBENCH_SMOKE_ACCESS_KEY" | gh secret set COSBENCH_SMOKE_ACCESS_KEY --repo sine-io/cosbench-go`
-  - `printf '%s' "$COSBENCH_SMOKE_SECRET_KEY" | gh secret set COSBENCH_SMOKE_SECRET_KEY --repo sine-io/cosbench-go`
-- To trigger the manual smoke workflow with GitHub CLI:
-  - `gh workflow run "Smoke S3" --repo sine-io/cosbench-go -f backend=s3 -f region= -f path_style= -f bucket_prefix=`
+- Real `make smoke-s3` is now a local or private-network-only path. GitHub-hosted runners do not execute it because the repository does not have a public S3-compatible endpoint.
+- To trigger the manual GitHub smoke workflow with GitHub CLI:
+  - `gh workflow run "Smoke Local" --repo sine-io/cosbench-go`
 
 ## CI
 - Repository CI runs `make validate` on `push` and `pull_request`
 - The default CI path does not run `make smoke-s3`; live endpoint checks remain opt-in
 - A manual GitHub Actions workflow can run `make compare-local` on demand
 - A separate manual GitHub Actions workflow can run `make smoke-local` without external secrets to verify the local live-endpoint path on GitHub-hosted runners
-- A separate manual GitHub Actions workflow can run `make smoke-s3` with `COSBENCH_SMOKE_*` secrets and optional workflow inputs
-- That smoke workflow uses an explicit `s3` / `sio` backend choice and writes a small GitHub job summary with the selected inputs
-- The `path_style` workflow input is also constrained to explicit choices (`""`, `true`, `false`)
-- The smoke job summary now also reports whether the required endpoint and credential secrets were present
-- The smoke workflow now fails fast if any required smoke secret is missing, instead of silently relying on test-level skips
-- The smoke workflow also uploads the raw `make smoke-s3` output as an artifact
-- The smoke summary step now runs even when preflight fails, so the secret-status summary is still visible on failed runs
+- GitHub-hosted runners no longer attempt real `make smoke-s3`; that path remains for local or private-network execution only
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`
 

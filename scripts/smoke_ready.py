@@ -12,7 +12,7 @@ REQUIRED_SECRETS = [
     "COSBENCH_SMOKE_ACCESS_KEY",
     "COSBENCH_SMOKE_SECRET_KEY",
 ]
-SMOKE_WORKFLOW_NAME = "Smoke S3"
+SMOKE_WORKFLOW_NAME = "Smoke Local"
 DEFAULT_REPO = "sine-io/cosbench-go"
 
 
@@ -80,9 +80,8 @@ def build_payload():
     workflow_names, workflows_accessible, workflows_error = load_workflow_names(repo)
 
     repo_secret_presence = {name: name in repo_secret_names for name in REQUIRED_SECRETS}
-    repo_secrets_ready = repo_secrets_accessible and all(repo_secret_presence.values())
     workflow_presence = {SMOKE_WORKFLOW_NAME: SMOKE_WORKFLOW_NAME in workflow_names}
-    workflow_ready = workflows_accessible and workflow_presence[SMOKE_WORKFLOW_NAME] and repo_secrets_ready
+    workflow_ready = workflows_accessible and workflow_presence[SMOKE_WORKFLOW_NAME]
     ready = local_ready or workflow_ready
 
     blockers = []
@@ -92,12 +91,6 @@ def build_payload():
         missing_local = [name for name, present in local_env.items() if not present]
         if missing_local:
             blockers.append(f"missing local smoke env: {', '.join(missing_local)}")
-        if not repo_secrets_accessible and repo_secrets_error:
-            blockers.append(f"unable to query repo secrets: {repo_secrets_error}")
-        elif not repo_secrets_ready:
-            missing_repo = [name for name, present in repo_secret_presence.items() if not present]
-            if missing_repo:
-                blockers.append(f"missing repo smoke secrets: {', '.join(missing_repo)}")
         if not workflows_accessible and workflows_error:
             blockers.append(f"unable to query workflows: {workflows_error}")
         elif not workflow_presence[SMOKE_WORKFLOW_NAME]:
