@@ -41,7 +41,7 @@ Current readiness snapshot as of 2026-03-29:
 - local shell: required `COSBENCH_SMOKE_*` variables not present
 - repository workflow availability: manual `Smoke Local`, `Smoke S3`, `Smoke S3 Matrix`, `Legacy Live Compare`, and `Legacy Live Compare Matrix` workflows exist
 - local live-endpoint evidence: a temporary MinIO server passed `make smoke-s3` on 2026-03-28 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
-- GitHub-hosted evidence: `Smoke S3` runs `23692178816` (`s3`) and `23692209829` (`sio`) both passed on 2026-03-29; `Legacy Live Compare` run `23693647646` and `Legacy Live Compare Matrix` run `23694053504` both completed cleanly with `skipped` legacy result states when `COSBENCH_SMOKE_*` repository secrets were absent instead of failing with empty rendered config
+- GitHub-hosted evidence: the latest `Smoke S3` run now maps to `real_endpoint_latest_result=skipped`, and the latest `Smoke S3 Matrix` run now maps to `real_endpoint_matrix_latest_result=skipped`, because their smoke tests were skipped when `COSBENCH_SMOKE_*` repository secrets were absent. `Legacy Live Compare` run `23693647646` and `Legacy Live Compare Matrix` run `23694053504` likewise completed cleanly with `skipped` legacy result states instead of failing with empty rendered config
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 
@@ -52,6 +52,12 @@ First confirm that the current Go adapter path can talk to the target endpoint:
 ```bash
 GO=$(which go || echo /snap/bin/go) make smoke-s3
 ```
+
+Treat `smoke-ready` as the status view for the latest real-endpoint smoke result:
+
+- `real_endpoint_latest_result=executed` means the latest `Smoke S3` run actually executed live smoke coverage
+- `real_endpoint_latest_result=skipped` means the latest `Smoke S3` run only proved workflow wiring and secret gating
+- `real_endpoint_matrix_latest_result` applies the same distinction to `Smoke S3 Matrix`
 
 If you only need remote evidence that the local live-endpoint smoke path is still healthy on GitHub-hosted runners, trigger the manual `Smoke Local` workflow and use its job summary plus uploaded `smoke-local-output` artifact as the recorded precheck evidence.
 
