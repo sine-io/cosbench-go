@@ -67,6 +67,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) routes() {
 	h.mux.HandleFunc("/", h.dashboard)
+	h.mux.HandleFunc("/api/controller/jobs", h.controllerJobsAPI)
+	h.mux.HandleFunc("/api/controller/jobs/", h.controllerJobAPIRoute)
 	h.mux.HandleFunc("/workloads/new", h.workloadForm)
 	h.mux.HandleFunc("/workloads", h.createWorkload)
 	h.mux.HandleFunc("/endpoints", h.endpoints)
