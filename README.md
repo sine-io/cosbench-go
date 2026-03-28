@@ -53,6 +53,8 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also consumes structured remote smoke and remote recovery summaries first, rather than relying only on workflow conclusions
 - The latest verified GitHub-hosted `Smoke S3` run is `23695743149`, and it uploaded both `smoke-s3-output.txt` and `.artifacts/smoke-s3-summary/summary.json` with `{"result":"skipped"}`
 - The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23695743153`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`
+- The latest verified GitHub-hosted `Remote Smoke Matrix` run is `23696657083`, and its aggregate artifact still reports all four supported combinations as passing
+- The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23696657085`, and its aggregate artifact still reports both recovery backends as passing
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`

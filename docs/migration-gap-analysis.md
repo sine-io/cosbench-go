@@ -21,6 +21,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - local recovery smoke parity across both `s3` and `sio`
 - dedicated manual GitHub workflows for remote happy-path and recovery smoke
 - non-blocking GitHub workflows for remote happy-path and recovery matrices, including aggregate summaries and aggregate artifacts
+- structured remote smoke and remote recovery summary artifacts, plus aggregate result reporting that `smoke-ready` now consumes directly
 - structured `Smoke S3` and `Smoke S3 Matrix` summary artifacts for real-endpoint evidence, plus aggregate row status reporting beyond simple artifact presence
 - a manual `Legacy Live Compare` workflow for rendering representative legacy XML against a real S3/SIO-compatible endpoint, with clean `skipped` behavior when repository live secrets are absent
 - a manual `Legacy Live Compare Matrix` workflow for the representative `s3` and `sio` legacy samples, with per-row artifacts plus an aggregate summary/artifact and the same clean `skipped` behavior when repository live secrets are absent
@@ -44,6 +45,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - `Legacy Live Compare` now has a stable manual GitHub Actions entrypoint, and the latest repository-hosted run on 2026-03-28 (`23696226320`) produced a normalized `result.json` with `result=skipped` because `COSBENCH_SMOKE_*` repository secrets were not configured; that proves workflow ergonomics and summary generation, not endpoint parity
 - `Legacy Live Compare Matrix` now also has a stable manual GitHub Actions entrypoint, and the latest repository-hosted run on 2026-03-28 (`23696226307`) produced an aggregate summary with both `s3` and `sio` rows marked `skipped`; that proves matrix ergonomics, structured aggregation, and summary consumption, not endpoint parity
 - the current comparison checklist, runbook, and seed findings now live in `docs/legacy-comparison-matrix.md`
+- the latest repository-hosted `Remote Smoke Matrix` run on 2026-03-28 (`23696657083`) and `Remote Smoke Recovery Matrix` run on 2026-03-28 (`23696657085`) both completed successfully, confirming that the structured remote summary artifacts still align with `smoke-ready` consumption on the current mainline head
 
 ## Deferred By Design
 
