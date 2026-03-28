@@ -23,6 +23,7 @@ SIO_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-sio-two-driver.xml
 S3_MULTISTAGE_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-multistage-two-driver.xml"
 SIO_MULTISTAGE_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-sio-multistage-two-driver.xml"
 S3_RECOVERY_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-recovery-two-driver.xml"
+SIO_RECOVERY_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-sio-recovery-two-driver.xml"
 DEFAULT_MINIO = ROOT / ".artifacts" / "minio" / "bin" / "minio"
 DEFAULT_MINIO_DATA = ROOT / ".artifacts" / "remote-smoke" / "minio-data"
 DEFAULT_MINIO_URL = "https://dl.min.io/server/minio/release/linux-amd64/minio"
@@ -220,6 +221,8 @@ def fixture_for_selection(backend, scenario):
     if scenario == "recovery":
         if backend == "s3":
             return S3_RECOVERY_FIXTURE
+        if backend == "sio":
+            return SIO_RECOVERY_FIXTURE
         raise ValueError(f"unsupported remote smoke scenario: backend={backend} scenario={scenario}")
     if backend == "s3":
         return S3_MULTISTAGE_FIXTURE
