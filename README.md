@@ -37,6 +37,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Run `make --no-print-directory smoke-local` to start a temporary local MinIO endpoint and verify both the S3 smoke path and the SIO multipart smoke path end-to-end
 - Run `make --no-print-directory smoke-remote-local` to validate the remote controller/driver split against local MinIO with one controller-only and two driver-only processes
 - Set `SMOKE_REMOTE_LOCAL_BACKEND=sio` when you want the same helper to validate the SIO remote path instead of the default S3 path
+- Set `SMOKE_REMOTE_LOCAL_SCENARIO=multistage` when you want the helper to validate multi-stage remote progression instead of the default single-stage path
 - Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
@@ -51,6 +52,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `COSBENCH_SMOKE_BUCKET_PREFIX`
 - If required env vars are missing, the smoke tests skip cleanly
 - `smoke-remote-local` writes controller, driver, and MinIO artifacts under `.artifacts/remote-smoke/`
+- the remote smoke summary artifacts now also record `scenario`, `stage_names`, and `stages_seen`
 - Real `make smoke-s3` is now a local or private-network-only path. GitHub-hosted runners do not execute it because the repository does not have a public S3-compatible endpoint.
 - To trigger the manual GitHub smoke workflow with GitHub CLI:
   - `gh workflow run "Smoke Local" --repo sine-io/cosbench-go`

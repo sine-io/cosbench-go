@@ -18,6 +18,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - remote driver registration, heartbeat, scheduling, mission claim, mission reporting, and combined-mode loopback execution
 - local multi-process MinIO smoke for one controller-only and two driver-only processes
 - remote multi-process smoke parity across both `s3` and `sio`
+- local multistage remote smoke coverage for the S3 controller/driver split
 
 ## Closed for the Local v1 Boundary
 

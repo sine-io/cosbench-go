@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-smoke-s3-multistage-two-driver" description="minimal remote multi-process multistage smoke">
+  <storage type="s3" config="accesskey=minioadmin;secretkey=minioadmin;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+  <workflow>
+    <workstage name="stage-a">
+      <work name="fanout-a" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=remote;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="stage-b">
+      <work name="fanout-b" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=remote;containers=c(1);objects=s(3,4);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>
