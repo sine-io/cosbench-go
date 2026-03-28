@@ -38,6 +38,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Run `make --no-print-directory smoke-remote-local` to validate the remote controller/driver split against local MinIO with one controller-only and two driver-only processes
 - Set `SMOKE_REMOTE_LOCAL_BACKEND=sio` when you want the same helper to validate the SIO remote path instead of the default S3 path
 - Set `SMOKE_REMOTE_LOCAL_SCENARIO=multistage` when you want the helper to validate multi-stage remote progression instead of the default single-stage path
+- Set `SMOKE_REMOTE_LOCAL_SCENARIO=recovery` when you want the helper to validate lease-expiry reassignment after one driver disappears
 - Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`

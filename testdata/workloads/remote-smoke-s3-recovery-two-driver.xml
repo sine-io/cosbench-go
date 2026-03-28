@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-smoke-s3-recovery-two-driver" description="remote smoke recovery path">
+  <storage type="s3" config="accesskey=minioadmin;secretkey=minioadmin;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+  <workflow>
+    <workstage name="main">
+      <work name="fanout" workers="2" totalOps="2">
+        <operation type="delay" ratio="100" config="duration=45s" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>
