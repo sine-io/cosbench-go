@@ -31,7 +31,7 @@ jobs:
 
       - name: Upload remote smoke artifact
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: remote-smoke-output
           path: .artifacts/remote-smoke
