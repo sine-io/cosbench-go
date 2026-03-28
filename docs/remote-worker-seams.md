@@ -42,3 +42,15 @@ The current system runs controller and execution in one process. This document r
 - authenticated worker registration and liveness model
 - backpressure/retry rules for sample/event delivery
 - controller-side scheduling strategy across multiple workers
+
+## Current Remote-Split Progress
+
+The repository now has a first remote-capable skeleton:
+
+- persisted driver and mission state
+- controller registration, heartbeat, scheduling, and mission claim endpoints
+- a driver agent that can claim work, execute it locally, upload samples/events, and complete a mission
+- runtime modes for `controller-only`, `driver-only`, and `combined`
+- a `combined` loopback path that exercises the same HTTP driver protocol in-process for tests
+
+The remaining gaps are now about deepening the protocol rather than introducing it from scratch.

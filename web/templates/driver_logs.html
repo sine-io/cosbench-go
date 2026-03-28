@@ -1,0 +1,14 @@
+{{define "driver_logs.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Driver Logs</h1>
+  <p>Driver: {{.DriverOverview.Driver.Name}}</p>
+  {{if .DriverLogs}}
+  <ul class="timeline">
+    {{range .DriverLogs}}
+    <li><strong>{{.OccurredAt.Format "2006-01-02 15:04:05"}}</strong> <span class="status {{.Level}}">{{.Level}}</span> {{.Message}}</li>
+    {{end}}
+  </ul>
+  {{else}}<p class="empty">No driver logs yet.</p>{{end}}
+</section>
+{{end}}

@@ -18,10 +18,13 @@ type Store struct {
 
 func New(root string) (*Store, error) {
 	paths := []string{
+		filepath.Join(root, "drivers"),
 		filepath.Join(root, "jobs"),
+		filepath.Join(root, "missions"),
 		filepath.Join(root, "results"),
 		filepath.Join(root, "events"),
 		filepath.Join(root, "endpoints"),
+		filepath.Join(root, "timelines"),
 	}
 	for _, path := range paths {
 		if err := os.MkdirAll(path, 0o755); err != nil {
@@ -33,6 +36,14 @@ func New(root string) (*Store, error) {
 
 func (s *Store) SaveJob(job domain.Job) error {
 	return writeJSON(filepath.Join(s.root, "jobs", job.ID+".json"), job)
+}
+
+func (s *Store) SaveDriverNode(driver domain.DriverNode) error {
+	return writeJSON(filepath.Join(s.root, "drivers", driver.ID+".json"), driver)
+}
+
+func (s *Store) SaveMission(mission domain.Mission) error {
+	return writeJSON(filepath.Join(s.root, "missions", mission.ID+".json"), mission)
 }
 
 func (s *Store) SaveResult(result domain.JobResult) error {
@@ -47,6 +58,10 @@ func (s *Store) SaveEvents(jobID string, events []domain.JobEvent) error {
 	return writeJSON(filepath.Join(s.root, "events", jobID+".json"), events)
 }
 
+func (s *Store) SaveTimeline(timeline domain.JobTimeline) error {
+	return writeJSON(filepath.Join(s.root, "timelines", timeline.JobID+".json"), timeline)
+}
+
 func (s *Store) LoadJobs() ([]domain.Job, error) {
 	var jobs []domain.Job
 	if err := readAllJSON(filepath.Join(s.root, "jobs"), &jobs); err != nil {
@@ -54,6 +69,24 @@ func (s *Store) LoadJobs() ([]domain.Job, error) {
 	}
 	sort.Slice(jobs, func(i, j int) bool { return jobs[i].CreatedAt.After(jobs[j].CreatedAt) })
 	return jobs, nil
+}
+
+func (s *Store) LoadDriverNodes() ([]domain.DriverNode, error) {
+	var drivers []domain.DriverNode
+	if err := readAllJSON(filepath.Join(s.root, "drivers"), &drivers); err != nil {
+		return nil, err
+	}
+	sort.Slice(drivers, func(i, j int) bool { return drivers[i].RegisteredAt.After(drivers[j].RegisteredAt) })
+	return drivers, nil
+}
+
+func (s *Store) LoadMissions() ([]domain.Mission, error) {
+	var missions []domain.Mission
+	if err := readAllJSON(filepath.Join(s.root, "missions"), &missions); err != nil {
+		return nil, err
+	}
+	sort.Slice(missions, func(i, j int) bool { return missions[i].UpdatedAt.After(missions[j].UpdatedAt) })
+	return missions, nil
 }
 
 func (s *Store) LoadEndpoints() ([]domain.EndpointConfig, error) {
@@ -81,6 +114,12 @@ func (s *Store) LoadEvents(jobID string) ([]domain.JobEvent, error) {
 		return nil, err
 	}
 	return events, nil
+}
+
+func (s *Store) LoadTimeline(jobID string) (domain.JobTimeline, error) {
+	var timeline domain.JobTimeline
+	err := readJSON(filepath.Join(s.root, "timelines", jobID+".json"), &timeline)
+	return timeline, err
 }
 
 func writeJSON(path string, value any) error {

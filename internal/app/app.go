@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/sine-io/cosbench-go/internal/controlplane"
+	driveragent "github.com/sine-io/cosbench-go/internal/driver/agent"
 	"github.com/sine-io/cosbench-go/internal/snapshot"
 	"github.com/sine-io/cosbench-go/internal/web"
 )
@@ -13,14 +14,21 @@ import (
 type Config struct {
 	DataDir string
 	ViewDir string
+	Mode    Mode
 }
 
 type App struct {
-	Manager *controlplane.Manager
-	Handler http.Handler
+	Mode         Mode
+	Manager      *controlplane.Manager
+	Handler      http.Handler
+	loopbackAgent *driveragent.Agent
 }
 
 func New(cfg Config) (*App, error) {
+	mode, err := normalizeMode(cfg.Mode)
+	if err != nil {
+		return nil, err
+	}
 	dataDir := cfg.DataDir
 	if dataDir == "" {
 		dataDir = filepath.Join("data")
@@ -41,5 +49,5 @@ func New(cfg Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &App{Manager: manager, Handler: handler}, nil
+	return &App{Mode: mode, Manager: manager, Handler: handler}, nil
 }

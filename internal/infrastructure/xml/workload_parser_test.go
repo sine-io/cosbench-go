@@ -263,3 +263,55 @@ func TestParseAuthNoneSubsetWorkload(t *testing.T) {
 		t.Fatalf("unexpected parsed structure: %#v", wl.Workflow.Stages)
 	}
 }
+
+func TestParseAuthInheritanceSubsetWorkload(t *testing.T) {
+	path := filepath.Clean("../../../testdata/workloads/xml-auth-inheritance-subset.xml")
+	wl, err := ParseWorkloadFile(path)
+	if err != nil {
+		t.Fatalf("ParseWorkloadFile(): %v", err)
+	}
+	if wl.Auth == nil || wl.Auth.Type != "basic" || wl.Auth.Config != "username=workload;password=root" {
+		t.Fatalf("workload auth = %#v", wl.Auth)
+	}
+	if len(wl.Workflow.Stages) != 2 {
+		t.Fatalf("stages = %d", len(wl.Workflow.Stages))
+	}
+	stageAuth := wl.Workflow.Stages[0]
+	if stageAuth.Auth == nil || stageAuth.Auth.Config != "username=stage;password=override" {
+		t.Fatalf("stage auth = %#v", stageAuth.Auth)
+	}
+	inheritedWork := stageAuth.Works[0]
+	if inheritedWork.Auth == nil || inheritedWork.Auth.Config != "username=stage;password=override" {
+		t.Fatalf("inherited work auth = %#v", inheritedWork.Auth)
+	}
+	explicitWork := stageAuth.Works[1]
+	if explicitWork.Auth == nil || explicitWork.Auth.Config != "username=work;password=leaf" {
+		t.Fatalf("explicit work auth = %#v", explicitWork.Auth)
+	}
+	fallbackStage := wl.Workflow.Stages[1]
+	if fallbackStage.Auth == nil || fallbackStage.Auth.Config != "username=workload;password=root" {
+		t.Fatalf("fallback stage auth = %#v", fallbackStage.Auth)
+	}
+	fallbackWork := fallbackStage.Works[0]
+	if fallbackWork.Auth == nil || fallbackWork.Auth.Config != "username=workload;password=root" {
+		t.Fatalf("fallback work auth = %#v", fallbackWork.Auth)
+	}
+}
+
+func TestParseFileWriteSubsetWorkload(t *testing.T) {
+	path := filepath.Clean("../../../testdata/workloads/xml-filewrite-subset.xml")
+	wl, err := ParseWorkloadFile(path)
+	if err != nil {
+		t.Fatalf("ParseWorkloadFile(): %v", err)
+	}
+	work := wl.Workflow.Stages[0].Works[0]
+	if work.Storage == nil || work.Storage.Type != "sio" {
+		t.Fatalf("work storage = %#v", work.Storage)
+	}
+	if len(work.Operations) != 1 || work.Operations[0].Type != "filewrite" {
+		t.Fatalf("work operations = %#v", work.Operations)
+	}
+	if !strings.Contains(work.Operations[0].Config, "files=/tmp/input.bin") {
+		t.Fatalf("operation config = %q", work.Operations[0].Config)
+	}
+}

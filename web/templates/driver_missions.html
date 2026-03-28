@@ -1,0 +1,20 @@
+{{define "driver_missions.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Driver Missions</h1>
+  <p>Driver: {{.DriverOverview.Driver.Name}}</p>
+  <table>
+    <thead><tr><th>ID</th><th>Stage</th><th>Work</th><th>Status</th></tr></thead>
+    <tbody>
+    {{range .DriverMissions}}
+    <tr>
+      <td><a href="/driver/missions/{{.ID}}">{{.ID}}</a></td>
+      <td>{{.StageName}}</td>
+      <td>{{.WorkName}}</td>
+      <td>{{.Status}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}

@@ -20,6 +20,9 @@ func NormalizeAndValidate(w Workload) (Workload, error) {
 			return w, errors.New("stage name cannot be empty")
 		}
 		stage.Config = inheritConfig(stage.Config, w.Workflow.Config)
+		if stage.Auth == nil {
+			stage.Auth = cloneAuth(w.Auth)
+		}
 		if stage.Storage == nil {
 			stage.Storage = cloneStorage(w.Storage)
 		}
@@ -31,6 +34,9 @@ func NormalizeAndValidate(w Workload) (Workload, error) {
 			work := &stage.Works[wi]
 			applyWorkDefaults(work)
 			work.Config = inheritConfig(work.Config, stage.Config)
+			if work.Auth == nil {
+				work.Auth = cloneAuth(stage.Auth)
+			}
 			if work.Storage == nil {
 				work.Storage = cloneStorage(stage.Storage)
 			}
@@ -240,6 +246,14 @@ func cloneStorage(s *StorageSpec) *StorageSpec {
 		return nil
 	}
 	cp := *s
+	return &cp
+}
+
+func cloneAuth(a *AuthSpec) *AuthSpec {
+	if a == nil {
+		return nil
+	}
+	cp := *a
 	return &cp
 }
 

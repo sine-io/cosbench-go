@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -77,7 +78,7 @@ func (e *Engine) Run(ctx context.Context) Result {
 				}
 				op := picker.Pick(r)
 				start := time.Now()
-				bytesN, err := executeOp(runCtx, e.Storage, storageConfig(e.Work.Storage), op, workerID+1, workers, r)
+				bytesN, err := executeOp(runCtx, e.Storage, storageConfig(e.Work.Storage, e.Work.Auth), op, workerID+1, workers, r)
 				elapsed := time.Since(start)
 				s := Sample{Timestamp: start, OpType: op.Type, OpCount: 1, ByteCount: bytesN, TotalTimeMs: elapsed.Milliseconds()}
 				if err != nil {
@@ -121,7 +122,15 @@ func executeOp(ctx context.Context, sa ports.StorageAdapter, storageRaw string, 
 		body := bytes.NewReader(make([]byte, t.Size))
 		return t.Size, sa.MultipartPut(ctx, t.Bucket, t.Key, body, t.Size, pc.PartSize)
 	case "read":
-		rc, err := sa.GetObject(ctx, t.Bucket, t.Key)
+		var (
+			rc  io.ReadCloser
+			err error
+		)
+		if advanced, ok := sa.(ports.ReadOptionsStorageAdapter); ok && (pc.IsPrefetch || pc.IsRangeRequest) {
+			rc, err = advanced.GetObjectWithOptions(ctx, t.Bucket, t.Key, readOptionsFromParsed(pc))
+		} else {
+			rc, err = sa.GetObject(ctx, t.Bucket, t.Key)
+		}
 		if err != nil {
 			return 0, err
 		}
@@ -153,6 +162,13 @@ func executeOp(ctx context.Context, sa ports.StorageAdapter, storageRaw string, 
 		return total, nil
 	case "restore":
 		return 0, sa.RestoreObject(ctx, t.Bucket, t.Key, pc.RestoreDays)
+	case "filewrite":
+		body, size, err := openInputFile(t.File)
+		if err != nil {
+			return 0, err
+		}
+		defer body.Close()
+		return size, sa.PutObject(ctx, t.Bucket, t.Key, body, size)
 	case "localwrite":
 		body, size, err := openInputFile(t.File)
 		if err != nil {
@@ -193,7 +209,7 @@ func ValidateOperation(op workload.Operation, storageRaw string) error {
 	switch op.Type {
 	case "init", "dispose", "prepare", "write", "mprepare", "mwrite", "read", "delete", "cleanup", "head", "list", "restore", "delay":
 		return nil
-	case "localwrite", "mfilewrite":
+	case "filewrite", "localwrite", "mfilewrite":
 		target := pc.NextTarget(rand.New(rand.NewSource(1)), 1, 1)
 		file, _, err := openInputFile(target.File)
 		if err != nil {
@@ -205,11 +221,43 @@ func ValidateOperation(op workload.Operation, storageRaw string) error {
 	}
 }
 
-func storageConfig(spec *workload.StorageSpec) string {
-	if spec == nil {
-		return ""
+func storageConfig(spec *workload.StorageSpec, auth *workload.AuthSpec) string {
+	raw := ""
+	if spec != nil {
+		raw = strings.TrimSpace(spec.Config)
 	}
-	return spec.Config
+	if auth == nil || strings.TrimSpace(auth.Config) == "" {
+		return raw
+	}
+	if raw == "" {
+		return strings.TrimSpace(auth.Config)
+	}
+	return raw + ";" + strings.TrimSpace(auth.Config)
+}
+
+func ResolvedStorageConfig(spec *workload.StorageSpec, auth *workload.AuthSpec) string {
+	return storageConfig(spec, auth)
+}
+
+func readOptionsFromParsed(pc *ParsedOpConfig) ports.ReadOptions {
+	opts := ports.ReadOptions{Prefetch: pc.IsPrefetch}
+	if !pc.IsRangeRequest {
+		return opts
+	}
+	end := pc.ChunkLength - 1
+	if end < 0 {
+		end = 0
+	}
+	if pc.FileLength > 0 && end >= pc.FileLength {
+		end = pc.FileLength - 1
+	}
+	if end < 0 {
+		end = 0
+	}
+	opts.HasRange = true
+	opts.RangeStart = 0
+	opts.RangeEnd = end
+	return opts
 }
 
 func openInputFile(path string) (*os.File, int64, error) {

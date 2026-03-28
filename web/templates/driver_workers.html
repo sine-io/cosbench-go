@@ -1,0 +1,8 @@
+{{define "driver_workers.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Driver Workers</h1>
+  <p>Driver: {{.DriverOverview.Driver.Name}}</p>
+  <p>Active missions: {{.DriverWorkerState.ActiveMissionCount}}</p>
+</section>
+{{end}}

@@ -26,9 +26,18 @@ type Handler struct {
 type pageData struct {
 	Title         string
 	Jobs          []domain.Job
+	MatrixRows    []domain.JobMatrixRow
+	DriverOverview domain.DriverOverview
+	DriverMissions []domain.Mission
+	DriverMission  domain.Mission
+	DriverWorkerState domain.DriverWorkerState
+	DriverLogs []domain.JobEvent
 	Job           domain.Job
 	JobResult     domain.JobResult
 	JobEvents     []domain.JobEvent
+	Timeline      domain.JobTimeline
+	Stage         domain.StageState
+	NormalizedWorkload domain.Workload
 	RecentErrors  []domain.JobEvent
 	Endpoints     []domain.EndpointConfig
 	Error         string
@@ -49,7 +58,23 @@ func NewHandler(manager *controlplane.Manager, viewDir string) (*Handler, error)
 
 func (h *Handler) loadTemplates(viewDir string) error {
 	baseFiles := []string{filepath.Join(viewDir, "layout.html")}
-	pages := []string{"dashboard.html", "workload_upload.html", "endpoints.html", "job_detail.html", "history.html"}
+	pages := []string{
+		"dashboard.html",
+		"workload_upload.html",
+		"endpoints.html",
+		"job_detail.html",
+		"history.html",
+		"controller_matrix.html",
+		"controller_job_config.html",
+		"controller_advanced_config.html",
+		"controller_stage.html",
+		"controller_timeline.html",
+		"driver_dashboard.html",
+		"driver_missions.html",
+		"driver_mission_detail.html",
+		"driver_workers.html",
+		"driver_logs.html",
+	}
 	h.templates = map[string]*template.Template{}
 	for _, page := range pages {
 		pageTemplate, err := template.New(page).ParseFiles(append(baseFiles, filepath.Join(viewDir, page))...)
@@ -67,6 +92,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) routes() {
 	h.mux.HandleFunc("/", h.dashboard)
+	h.mux.HandleFunc("/api/controller/jobs", h.controllerJobsAPI)
+	h.mux.HandleFunc("/api/controller/jobs/", h.controllerJobAPIRoute)
+	h.mux.HandleFunc("/api/controller/metrics/prometheus", h.controllerPrometheus)
+	h.mux.HandleFunc("/api/driver/register", h.driverRegister)
+	h.mux.HandleFunc("/api/driver/heartbeat", h.driverHeartbeat)
+	h.mux.HandleFunc("/api/driver/self", h.driverSelf)
+	h.mux.HandleFunc("/api/driver/missions", h.driverMissions)
+	h.mux.HandleFunc("/api/driver/missions/claim", h.driverClaimMission)
+	h.mux.HandleFunc("/api/driver/missions/", h.driverMissionRoute)
+	h.mux.HandleFunc("/api/driver/workers", h.driverWorkers)
+	h.mux.HandleFunc("/api/driver/logs", h.driverLogs)
+	h.mux.HandleFunc("/driver", h.driverDashboardPage)
+	h.mux.HandleFunc("/driver/missions", h.driverMissionsPage)
+	h.mux.HandleFunc("/driver/missions/", h.driverMissionDetailPage)
+	h.mux.HandleFunc("/driver/workers", h.driverWorkersPage)
+	h.mux.HandleFunc("/driver/logs", h.driverLogsPage)
+	h.mux.HandleFunc("/controller/matrix", h.controllerMatrixPage)
+	h.mux.HandleFunc("/controller/jobs/", h.controllerJobPageRoute)
 	h.mux.HandleFunc("/workloads/new", h.workloadForm)
 	h.mux.HandleFunc("/workloads", h.createWorkload)
 	h.mux.HandleFunc("/endpoints", h.endpoints)

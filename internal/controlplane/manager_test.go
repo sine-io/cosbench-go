@@ -233,6 +233,41 @@ func TestStartJobRejectsUnreadableMFileWriteInputDuringPreflight(t *testing.T) {
 	}
 }
 
+func TestStartJobRejectsUnreadableFileWriteInputDuringPreflight(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="bad-filewrite">
+  <storage type="sio" config="accesskey=test;secretkey=test;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <auth type="basic" config="username=work;password=secret" />
+        <operation type="filewrite" ratio="100" config="containers=c(1);objects=c(1);files=/definitely/missing/filewrite.bin" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = mgr.StartJob(context.Background(), job.ID)
+	if err == nil || !strings.Contains(err.Error(), "filewrite.bin") {
+		t.Fatalf("unexpected preflight error: %v", err)
+	}
+	loaded, _ := mgr.GetJob(job.ID)
+	if loaded.Status != domain.JobStatusCreated {
+		t.Fatalf("job status = %s", loaded.Status)
+	}
+}
+
 func TestManagerCanCancelRunningJob(t *testing.T) {
 	store, err := snapshot.New(t.TempDir())
 	if err != nil {
@@ -401,6 +436,72 @@ func TestManagerReuseDataFixtureSucceeds(t *testing.T) {
 	}
 	if loaded.Stages[3].Metrics.ByteCount == 0 {
 		t.Fatalf("main-list metrics = %#v", loaded.Stages[3].Metrics)
+	}
+}
+
+func TestManagerPersistsTimelineAndMatrixReadModel(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoint, err := mgr.CreateEndpoint(domain.EndpointConfig{Name: "mock", Type: domain.EndpointTypeMock})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(testWorkloadXML), endpoint.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.StartJob(context.Background(), job.ID); err != nil {
+		t.Fatal(err)
+	}
+	waitForJobStatus(t, mgr, job.ID, domain.JobStatusSucceeded)
+
+	rows := mgr.ListJobMatrix()
+	if len(rows) == 0 {
+		t.Fatal("expected matrix rows")
+	}
+	var row domain.JobMatrixRow
+	foundRow := false
+	for _, item := range rows {
+		if item.JobID == job.ID {
+			row = item
+			foundRow = true
+			break
+		}
+	}
+	if !foundRow {
+		t.Fatalf("job %s missing from matrix rows %#v", job.ID, rows)
+	}
+	if row.StageCount != 3 || row.Status != domain.JobStatusSucceeded || row.OperationCount == 0 {
+		t.Fatalf("unexpected matrix row: %#v", row)
+	}
+
+	timeline, ok := mgr.GetJobTimeline(job.ID)
+	if !ok {
+		t.Fatal("expected job timeline")
+	}
+	if timeline.JobID != job.ID || len(timeline.Job) == 0 {
+		t.Fatalf("unexpected job timeline: %#v", timeline)
+	}
+	if len(timeline.Stages["main"]) == 0 {
+		t.Fatalf("expected stage timeline for main: %#v", timeline.Stages)
+	}
+
+	reloaded, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reloadedTimeline, ok := reloaded.GetJobTimeline(job.ID)
+	if !ok {
+		t.Fatal("expected reloaded job timeline")
+	}
+	if len(reloadedTimeline.Job) != len(timeline.Job) {
+		t.Fatalf("reloaded timeline = %#v want %#v", reloadedTimeline, timeline)
 	}
 }
 

@@ -20,32 +20,32 @@ Legacy Java implementation:
 
 ## High-Value Comparisons
 
-### 1. S3 required config is stricter in `cosbench-go`
+### 1. S3 endpoint default is now aligned, but credentials remain explicit
 
 Legacy S3 has defaults for:
 
 - `endpoint=http://s3.amazonaws.com`
 - `path_style_access=false`
 
-Current Go requires:
+Current Go now aligns the endpoint default and still requires:
 
-- explicit `endpoint`
 - explicit `accesskey`
 - explicit `secretkey`
 
-This is acceptable for the current repository, but it is still a real behavioral delta when comparing “empty or partial config still initializes” behavior.
+This narrows the old gap, but “empty or partial config still initializes” can still differ when credentials are omitted.
 
-### 2. SIO path-style default differs
+### 2. SIO-family path-style policy is now explicit by backend profile
 
 Legacy Java SIO constants define:
 
 - `path_style_access=false` by default
 
-Current Go does this instead:
+Current Go now does this:
 
-- when backend is `sio` and `path_style_access` is absent, `PathStyle` is forced to `true`
+- `sio`: when `path_style_access` is absent, `PathStyle` is forced to `true`
+- `siov1` / `gdas`: when `path_style_access` is absent, the legacy `false` default is preserved
 
-This is a deliberate convenience choice in `cosbench-go`, but it means a live comparison should explicitly record whether a given workload relied on the legacy default or always set the field.
+This turns the old alias-only behavior into an explicit profile policy. Live comparison still matters for any workload that depended on implicit defaults.
 
 ### 3. `storage_class` parity is now present for both single-part and multipart uploads
 
@@ -89,19 +89,15 @@ Current Go now merges config sources for execution-time defaults:
 
 This reduces the previous source-layer mismatch to a live-verification question rather than an obvious implementation gap.
 
-### 6. Delete tolerance differs
+### 6. Delete tolerance is now intentionally aligned for common missing-object cases
 
 Legacy S3 delete paths explicitly suppress `404 Not Found` for:
 
 - bucket deletion
 - object deletion
 
-Current Go directly returns the SDK error for:
-
-- `DeleteBucket`
-- `DeleteObject`
-
-`CreateBucket` already tolerates “already exists/already owned” style responses, but delete behavior is stricter. This may show up as a live difference during cleanup-heavy workloads.
+Current Go now suppresses common “missing bucket/object” delete errors using the same broad compatibility intent.
+Live endpoint checks are still useful to confirm the tolerated error set is wide enough and not overbroad.
 
 ### 7. List result shape differs
 
@@ -114,13 +110,28 @@ Current Go returns:
 
 This is not necessarily a mismatch at the benchmark level, but it is a surface-level difference worth keeping in mind when comparing driver internals or downstream reporting assumptions.
 
-### 8. SIO create-container behavior may differ on slash-containing container names
+### 8. SIO create-container slash handling is now normalized in the adapter
 
 Legacy Java SIO explicitly splits container names on `/` before bucket creation and keeps only the first segment.
 
-Current Go passes the bucket string through unchanged.
+Current Go now normalizes slash-containing bucket names for SIO-family profiles before request construction.
 
-If any real workload depends on slash-containing container names, this is another high-priority live comparison candidate.
+This closes an obvious compatibility gap, though live verification is still useful for real workloads that depend on this quirk.
+
+### 9. Prefetch and range-read request shaping is now present in the local execution path
+
+Legacy SIO samples and code paths support:
+
+- prefetch header-based reads
+- explicit byte-range reads
+
+Current Go now:
+
+- parses `is_prefetch`
+- parses `is_range_request`, `file_length`, and `chunk_length`
+- uses those flags to shape `GetObject` requests in the S3/SIO adapter
+
+The current Go range behavior uses the first chunk implied by `chunk_length` and `file_length`. Live comparison should verify whether that request pattern is sufficient for the intended legacy workloads.
 
 ## Recommended Live Check Order
 
@@ -132,8 +143,10 @@ When live endpoint credentials are available, check these in order:
    Reason: current mock evidence already shows a large error count, so this is the strongest S3 delta candidate
 3. explicit storage-level `part_size` and `restore_days`
    Reason: fallback logic is now aligned in code, so live checks should confirm there are no remaining endpoint-specific surprises
-4. cleanup/list-heavy scenarios
-   Reason: delete tolerance and list surface differences may appear there
+4. cleanup/list-heavy and slash-container scenarios
+   Reason: delete tolerance, list surface differences, and bucket normalization should be validated on a real endpoint
+5. range/prefetch scenarios
+   Reason: request shaping is now implemented but still needs live parity evidence
 
 ## Status
 

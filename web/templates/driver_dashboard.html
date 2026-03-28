@@ -1,0 +1,9 @@
+{{define "driver_dashboard.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Driver Dashboard</h1>
+  <p>Driver: {{.DriverOverview.Driver.Name}}</p>
+  <p>Status: {{.DriverOverview.Driver.Status}}</p>
+  <p>Active missions: {{.DriverOverview.ActiveMissionCount}}</p>
+</section>
+{{end}}

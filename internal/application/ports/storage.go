@@ -31,6 +31,17 @@ type StorageAdapter interface {
 	RestoreObject(ctx context.Context, bucket, key string, days int) error
 }
 
+type ReadOptions struct {
+	Prefetch   bool
+	HasRange   bool
+	RangeStart int64
+	RangeEnd   int64
+}
+
+type ReadOptionsStorageAdapter interface {
+	GetObjectWithOptions(ctx context.Context, bucket, key string, opts ReadOptions) (io.ReadCloser, error)
+}
+
 // ObjectMeta holds metadata returned from HeadObject.
 type ObjectMeta struct {
 	ContentLength int64

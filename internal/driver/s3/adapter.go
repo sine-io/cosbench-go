@@ -13,6 +13,7 @@ import (
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/smithy-go/transport/http"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	featuremanager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -66,7 +67,7 @@ func (a *Adapter) Dispose() error {
 }
 
 func (a *Adapter) CreateBucket(ctx context.Context, bucket string) error {
-	_, err := a.client.CreateBucket(ctx, &awss3.CreateBucketInput{Bucket: aws.String(bucket)})
+	_, err := a.client.CreateBucket(ctx, &awss3.CreateBucketInput{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket))})
 	if err != nil && isBucketAlreadyOwned(err) {
 		return nil
 	}
@@ -74,17 +75,36 @@ func (a *Adapter) CreateBucket(ctx context.Context, bucket string) error {
 }
 
 func (a *Adapter) DeleteBucket(ctx context.Context, bucket string) error {
-	_, err := a.client.DeleteBucket(ctx, &awss3.DeleteBucketInput{Bucket: aws.String(bucket)})
+	_, err := a.client.DeleteBucket(ctx, &awss3.DeleteBucketInput{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket))})
+	if err != nil && isDeleteMissingError(err) {
+		return nil
+	}
 	return err
 }
 
 func (a *Adapter) PutObject(ctx context.Context, bucket, key string, body io.Reader, size int64) error {
-	_, err := a.client.PutObject(ctx, &awss3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: body, ContentLength: aws.Int64(size)})
+	_, err := a.client.PutObject(ctx, &awss3.PutObjectInput{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket)), Key: aws.String(key), Body: body, ContentLength: aws.Int64(size)})
 	return err
 }
 
 func (a *Adapter) GetObject(ctx context.Context, bucket, key string) (io.ReadCloser, error) {
-	resp, err := a.client.GetObject(ctx, &awss3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	return a.GetObjectWithOptions(ctx, bucket, key, ports.ReadOptions{})
+}
+
+func (a *Adapter) GetObjectWithOptions(ctx context.Context, bucket, key string, opts ports.ReadOptions) (io.ReadCloser, error) {
+	input := &awss3.GetObjectInput{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket)), Key: aws.String(key)}
+	if opts.HasRange {
+		input.Range = aws.String(fmt.Sprintf("bytes=%d-%d", opts.RangeStart, opts.RangeEnd))
+	}
+	var apiOptions []func(*middleware.Stack) error
+	if opts.Prefetch {
+		apiOptions = append(apiOptions, setHeaderMiddleware("prefetch", "value"))
+	}
+	resp, err := a.client.GetObject(ctx, input, func(o *awss3.Options) {
+		if len(apiOptions) > 0 {
+			o.APIOptions = append(o.APIOptions, apiOptions...)
+		}
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -92,12 +112,15 @@ func (a *Adapter) GetObject(ctx context.Context, bucket, key string) (io.ReadClo
 }
 
 func (a *Adapter) DeleteObject(ctx context.Context, bucket, key string) error {
-	_, err := a.client.DeleteObject(ctx, &awss3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	_, err := a.client.DeleteObject(ctx, &awss3.DeleteObjectInput{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket)), Key: aws.String(key)})
+	if err != nil && isDeleteMissingError(err) {
+		return nil
+	}
 	return err
 }
 
 func (a *Adapter) HeadObject(ctx context.Context, bucket, key string) (ports.ObjectMeta, error) {
-	resp, err := a.client.HeadObject(ctx, &awss3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	resp, err := a.client.HeadObject(ctx, &awss3.HeadObjectInput{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket)), Key: aws.String(key)})
 	if err != nil {
 		return ports.ObjectMeta{}, err
 	}
@@ -105,7 +128,7 @@ func (a *Adapter) HeadObject(ctx context.Context, bucket, key string) (ports.Obj
 }
 
 func (a *Adapter) ListObjects(ctx context.Context, bucket, prefix string, maxKeys int) ([]ports.ObjectEntry, error) {
-	input := &awss3.ListObjectsV2Input{Bucket: aws.String(bucket), Prefix: aws.String(prefix)}
+	input := &awss3.ListObjectsV2Input{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket)), Prefix: aws.String(prefix)}
 	if maxKeys > 0 {
 		input.MaxKeys = aws.Int32(int32(maxKeys))
 	}
@@ -127,13 +150,13 @@ func (a *Adapter) MultipartPut(ctx context.Context, bucket, key string, body io.
 			u.PartSize = partSize
 		}
 	})
-	_, err := uploader.Upload(ctx, &awss3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: body})
+	_, err := uploader.Upload(ctx, &awss3.PutObjectInput{Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket)), Key: aws.String(key), Body: body})
 	return err
 }
 
 func (a *Adapter) RestoreObject(ctx context.Context, bucket, key string, days int) error {
 	_, err := a.client.RestoreObject(ctx, &awss3.RestoreObjectInput{
-		Bucket: aws.String(bucket),
+		Bucket: aws.String(normalizeBucketName(a.config.Backend, bucket)),
 		Key:    aws.String(key),
 		RestoreRequest: &awstypes.RestoreRequest{
 			Days: aws.Int32(int32(days)),
@@ -148,6 +171,26 @@ func isBucketAlreadyOwned(err error) bool {
 	}
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "bucketalreadyownedbyyou") || strings.Contains(msg, "bucket already exists")
+}
+
+func isDeleteMissingError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "nosuchbucket") || strings.Contains(msg, "nosuchkey") || strings.Contains(msg, "404") || strings.Contains(msg, "not found")
+}
+
+func normalizeBucketName(backend, bucket string) string {
+	kind := strings.ToLower(strings.TrimSpace(backend))
+	if kind != "sio" && kind != "siov1" && kind != "gdas" {
+		return bucket
+	}
+	head, _, found := strings.Cut(bucket, "/")
+	if !found {
+		return bucket
+	}
+	return head
 }
 
 func buildHTTPClient(cfg Config) *http.Client {
@@ -183,6 +226,18 @@ func setStorageClassMiddleware(storageClass string) func(*middleware.Stack) erro
 				}
 			}
 			return next.HandleInitialize(ctx, in)
+		}), middleware.After)
+	}
+}
+
+func setHeaderMiddleware(name, value string) func(*middleware.Stack) error {
+	return func(stack *middleware.Stack) error {
+		return stack.Build.Add(middleware.BuildMiddlewareFunc("set-header-"+name, func(ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler) (middleware.BuildOutput, middleware.Metadata, error) {
+			req, ok := in.Request.(*awshttp.Request)
+			if ok {
+				req.Header.Set(name, value)
+			}
+			return next.HandleBuild(ctx, in)
 		}), middleware.After)
 	}
 }

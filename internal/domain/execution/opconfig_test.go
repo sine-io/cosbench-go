@@ -51,3 +51,22 @@ func TestParseOpConfigWithStorageOverride(t *testing.T) {
 		t.Fatalf("restoreDays = %d", pc.RestoreDays)
 	}
 }
+
+func TestParseOpConfigReadCompatibilityFlags(t *testing.T) {
+	pc, err := ParseOpConfig("is_prefetch=true;is_range_request=true;file_length=15000000;chunk_length=5000000")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pc.IsPrefetch {
+		t.Fatal("expected prefetch flag")
+	}
+	if !pc.IsRangeRequest {
+		t.Fatal("expected range-request flag")
+	}
+	if pc.FileLength != 15000000 {
+		t.Fatalf("fileLength = %d", pc.FileLength)
+	}
+	if pc.ChunkLength != 5000000 {
+		t.Fatalf("chunkLength = %d", pc.ChunkLength)
+	}
+}

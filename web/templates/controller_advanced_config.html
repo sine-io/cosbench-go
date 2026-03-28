@@ -1,0 +1,13 @@
+{{define "controller_advanced_config.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Advanced Config</h1>
+  <p>Job: {{.Job.Name}}</p>
+  <h2>Stages</h2>
+  <ul class="timeline">
+    {{range .NormalizedWorkload.Workflow.Stages}}
+    <li>{{.Name}} (works: {{len .Works}})</li>
+    {{end}}
+  </ul>
+</section>
+{{end}}

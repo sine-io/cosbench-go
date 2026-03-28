@@ -16,6 +16,7 @@ type xmlWorkload struct {
 	Description string      `xml:"description,attr"`
 	Trigger     string      `xml:"trigger,attr"`
 	Config      string      `xml:"config,attr"`
+	Auth        *xmlAuth    `xml:"auth"`
 	Storage     *xmlStorage `xml:"storage"`
 	Workflow    xmlWorkflow `xml:"workflow"`
 }
@@ -30,6 +31,7 @@ type xmlStage struct {
 	ClosureDelay int         `xml:"closuredelay,attr"`
 	Trigger      string      `xml:"trigger,attr"`
 	Config       string      `xml:"config,attr"`
+	Auth         *xmlAuth    `xml:"auth"`
 	Storage      *xmlStorage `xml:"storage"`
 	Works        []xmlWork   `xml:"work"`
 }
@@ -48,6 +50,7 @@ type xmlWork struct {
 	TotalBytes int64          `xml:"totalBytes,attr"`
 	Driver     string         `xml:"driver,attr"`
 	Config     string         `xml:"config,attr"`
+	Auth       *xmlAuth       `xml:"auth"`
 	Storage    *xmlStorage    `xml:"storage"`
 	Operations []xmlOperation `xml:"operation"`
 }
@@ -61,6 +64,11 @@ type xmlOperation struct {
 }
 
 type xmlStorage struct {
+	Type   string `xml:"type,attr"`
+	Config string `xml:"config,attr"`
+}
+
+type xmlAuth struct {
 	Type   string `xml:"type,attr"`
 	Config string `xml:"config,attr"`
 }
@@ -83,6 +91,7 @@ func ParseWorkload(data []byte) (workload.Workload, error) {
 		Description: xw.Description,
 		Trigger:     xw.Trigger,
 		Config:      xw.Config,
+		Auth:        toAuth(xw.Auth),
 		Storage:     toStorage(xw.Storage),
 		Workflow: workload.Workflow{
 			Config: xw.Workflow.Config,
@@ -95,6 +104,7 @@ func ParseWorkload(data []byte) (workload.Workload, error) {
 			ClosureDelay: xs.ClosureDelay,
 			Trigger:      xs.Trigger,
 			Config:       xs.Config,
+			Auth:         toAuth(xs.Auth),
 			Storage:      toStorage(xs.Storage),
 			Works:        make([]workload.Work, 0, len(xs.Works)),
 		}
@@ -113,6 +123,7 @@ func ParseWorkload(data []byte) (workload.Workload, error) {
 				TotalBytes: xwork.TotalBytes,
 				Driver:     xwork.Driver,
 				Config:     xwork.Config,
+				Auth:       toAuth(xwork.Auth),
 				Storage:    toStorage(xwork.Storage),
 				Operations: make([]workload.Operation, 0, len(xwork.Operations)),
 			}
@@ -141,6 +152,13 @@ func toStorage(s *xmlStorage) *workload.StorageSpec {
 		return nil
 	}
 	return &workload.StorageSpec{Type: s.Type, Config: s.Config}
+}
+
+func toAuth(a *xmlAuth) *workload.AuthSpec {
+	if a == nil {
+		return nil
+	}
+	return &workload.AuthSpec{Type: a.Type, Config: a.Config}
 }
 
 func normalizeAFR(v int) int {

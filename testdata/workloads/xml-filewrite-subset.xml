@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-filewrite-subset" description="filewrite subset">
+  <storage type="sio" config="accesskey=test;secretkey=test;endpoint=http://127.0.0.1:9000;path_style_access=true" />
+  <workflow>
+    <workstage name="main">
+      <work name="filewrite" workers="1" totalOps="1">
+        <operation type="filewrite" ratio="100" config="containers=c(1);objects=c(1);files=/tmp/input.bin" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

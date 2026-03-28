@@ -241,6 +241,52 @@ func TestParseAuthNoneSubsetFixture(t *testing.T) {
 	}
 }
 
+func TestParseAuthInheritanceSubsetFixture(t *testing.T) {
+	path := filepath.Clean("../../testdata/workloads/xml-auth-inheritance-subset.xml")
+	parsed, _, err := ParseFile(path)
+	if err != nil {
+		t.Fatalf("ParseFile(): %v", err)
+	}
+	if parsed.Auth == nil || parsed.Auth.Type != "basic" || parsed.Auth.Config != "username=workload;password=root" {
+		t.Fatalf("workload auth = %#v", parsed.Auth)
+	}
+	stageAuth := parsed.Workflow.Stages[0]
+	if stageAuth.Auth == nil || stageAuth.Auth.Config != "username=stage;password=override" {
+		t.Fatalf("stage auth = %#v", stageAuth.Auth)
+	}
+	if stageAuth.Works[0].Auth == nil || stageAuth.Works[0].Auth.Config != "username=stage;password=override" {
+		t.Fatalf("inherited work auth = %#v", stageAuth.Works[0].Auth)
+	}
+	if stageAuth.Works[1].Auth == nil || stageAuth.Works[1].Auth.Config != "username=work;password=leaf" {
+		t.Fatalf("explicit work auth = %#v", stageAuth.Works[1].Auth)
+	}
+	fallbackStage := parsed.Workflow.Stages[1]
+	if fallbackStage.Auth == nil || fallbackStage.Auth.Config != "username=workload;password=root" {
+		t.Fatalf("fallback stage auth = %#v", fallbackStage.Auth)
+	}
+	if fallbackStage.Works[0].Auth == nil || fallbackStage.Works[0].Auth.Config != "username=workload;password=root" {
+		t.Fatalf("fallback work auth = %#v", fallbackStage.Works[0].Auth)
+	}
+}
+
+func TestParseFileWriteSubsetFixture(t *testing.T) {
+	path := filepath.Clean("../../testdata/workloads/xml-filewrite-subset.xml")
+	parsed, _, err := ParseFile(path)
+	if err != nil {
+		t.Fatalf("ParseFile(): %v", err)
+	}
+	work := parsed.Workflow.Stages[0].Works[0]
+	if work.Storage == nil || work.Storage.Type != "sio" {
+		t.Fatalf("work storage = %#v", work.Storage)
+	}
+	if len(work.Operations) != 1 || work.Operations[0].Type != "filewrite" {
+		t.Fatalf("work operations = %#v", work.Operations)
+	}
+	if !strings.Contains(work.Operations[0].Config, "files=/tmp/input.bin") {
+		t.Fatalf("operation config = %q", work.Operations[0].Config)
+	}
+}
+
 func TestParseInvalidXML(t *testing.T) {
 	_, err := Parse([]byte("<workload"))
 	if err == nil {

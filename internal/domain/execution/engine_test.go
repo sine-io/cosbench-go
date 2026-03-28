@@ -68,6 +68,16 @@ func (s *stubStorage) RestoreObject(ctx context.Context, bucket, key string, day
 	return nil
 }
 
+type stubReadOptionsStorage struct {
+	stubStorage
+	readOptions ports.ReadOptions
+}
+
+func (s *stubReadOptionsStorage) GetObjectWithOptions(ctx context.Context, bucket, key string, opts ports.ReadOptions) (io.ReadCloser, error) {
+	s.readOptions = opts
+	return io.NopCloser(strings.NewReader("abc")), nil
+}
+
 func TestEngineRunTotalOps(t *testing.T) {
 	e := Engine{Work: workload.Work{Workers: 2, TotalOps: 4, Operations: []workload.Operation{{Type: "read", Ratio: 100, Config: "containers=c(1);objects=c(1)"}}}, Storage: &stubStorage{}}
 	res := e.Run(context.Background())
@@ -102,6 +112,32 @@ func TestExecuteOpMFileWriteUsesLocalFileContents(t *testing.T) {
 	}
 	if storage.multipartSize != int64(len("payload")) || storage.partSize != 4 {
 		t.Fatalf("multipart size=%d partSize=%d", storage.multipartSize, storage.partSize)
+	}
+}
+
+func TestExecuteOpFileWriteUsesLocalFileContents(t *testing.T) {
+	storage := &stubStorage{}
+	path := t.TempDir() + "/payload.bin"
+	if err := os.WriteFile(path, []byte("payload"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	n, err := executeOp(context.Background(), storage, "", workload.Operation{
+		Type:   "filewrite",
+		Ratio:  100,
+		Config: "containers=c(1);objects=c(1);files=" + path,
+	}, 1, 1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != int64(len("payload")) {
+		t.Fatalf("bytes = %d", n)
+	}
+	if !bytes.Equal(storage.putPayload, []byte("payload")) {
+		t.Fatalf("put payload = %q", storage.putPayload)
+	}
+	if storage.putSize != int64(len("payload")) {
+		t.Fatalf("put size = %d", storage.putSize)
 	}
 }
 
@@ -182,6 +218,40 @@ func TestExecuteOpRestoreUsesStorageLevelRestoreDaysByDefault(t *testing.T) {
 	}
 	if storage.restoreDays != 7 {
 		t.Fatalf("restoreDays = %d", storage.restoreDays)
+	}
+}
+
+func TestResolvedStorageConfigIncludesAuthAndStorageConfig(t *testing.T) {
+	raw := storageConfig(&workload.StorageSpec{Type: "sio", Config: "endpoint=http://storage"}, &workload.AuthSpec{Type: "basic", Config: "username=work;password=secret"})
+	if !strings.Contains(raw, "endpoint=http://storage") {
+		t.Fatalf("missing storage config in %q", raw)
+	}
+	if !strings.Contains(raw, "username=work;password=secret") {
+		t.Fatalf("missing auth config in %q", raw)
+	}
+}
+
+func TestExecuteOpReadUsesConfiguredReadOptions(t *testing.T) {
+	storage := &stubReadOptionsStorage{}
+	n, err := executeOp(context.Background(), storage, "", workload.Operation{
+		Type:   "read",
+		Ratio:  100,
+		Config: "containers=c(1);objects=c(1);is_prefetch=true;is_range_request=true;file_length=15000000;chunk_length=5000000",
+	}, 1, 1, rand.New(rand.NewSource(1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 3 {
+		t.Fatalf("bytes = %d", n)
+	}
+	if !storage.readOptions.Prefetch {
+		t.Fatal("expected prefetch option")
+	}
+	if !storage.readOptions.HasRange {
+		t.Fatal("expected range option")
+	}
+	if storage.readOptions.RangeStart != 0 || storage.readOptions.RangeEnd != 4999999 {
+		t.Fatalf("range = %#v", storage.readOptions)
 	}
 }
 
