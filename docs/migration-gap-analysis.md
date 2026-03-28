@@ -21,9 +21,10 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - local recovery smoke parity across both `s3` and `sio`
 - dedicated manual GitHub workflows for remote happy-path and recovery smoke
 - non-blocking GitHub workflows for remote happy-path and recovery matrices, including aggregate summaries and aggregate artifacts
+- structured `Smoke S3` and `Smoke S3 Matrix` summary artifacts for real-endpoint evidence, plus aggregate row status reporting beyond simple artifact presence
 - a manual `Legacy Live Compare` workflow for rendering representative legacy XML against a real S3/SIO-compatible endpoint, with clean `skipped` behavior when repository live secrets are absent
 - a manual `Legacy Live Compare Matrix` workflow for the representative `s3` and `sio` legacy samples, with per-row artifacts plus an aggregate summary/artifact and the same clean `skipped` behavior when repository live secrets are absent
-- `smoke-ready` / `smoke-ready-json` reporting for local readiness, real-endpoint smoke readiness, real-endpoint smoke result states, legacy live compare readiness, legacy live compare matrix readiness, remote happy-path readiness, remote recovery readiness, the latest known workflow run state across those surfaces, and legacy live result states such as `executed` versus `skipped`
+- `smoke-ready` / `smoke-ready-json` reporting for local readiness, real-endpoint smoke readiness, real-endpoint smoke result states, legacy live compare readiness, legacy live compare matrix readiness, remote happy-path readiness, remote recovery readiness, the latest known workflow run state across those surfaces, and legacy live result states such as `executed` versus `skipped`, with the real-endpoint path now consuming structured smoke summaries first
 
 ## Closed for the Local v1 Boundary
 
