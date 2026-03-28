@@ -30,6 +30,8 @@ env | rg '^COSBENCH_SMOKE_'
 gh workflow list --repo sine-io/cosbench-go
 ```
 
+When reading repository-hosted evidence, prefer the structured result fields from `smoke-ready` / `smoke-ready-json` over raw workflow conclusions.
+
 Treat the environment as ready when at least one of these is true:
 
 - the local shell already exposes the required `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`
@@ -58,6 +60,7 @@ Treat `smoke-ready` as the status view for the latest real-endpoint smoke result
 - `real_endpoint_latest_result=executed` means the latest `Smoke S3` run actually executed live smoke coverage
 - `real_endpoint_latest_result=skipped` means the latest `Smoke S3` run only proved workflow wiring and secret gating
 - `real_endpoint_matrix_latest_result` applies the same distinction to `Smoke S3 Matrix`
+- those real-endpoint result fields are now derived from structured `Smoke S3` summary artifacts first, with raw text parsing kept only as a backward-compatible fallback
 
 If you only need remote evidence that the local live-endpoint smoke path is still healthy on GitHub-hosted runners, trigger the manual `Smoke Local` workflow and use its job summary plus uploaded `smoke-local-output` artifact as the recorded precheck evidence.
 

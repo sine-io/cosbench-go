@@ -18,7 +18,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The repository now also includes a local `smoke-remote-local` path that runs one controller-only process, two driver-only processes, and local MinIO to validate remote work-unit execution end-to-end
 - Remote smoke coverage now spans `single`, `multistage`, and `recovery` scenarios, with `s3` and `sio` parity across the happy-path and recovery surfaces
 - The repository now includes dedicated manual workflows for remote happy-path and recovery smoke, plus separate non-blocking matrix workflows for happy-path and recovery verification on GitHub-hosted runners
-- `smoke-ready` and `smoke-ready-json` now summarize both workflow availability and the latest known remote smoke evidence state
+- `smoke-ready` and `smoke-ready-json` now summarize both workflow availability and the latest known smoke evidence state, and the real-endpoint path now prefers structured `Smoke S3` / `Smoke S3 Matrix` summaries over raw text parsing
 
 ## Local CLI
 - Run with any of these equivalent workload forms:
@@ -49,6 +49,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - That same readiness view now also includes `Smoke S3 Matrix` as a separate real-endpoint matrix signal, distinct from the single-run `Smoke S3` path
 - Real-endpoint smoke signals now also distinguish workflow availability from the latest real smoke result (`executed`, `skipped`, or `failed`)
 - `Smoke S3` and `Smoke S3 Matrix` now also publish structured summary artifacts in addition to their raw text output
+- `smoke-ready` now consumes those structured `Smoke S3` summary artifacts first and only falls back to raw text parsing for older artifacts
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
