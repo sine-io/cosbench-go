@@ -540,6 +540,9 @@ func TestRemoteJobProgressesToNextStageOnlyAfterCurrentStageSucceeds(t *testing.
 	if err := mgr.CompleteMission(firstA.ID, domain.MissionStatusSucceeded, ""); err != nil {
 		t.Fatal(err)
 	}
+	if _, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second); err != nil || ok {
+		t.Fatalf("expected no stage-b claim while stage-a still has running units, ok=%v err=%v", ok, err)
+	}
 	if err := mgr.CompleteMission(firstB.ID, domain.MissionStatusSucceeded, ""); err != nil {
 		t.Fatal(err)
 	}
@@ -554,6 +557,29 @@ func TestRemoteJobProgressesToNextStageOnlyAfterCurrentStageSucceeds(t *testing.
 	}
 	if secondA.StageName != "stage-b" || secondB.StageName != "stage-b" {
 		t.Fatalf("unexpected second-stage claims: %#v %#v", secondA, secondB)
+	}
+	if err := mgr.CompleteMission(secondA.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.CompleteMission(secondB.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, ok := mgr.GetJob(job.ID)
+	if !ok {
+		t.Fatal("expected loaded job")
+	}
+	if len(loaded.Stages) != 2 {
+		t.Fatalf("stages = %#v", loaded.Stages)
+	}
+	if loaded.Stages[0].StartedAt == nil || loaded.Stages[0].FinishedAt == nil {
+		t.Fatalf("stage-a timestamps = %#v", loaded.Stages[0])
+	}
+	if loaded.Stages[1].StartedAt == nil || loaded.Stages[1].FinishedAt == nil {
+		t.Fatalf("stage-b timestamps = %#v", loaded.Stages[1])
+	}
+	if loaded.Stages[0].FinishedAt.After(*loaded.Stages[1].StartedAt) {
+		t.Fatalf("stage ordering violated: stage-a=%#v stage-b=%#v", loaded.Stages[0], loaded.Stages[1])
 	}
 }
 

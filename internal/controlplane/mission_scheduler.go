@@ -290,6 +290,10 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) bool {
 
 	for stageIndex, stage := range job.Workload.Workflow.Stages {
 		stageState := stageStates[stageIndex]
+		if stageIndex < len(job.Stages) {
+			stageState.StartedAt = job.Stages[stageIndex].StartedAt
+			stageState.FinishedAt = job.Stages[stageIndex].FinishedAt
+		}
 		stageSamples := make([]legacyexec.Sample, 0)
 		workSummaries := make([]domain.WorkSummary, 0, len(stage.Works))
 		stageParts := make([]domain.MetricsSummary, 0, len(stage.Works))
@@ -297,6 +301,8 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) bool {
 		stageAnyStarted := false
 		stageAnyFailed := false
 		stageAnyRunning := false
+		var stageStartedAt *time.Time
+		var stageFinishedAt *time.Time
 
 		for _, work := range stage.Works {
 			units := listWorkUnitsLocked(m.workUnits, jobID, stage.Name, work.Name)
@@ -311,6 +317,8 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) bool {
 				attempt, ok := latestAttemptForUnitLocked(m.missions, unit.ID)
 				if ok {
 					stageAnyStarted = true
+					stageStartedAt = minTimePointer(stageStartedAt, attempt.CreatedAt)
+					stageFinishedAt = maxTimePointer(stageFinishedAt, attempt.UpdatedAt)
 					samples := append([]legacyexec.Sample(nil), m.missionSamples[attempt.ID]...)
 					workSamples = append(workSamples, samples...)
 					stageSamples = append(stageSamples, samples...)
@@ -336,7 +344,7 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) bool {
 			workSummary.Metrics = reporting.Summarize(workSamples)
 			stageParts = append(stageParts, workSummary.Metrics)
 			workSummaries = append(workSummaries, workSummary)
-			if !workAllSucceeded && workSummary.Metrics.OperationCount == 0 {
+			if !workAllSucceeded {
 				stageAllSucceeded = false
 			}
 		}
@@ -353,6 +361,14 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) bool {
 		} else {
 			stageState.Status = domain.JobStatusCreated
 			allSucceeded = false
+		}
+		if stageAnyStarted {
+			stageState.StartedAt = minOptionalTime(stageState.StartedAt, stageStartedAt)
+		}
+		if stageState.Status == domain.JobStatusSucceeded || stageState.Status == domain.JobStatusFailed {
+			stageState.FinishedAt = stageFinishedAt
+		} else {
+			stageState.FinishedAt = nil
 		}
 		if stageState.Status != domain.JobStatusSucceeded {
 			allSucceeded = false
@@ -396,6 +412,35 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) bool {
 	}
 	m.persistLocked(jobID)
 	return progressed
+}
+
+func minTimePointer(current *time.Time, candidate time.Time) *time.Time {
+	if current == nil || candidate.Before(*current) {
+		copy := candidate
+		return &copy
+	}
+	return current
+}
+
+func maxTimePointer(current *time.Time, candidate time.Time) *time.Time {
+	if current == nil || candidate.After(*current) {
+		copy := candidate
+		return &copy
+	}
+	return current
+}
+
+func minOptionalTime(left, right *time.Time) *time.Time {
+	if left == nil {
+		return right
+	}
+	if right == nil {
+		return left
+	}
+	if right.Before(*left) {
+		return right
+	}
+	return left
 }
 
 func findMissionForWork(missions map[string]domain.Mission, jobID, stageName, workName string) (domain.Mission, bool) {

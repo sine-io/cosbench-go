@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from datetime import datetime
 import json
 import os
 import signal
@@ -19,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_DIR = ROOT / ".artifacts" / "remote-smoke"
 S3_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-two-driver.xml"
 SIO_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-sio-two-driver.xml"
+S3_MULTISTAGE_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-multistage-two-driver.xml"
 DEFAULT_MINIO = ROOT / ".artifacts" / "minio" / "bin" / "minio"
 DEFAULT_MINIO_DATA = ROOT / ".artifacts" / "remote-smoke" / "minio-data"
 DEFAULT_MINIO_URL = "https://dl.min.io/server/minio/release/linux-amd64/minio"
@@ -31,6 +33,7 @@ DEFAULT_MINIO_SECRET_KEY = "minioadmin"
 def build_summary(
     *,
     backend,
+    scenario,
     controller_url,
     driver_urls,
     job_id,
@@ -40,11 +43,14 @@ def build_summary(
     drivers_participated,
     operation_count,
     byte_count,
+    stage_names,
+    stages_seen,
     checks,
 ):
     overall = "pass" if all(value == "pass" for value in checks.values()) else "fail"
     return {
         "backend": backend,
+        "scenario": scenario,
         "controller_url": controller_url,
         "driver_urls": driver_urls,
         "job_id": job_id,
@@ -54,6 +60,8 @@ def build_summary(
         "drivers_participated": drivers_participated,
         "operation_count": operation_count,
         "byte_count": byte_count,
+        "stage_names": stage_names,
+        "stages_seen": stages_seen,
         "checks": checks,
         "overall": overall,
     }
@@ -71,6 +79,7 @@ def render_summary_md(summary):
     lines = ["# Remote Smoke", ""]
     for key in [
         "backend",
+        "scenario",
         "controller_url",
         "driver_urls",
         "job_id",
@@ -80,6 +89,8 @@ def render_summary_md(summary):
         "drivers_participated",
         "operation_count",
         "byte_count",
+        "stage_names",
+        "stages_seen",
         "overall",
     ]:
         if key in summary:
@@ -111,6 +122,7 @@ def run_mock():
     if mode == "success":
         summary = build_summary(
             backend="s3",
+            scenario="single",
             controller_url="http://127.0.0.1:19088",
             driver_urls=["http://127.0.0.1:18081", "http://127.0.0.1:18082"],
             job_id="job-1",
@@ -120,6 +132,8 @@ def run_mock():
             drivers_participated=2,
             operation_count=2,
             byte_count=2000,
+            stage_names=["main"],
+            stages_seen=1,
             checks={
                 "process_ready": "pass",
                 "drivers_healthy": "pass",
@@ -174,6 +188,46 @@ def fixture_for_backend(backend):
     if backend == "sio":
         return SIO_FIXTURE
     raise ValueError(f"unsupported backend: {backend}")
+
+
+def normalize_scenario(scenario):
+    normalized = scenario.strip().lower()
+    if not normalized:
+        return "single"
+    if normalized in {"single", "multistage"}:
+        return normalized
+    raise ValueError(f"unsupported scenario: {scenario}")
+
+
+def fixture_for_selection(backend, scenario):
+    backend = backend.strip().lower()
+    scenario = normalize_scenario(scenario)
+    if scenario == "single":
+        return fixture_for_backend(backend)
+    if backend == "s3":
+        return S3_MULTISTAGE_FIXTURE
+    raise ValueError(f"unsupported remote smoke scenario: backend={backend} scenario={scenario}")
+
+
+def parse_time(value):
+    if not value:
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def multistage_barrier_holds(stages):
+    if len(stages) < 2:
+        return False
+    for index in range(len(stages) - 1):
+        current_stage = stages[index]
+        next_stage = stages[index + 1]
+        current_finished = parse_time(current_stage.get("finished_at"))
+        next_started = parse_time(next_stage.get("started_at"))
+        if current_finished is None or next_started is None:
+            return False
+        if current_finished > next_started:
+            return False
+    return True
 
 
 def wait_for_http(url, timeout_seconds=20):
@@ -286,7 +340,8 @@ def load_json_rows(directory):
 
 def run_real():
     backend = os.environ.get("SMOKE_REMOTE_LOCAL_BACKEND", "s3").strip().lower()
-    fixture = fixture_for_backend(backend)
+    scenario = normalize_scenario(os.environ.get("SMOKE_REMOTE_LOCAL_SCENARIO", "single"))
+    fixture = fixture_for_selection(backend, scenario)
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     controller_port = find_free_port()
     driver1_port = find_free_port()
@@ -382,6 +437,8 @@ def run_real():
 
         controller_drivers = load_json_rows(controller_data / "drivers")
         controller_missions = load_json_rows(controller_data / "missions")
+        job_stages = payload["job"].get("stages", [])
+        stage_names = [item.get("name") for item in job_stages if item.get("name")]
         checks = {
             "process_ready": "pass",
             "drivers_healthy": "pass" if len(controller_drivers) == 2 and all(item.get("status") == "healthy" for item in controller_drivers) else "fail",
@@ -389,6 +446,15 @@ def run_real():
             "job_succeeded": "pass" if payload["job"]["status"] == "succeeded" else "fail",
             "visibility": "pass",
         }
+        if scenario == "multistage":
+            mission_stage_names = {item.get("stage_name") for item in controller_missions if item.get("stage_name")}
+            stage_totals = payload["result"].get("stage_totals", [])
+            checks.update({
+                "stages_present": "pass" if len(job_stages) >= 2 and all(item.get("status") == "succeeded" for item in job_stages) else "fail",
+                "stage_coverage": "pass" if len(stage_names) >= 2 and set(stage_names).issubset(mission_stage_names) else "fail",
+                "stage_barrier": "pass" if multistage_barrier_holds(job_stages) else "fail",
+                "stage_aggregation": "pass" if len(stage_totals) >= 2 else "fail",
+            })
 
         driver_ids = [item["id"] for item in controller_drivers]
         # prove driver APIs are live
@@ -397,11 +463,15 @@ def run_real():
             fetch_json(driver2_url + f"/api/driver/self?driver_id={urllib.parse.quote(driver_ids[-1])}")
         fetch_json(controller_url + f"/api/controller/jobs/{job_id}/timeline")
         fetch_json(controller_url + "/api/controller/jobs")
+        if scenario == "multistage":
+            for stage_name in stage_names:
+                fetch_json(controller_url + f"/api/controller/jobs/{job_id}/stages/{urllib.parse.quote(stage_name)}")
 
         drivers_participated = len({item.get("lease", {}).get("driver_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}})
         units_claimed = len({item.get("work_unit_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}})
         summary = build_summary(
             backend=backend,
+            scenario=scenario,
             controller_url=controller_url,
             driver_urls=[driver1_url, driver2_url],
             job_id=job_id,
@@ -411,6 +481,8 @@ def run_real():
             drivers_participated=drivers_participated,
             operation_count=payload["result"]["metrics"]["operation_count"],
             byte_count=payload["result"]["metrics"]["byte_count"],
+            stage_names=stage_names,
+            stages_seen=len(stage_names),
             checks=checks,
         )
         write_summary(summary)
