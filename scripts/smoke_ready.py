@@ -15,6 +15,7 @@ REQUIRED_SECRETS = [
 WORKFLOW_NAMES = [
     "Smoke Local",
     "Smoke S3",
+    "Legacy Live Compare",
     "Remote Smoke Local",
     "Remote Smoke Matrix",
     "Remote Smoke Recovery",
@@ -126,9 +127,11 @@ def build_payload():
     workflow_presence = {name: name in workflow_names for name in WORKFLOW_NAMES}
     local_workflow_ready = workflows_accessible and workflow_presence["Smoke Local"]
     real_endpoint_ready = workflows_accessible and workflow_presence["Smoke S3"]
+    legacy_live_ready = workflows_accessible and workflow_presence["Legacy Live Compare"]
     remote_happy_ready = workflows_accessible and workflow_presence["Remote Smoke Local"] and workflow_presence["Remote Smoke Matrix"]
     remote_recovery_ready = workflows_accessible and workflow_presence["Remote Smoke Recovery"] and workflow_presence["Remote Smoke Recovery Matrix"]
     real_endpoint_latest_success = (workflow_latest.get("Smoke S3") or {}).get("conclusion") == "success"
+    legacy_live_latest_success = (workflow_latest.get("Legacy Live Compare") or {}).get("conclusion") == "success"
     remote_happy_latest_success = any(
         (workflow_latest.get(name) or {}).get("conclusion") == "success"
         for name in ("Remote Smoke Local", "Remote Smoke Matrix")
@@ -175,9 +178,11 @@ def build_payload():
             "local_env_ready": local_ready,
             "local_workflow_ready": local_workflow_ready,
             "real_endpoint_ready": real_endpoint_ready,
+            "legacy_live_ready": legacy_live_ready,
             "remote_happy_ready": remote_happy_ready,
             "remote_recovery_ready": remote_recovery_ready,
             "real_endpoint_latest_success": real_endpoint_latest_success,
+            "legacy_live_latest_success": legacy_live_latest_success,
             "remote_happy_latest_success": remote_happy_latest_success,
             "remote_recovery_latest_success": remote_recovery_latest_success,
             "ready": ready,
@@ -250,9 +255,11 @@ def print_text(payload):
     print(f"- Local Env Ready: `{yes_no(payload['summary']['local_env_ready'])}`")
     print(f"- Local Workflow Ready: `{yes_no(payload['summary']['local_workflow_ready'])}`")
     print(f"- Real Endpoint Ready: `{yes_no(payload['summary']['real_endpoint_ready'])}`")
+    print(f"- Legacy Live Ready: `{yes_no(payload['summary']['legacy_live_ready'])}`")
     print(f"- Remote Happy Ready: `{yes_no(payload['summary']['remote_happy_ready'])}`")
     print(f"- Remote Recovery Ready: `{yes_no(payload['summary']['remote_recovery_ready'])}`")
     print(f"- Real Endpoint Latest Success: `{yes_no(payload['summary']['real_endpoint_latest_success'])}`")
+    print(f"- Legacy Live Latest Success: `{yes_no(payload['summary']['legacy_live_latest_success'])}`")
     print(f"- Remote Happy Latest Success: `{yes_no(payload['summary']['remote_happy_latest_success'])}`")
     print(f"- Remote Recovery Latest Success: `{yes_no(payload['summary']['remote_recovery_latest_success'])}`")
     print(f"- Overall ready: `{yes_no(payload['summary']['ready'])}`")

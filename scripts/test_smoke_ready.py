@@ -10,6 +10,7 @@ def run_helper(*args, env_overrides=None):
         [
             "Smoke Local",
             "Smoke S3",
+            "Legacy Live Compare",
             "Remote Smoke Local",
             "Remote Smoke Matrix",
             "Remote Smoke Recovery",
@@ -29,6 +30,12 @@ def run_helper(*args, env_overrides=None):
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:05:00Z",
                 "url": "https://example.test/smoke-s3",
+            },
+            "Legacy Live Compare": {
+                "status": "completed",
+                "conclusion": "success",
+                "created_at": "2026-03-29T00:07:00Z",
+                "url": "https://example.test/legacy-live-compare",
             },
             "Remote Smoke Local": {
                 "status": "completed",
@@ -74,6 +81,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     present = payload["workflows"]["present"]
     assert present["Smoke Local"] is True
     assert present["Smoke S3"] is True
+    assert present["Legacy Live Compare"] is True
     assert present["Remote Smoke Local"] is True
     assert present["Remote Smoke Matrix"] is True
     assert present["Remote Smoke Recovery"] is True
@@ -81,6 +89,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     latest = payload["workflows"]["latest"]
     assert latest["Smoke Local"]["conclusion"] == "success"
     assert latest["Smoke S3"]["created_at"] == "2026-03-29T00:05:00Z"
+    assert latest["Legacy Live Compare"]["url"] == "https://example.test/legacy-live-compare"
     assert latest["Remote Smoke Local"]["status"] == "completed"
     assert latest["Remote Smoke Matrix"]["created_at"] == "2026-03-29T00:20:00Z"
     assert latest["Remote Smoke Recovery"]["url"] == "https://example.test/remote-smoke-recovery"
@@ -90,7 +99,9 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert "local_workflow_ready" in summary
     assert "remote_happy_ready" in summary
     assert "remote_recovery_ready" in summary
+    assert "legacy_live_ready" in summary
     assert "real_endpoint_latest_success" in summary
+    assert "legacy_live_latest_success" in summary
     assert "remote_happy_latest_success" in summary
     assert "remote_recovery_latest_success" in summary
     assert "ready" in summary
@@ -101,6 +112,7 @@ def test_smoke_ready_text_reports_remote_categories():
     text = proc.stdout
     assert "Smoke Local" in text
     assert "Smoke S3" in text
+    assert "Legacy Live Compare" in text
     assert "Remote Smoke Local" in text
     assert "Remote Smoke Matrix" in text
     assert "Remote Smoke Recovery" in text
@@ -111,6 +123,8 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Local Workflow Ready" in text
     assert "Remote Happy Ready" in text
     assert "Remote Recovery Ready" in text
+    assert "Legacy Live Ready" in text
     assert "Real Endpoint Latest Success" in text
+    assert "Legacy Live Latest Success" in text
     assert "Remote Happy Latest Success" in text
     assert "Remote Recovery Latest Success" in text

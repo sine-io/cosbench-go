@@ -45,6 +45,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Set `SMOKE_REMOTE_LOCAL_BACKEND=sio SMOKE_REMOTE_LOCAL_SCENARIO=recovery` when you want the same recovery validation against the SIO path
 - Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary across local live smoke, remote happy-path workflows, and remote recovery workflows
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
+- That readiness view now also includes `Legacy Live Compare` as a separate legacy live-validation signal, distinct from the `Smoke S3` real-endpoint smoke path
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
