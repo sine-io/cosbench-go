@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
 
 import os
-import shutil
 import signal
 import socket
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_VENV = ROOT / ".artifacts" / "moto-venv"
+DEFAULT_MINIO = ROOT / ".artifacts" / "minio" / "bin" / "minio"
+DEFAULT_MINIO_DATA = ROOT / ".artifacts" / "minio" / "data"
+DEFAULT_MINIO_URL = "https://dl.min.io/server/minio/release/linux-amd64/minio"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_GO = os.environ.get("GO", "/snap/bin/go")
-DEFAULT_REQUIREMENTS = ROOT / "requirements-smoke-local.txt"
+DEFAULT_MINIO_ACCESS_KEY = "minioadmin"
+DEFAULT_MINIO_SECRET_KEY = "minioadmin"
 
 
 def print_summary(endpoint, s3_status, sio_status):
     overall = "pass" if s3_status == "pass" and sio_status == "pass" else "fail"
     print("# Smoke Local")
     print()
+    print("Provider: `minio`")
     print(f"Endpoint: `{endpoint}`")
     print(f"S3 smoke: `{s3_status}`")
     print(f"SIO smoke: `{sio_status}`")
@@ -45,24 +49,15 @@ def find_free_port():
         return sock.getsockname()[1]
 
 
-def ensure_moto_server():
-    moto_server = DEFAULT_VENV / "bin" / "moto_server"
-    if moto_server.exists():
-        return str(moto_server)
+def ensure_minio():
+    if DEFAULT_MINIO.exists():
+        return str(DEFAULT_MINIO)
 
-    python_bin = shutil.which("python3")
-    if not python_bin:
-        raise RuntimeError("python3 not found for smoke-local setup")
-
-    subprocess.run([python_bin, "-m", "venv", str(DEFAULT_VENV)], check=True)
-    pip_bin = DEFAULT_VENV / "bin" / "python"
-    subprocess.run([str(pip_bin), "-m", "pip", "install", "--upgrade", "pip"], check=True)
-    requirements = Path(os.environ.get("SMOKE_LOCAL_REQUIREMENTS", str(DEFAULT_REQUIREMENTS)))
-    if requirements.exists():
-        subprocess.run([str(DEFAULT_VENV / "bin" / "pip"), "install", "-r", str(requirements)], check=True)
-    else:
-        subprocess.run([str(DEFAULT_VENV / "bin" / "pip"), "install", "moto[server]"], check=True)
-    return str(moto_server)
+    DEFAULT_MINIO.parent.mkdir(parents=True, exist_ok=True)
+    with urllib.request.urlopen(DEFAULT_MINIO_URL) as response, DEFAULT_MINIO.open("wb") as target:
+        target.write(response.read())
+    DEFAULT_MINIO.chmod(0o755)
+    return str(DEFAULT_MINIO)
 
 
 def wait_for_socket(host, port, timeout_seconds=10):
@@ -75,15 +70,15 @@ def wait_for_socket(host, port, timeout_seconds=10):
                 return
             except OSError:
                 time.sleep(0.1)
-    raise RuntimeError(f"moto server did not become ready on {host}:{port}")
+    raise RuntimeError(f"minio server did not become ready on {host}:{port}")
 
 
 def run_smoke(go_bin, endpoint, backend, extra_env=None):
     env = os.environ.copy()
     env["GO"] = go_bin
     env["COSBENCH_SMOKE_ENDPOINT"] = endpoint
-    env["COSBENCH_SMOKE_ACCESS_KEY"] = "test"
-    env["COSBENCH_SMOKE_SECRET_KEY"] = "test"
+    env["COSBENCH_SMOKE_ACCESS_KEY"] = DEFAULT_MINIO_ACCESS_KEY
+    env["COSBENCH_SMOKE_SECRET_KEY"] = DEFAULT_MINIO_SECRET_KEY
     env["COSBENCH_SMOKE_BACKEND"] = backend
     env.setdefault("COSBENCH_SMOKE_BUCKET_PREFIX", "cosbench-go-local-smoke")
     if extra_env:
@@ -104,12 +99,18 @@ def main():
     if mock_result is not None:
         raise SystemExit(mock_result)
 
-    moto_server = ensure_moto_server()
+    minio_server = ensure_minio()
     port = find_free_port()
     endpoint = f"http://{DEFAULT_HOST}:{port}"
+    DEFAULT_MINIO_DATA.mkdir(parents=True, exist_ok=True)
     server = subprocess.Popen(
-        [moto_server, "-H", DEFAULT_HOST, "-p", str(port)],
+        [minio_server, "server", str(DEFAULT_MINIO_DATA), "--address", f"{DEFAULT_HOST}:{port}"],
         cwd=ROOT,
+        env={
+            **os.environ,
+            "MINIO_ROOT_USER": DEFAULT_MINIO_ACCESS_KEY,
+            "MINIO_ROOT_PASSWORD": DEFAULT_MINIO_SECRET_KEY,
+        },
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         preexec_fn=os.setsid,

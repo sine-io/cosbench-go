@@ -485,6 +485,9 @@ func TestSmokeLocalTargetReportsSuccessInMockMode(t *testing.T) {
 	if !strings.Contains(text, "# Smoke Local") {
 		t.Fatalf("unexpected output: %s", text)
 	}
+	if !strings.Contains(text, "Provider: `minio`") {
+		t.Fatalf("unexpected output: %s", text)
+	}
 	if !strings.Contains(text, "S3 smoke: `pass`") {
 		t.Fatalf("unexpected output: %s", text)
 	}
