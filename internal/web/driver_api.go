@@ -10,6 +10,52 @@ import (
 	"github.com/sine-io/cosbench-go/internal/domain"
 )
 
+func (h *Handler) driverSelf(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	driverID := strings.TrimSpace(r.URL.Query().Get("driver_id"))
+	overview, ok := h.manager.GetDriverOverview(driverID)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	writeJSON(w, http.StatusOK, overview)
+}
+
+func (h *Handler) driverMissions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	driverID := strings.TrimSpace(r.URL.Query().Get("driver_id"))
+	writeJSON(w, http.StatusOK, h.manager.ListDriverMissions(driverID))
+}
+
+func (h *Handler) driverWorkers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	driverID := strings.TrimSpace(r.URL.Query().Get("driver_id"))
+	state, ok := h.manager.GetDriverWorkerState(driverID)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	writeJSON(w, http.StatusOK, state)
+}
+
+func (h *Handler) driverLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	driverID := strings.TrimSpace(r.URL.Query().Get("driver_id"))
+	writeJSON(w, http.StatusOK, h.manager.GetDriverLogs(driverID))
+}
+
 func (h *Handler) driverRegister(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -83,13 +129,22 @@ func (h *Handler) driverClaimMission(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) driverMissionRoute(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/driver/missions/")
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) == 1 && r.Method == http.MethodGet {
+		mission, ok := h.manager.GetMission(parts[0])
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		writeJSON(w, http.StatusOK, mission)
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	path := strings.TrimPrefix(r.URL.Path, "/api/driver/missions/")
-	path = strings.Trim(path, "/")
-	parts := strings.Split(path, "/")
 	if len(parts) != 2 {
 		http.NotFound(w, r)
 		return

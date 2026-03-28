@@ -27,6 +27,18 @@ type DriverNode struct {
 	LastHeartbeatAt *time.Time   `json:"last_heartbeat_at,omitempty"`
 }
 
+type DriverOverview struct {
+	Driver             DriverNode `json:"driver"`
+	ActiveMissionCount int        `json:"active_mission_count"`
+	MissionCount       int        `json:"mission_count"`
+	LogCount           int        `json:"log_count"`
+}
+
+type DriverWorkerState struct {
+	DriverID           string `json:"driver_id"`
+	ActiveMissionCount int    `json:"active_mission_count"`
+}
+
 type MissionStatus string
 
 const (
