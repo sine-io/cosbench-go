@@ -36,6 +36,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Live smoke coverage is opt-in and does not run by default in `go test ./...`
 - Run `make --no-print-directory smoke-local` to start a temporary local MinIO endpoint and verify both the S3 smoke path and the SIO multipart smoke path end-to-end
 - Run `make --no-print-directory smoke-remote-local` to validate the remote controller/driver split against local MinIO with one controller-only and two driver-only processes
+- Set `SMOKE_REMOTE_LOCAL_BACKEND=sio` when you want the same helper to validate the SIO remote path instead of the default S3 path
 - Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
@@ -64,11 +65,18 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`
 - A manual GitHub Actions workflow can run `make smoke-remote-local` and upload `.artifacts/remote-smoke/`
+- The same manual workflow now accepts a `backend` input (`s3` or `sio`)
 
 To trigger the manual remote smoke workflow with GitHub CLI:
 
 ```bash
 gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go
+```
+
+To trigger the SIO variant:
+
+```bash
+gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go -f backend=sio
 ```
 
 ## Legacy Comparison
