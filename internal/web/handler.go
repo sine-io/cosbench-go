@@ -27,6 +27,10 @@ type pageData struct {
 	Title         string
 	Jobs          []domain.Job
 	MatrixRows    []domain.JobMatrixRow
+	DriverOverview domain.DriverOverview
+	DriverMissions []domain.Mission
+	DriverMission  domain.Mission
+	DriverWorkerState domain.DriverWorkerState
 	Job           domain.Job
 	JobResult     domain.JobResult
 	JobEvents     []domain.JobEvent
@@ -64,6 +68,10 @@ func (h *Handler) loadTemplates(viewDir string) error {
 		"controller_advanced_config.html",
 		"controller_stage.html",
 		"controller_timeline.html",
+		"driver_dashboard.html",
+		"driver_missions.html",
+		"driver_mission_detail.html",
+		"driver_workers.html",
 	}
 	h.templates = map[string]*template.Template{}
 	for _, page := range pages {
@@ -93,6 +101,10 @@ func (h *Handler) routes() {
 	h.mux.HandleFunc("/api/driver/missions/", h.driverMissionRoute)
 	h.mux.HandleFunc("/api/driver/workers", h.driverWorkers)
 	h.mux.HandleFunc("/api/driver/logs", h.driverLogs)
+	h.mux.HandleFunc("/driver", h.driverDashboardPage)
+	h.mux.HandleFunc("/driver/missions", h.driverMissionsPage)
+	h.mux.HandleFunc("/driver/missions/", h.driverMissionDetailPage)
+	h.mux.HandleFunc("/driver/workers", h.driverWorkersPage)
 	h.mux.HandleFunc("/controller/matrix", h.controllerMatrixPage)
 	h.mux.HandleFunc("/controller/jobs/", h.controllerJobPageRoute)
 	h.mux.HandleFunc("/workloads/new", h.workloadForm)

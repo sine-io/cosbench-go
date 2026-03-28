@@ -248,6 +248,37 @@ func TestControllerPagesRender(t *testing.T) {
 	}
 }
 
+func TestDriverPagesRender(t *testing.T) {
+	h := newTestHandler(t)
+	driver, mission := createDriverPageFixture(t, h.manager)
+
+	cases := []struct {
+		path string
+		want string
+	}{
+		{path: "/driver", want: "Driver Dashboard"},
+		{path: "/driver/missions", want: "Driver Missions"},
+		{path: "/driver/missions/" + mission.ID, want: "Driver Mission Detail"},
+		{path: "/driver/workers", want: "Driver Workers"},
+	}
+
+	for _, tc := range cases {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status = %d body=%s", tc.path, rec.Code, rec.Body.String())
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, tc.want) {
+			t.Fatalf("%s body = %s", tc.path, body)
+		}
+		if !strings.Contains(body, driver.Name) {
+			t.Fatalf("%s missing driver context: %s", tc.path, body)
+		}
+	}
+}
+
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	store, err := snapshot.New(t.TempDir())
@@ -305,4 +336,37 @@ func waitForJobStatus(t *testing.T, mgr *controlplane.Manager, jobID string, wan
 	}
 	job, _ := mgr.GetJob(jobID)
 	t.Fatalf("job did not reach %s: %#v", want, job)
+}
+
+func createDriverPageFixture(t *testing.T, mgr *controlplane.Manager) (domain.DriverNode, domain.Mission) {
+	t.Helper()
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-page", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="driver-page-job">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+	mission, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(): mission=%#v ok=%v err=%v", mission, ok, err)
+	}
+	if err := mgr.AppendMissionEvents(mission.ID, []domain.JobEvent{{OccurredAt: time.Now().UTC(), Level: domain.EventLevelInfo, Message: "mission started"}}); err != nil {
+		t.Fatal(err)
+	}
+	return driver, mission
 }
