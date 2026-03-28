@@ -18,7 +18,9 @@ type Store struct {
 
 func New(root string) (*Store, error) {
 	paths := []string{
+		filepath.Join(root, "drivers"),
 		filepath.Join(root, "jobs"),
+		filepath.Join(root, "missions"),
 		filepath.Join(root, "results"),
 		filepath.Join(root, "events"),
 		filepath.Join(root, "endpoints"),
@@ -34,6 +36,14 @@ func New(root string) (*Store, error) {
 
 func (s *Store) SaveJob(job domain.Job) error {
 	return writeJSON(filepath.Join(s.root, "jobs", job.ID+".json"), job)
+}
+
+func (s *Store) SaveDriverNode(driver domain.DriverNode) error {
+	return writeJSON(filepath.Join(s.root, "drivers", driver.ID+".json"), driver)
+}
+
+func (s *Store) SaveMission(mission domain.Mission) error {
+	return writeJSON(filepath.Join(s.root, "missions", mission.ID+".json"), mission)
 }
 
 func (s *Store) SaveResult(result domain.JobResult) error {
@@ -59,6 +69,24 @@ func (s *Store) LoadJobs() ([]domain.Job, error) {
 	}
 	sort.Slice(jobs, func(i, j int) bool { return jobs[i].CreatedAt.After(jobs[j].CreatedAt) })
 	return jobs, nil
+}
+
+func (s *Store) LoadDriverNodes() ([]domain.DriverNode, error) {
+	var drivers []domain.DriverNode
+	if err := readAllJSON(filepath.Join(s.root, "drivers"), &drivers); err != nil {
+		return nil, err
+	}
+	sort.Slice(drivers, func(i, j int) bool { return drivers[i].RegisteredAt.After(drivers[j].RegisteredAt) })
+	return drivers, nil
+}
+
+func (s *Store) LoadMissions() ([]domain.Mission, error) {
+	var missions []domain.Mission
+	if err := readAllJSON(filepath.Join(s.root, "missions"), &missions); err != nil {
+		return nil, err
+	}
+	sort.Slice(missions, func(i, j int) bool { return missions[i].UpdatedAt.After(missions[j].UpdatedAt) })
+	return missions, nil
 }
 
 func (s *Store) LoadEndpoints() ([]domain.EndpointConfig, error) {
