@@ -48,7 +48,7 @@ Each row uses the same dimensions:
 - Some repository fixtures are curated representatives of active legacy semantics rather than one-to-one copies of legacy XML files.
 - The legacy S3 sample currently shows a large error count when run through `cosbench-go` with `-backend mock`; this is evidence worth preserving, not hiding, until a direct live legacy comparison explains whether the behavior is expected or divergent.
 - `filewrite`, auth inheritance, and prefetch/range request shaping are now covered locally in Go, but they still need broader live-endpoint comparison against the legacy Java implementation before they should be treated as proven parity.
-- The `Legacy Live Compare` and `Legacy Live Compare Matrix` workflows now prove that the repository can surface a clean skip state for legacy live validation when shared live-endpoint secrets are absent, but that does not count as workload-level parity evidence.
+- The `Legacy Live Compare` and `Legacy Live Compare Matrix` workflows now prove that the repository can surface a clean skip state for legacy live validation when shared live-endpoint secrets are absent, and `smoke-ready` now reflects those states as `legacy_live_latest_result=skipped` and `legacy_live_matrix_latest_result=skipped`; none of that counts as workload-level parity evidence.
 
 ## Runbook
 
