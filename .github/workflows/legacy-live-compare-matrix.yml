@@ -1,0 +1,138 @@
+name: Legacy Live Compare Matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: Optional region override
+        required: false
+        default: ""
+      path_style:
+        description: Optional path-style access override
+        required: false
+        default: "true"
+
+jobs:
+  legacy-live-compare-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: s3
+            fixture: testdata/legacy/s3-config-sample.xml
+          - backend: sio
+            fixture: testdata/legacy/sio-config-sample.xml
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      COSBENCH_SMOKE_ENDPOINT: ${{ secrets.COSBENCH_SMOKE_ENDPOINT }}
+      COSBENCH_SMOKE_ACCESS_KEY: ${{ secrets.COSBENCH_SMOKE_ACCESS_KEY }}
+      COSBENCH_SMOKE_SECRET_KEY: ${{ secrets.COSBENCH_SMOKE_SECRET_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Check live compare credentials
+        id: preflight
+        shell: bash
+        run: |
+          mkdir -p .artifacts/legacy-live-compare
+          if [ -z "$COSBENCH_SMOKE_ENDPOINT" ] || [ -z "$COSBENCH_SMOKE_ACCESS_KEY" ] || [ -z "$COSBENCH_SMOKE_SECRET_KEY" ]; then
+            cat > .artifacts/legacy-live-compare/summary.json <<'EOF'
+          {"status":"skipped","reason":"missing COSBENCH_SMOKE_ENDPOINT / COSBENCH_SMOKE_ACCESS_KEY / COSBENCH_SMOKE_SECRET_KEY secrets"}
+          EOF
+            printf '%s\n' "missing live compare secrets; skipping rendered workload execution" > .artifacts/legacy-live-compare/run.log
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Render legacy fixture
+        if: steps.preflight.outputs.should_run == 'true'
+        run: |
+          mkdir -p .artifacts/legacy-live-compare
+          python3 ./scripts/render_legacy_live_compare_workload.py \
+            '${{ matrix.fixture }}' \
+            .artifacts/legacy-live-compare/rendered-workload.xml \
+            '${{ matrix.backend }}' \
+            "$COSBENCH_SMOKE_ENDPOINT" \
+            "$COSBENCH_SMOKE_ACCESS_KEY" \
+            "$COSBENCH_SMOKE_SECRET_KEY" \
+            '${{ inputs.region }}' \
+            '${{ inputs.path_style }}'
+
+      - name: Run legacy live compare
+        if: steps.preflight.outputs.should_run == 'true'
+        run: |
+          GO=go go run ./cmd/cosbench-go .artifacts/legacy-live-compare/rendered-workload.xml -backend '${{ matrix.backend }}' -json -quiet -summary-file .artifacts/legacy-live-compare/summary.json \
+            > .artifacts/legacy-live-compare/run.log 2>&1
+
+      - name: Write legacy compare summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# Legacy Live Compare"
+            echo
+            echo "- fixture: \`${{ matrix.fixture }}\`"
+            echo "- backend: \`${{ matrix.backend }}\`"
+            if [ -f .artifacts/legacy-live-compare/summary.json ]; then
+              echo
+              echo '```json'
+              cat .artifacts/legacy-live-compare/summary.json
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload legacy live compare artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: legacy-live-compare-${{ matrix.backend }}
+          path: .artifacts/legacy-live-compare
+
+  aggregate:
+    if: always()
+    needs: legacy-live-compare-matrix
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Download legacy live compare artifacts
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: legacy-live-compare-*
+          path: .artifacts/legacy-live-compare-matrix
+
+      - name: Aggregate legacy live compare outputs
+        run: python3 ./scripts/aggregate_legacy_live_compare_matrix.py .artifacts/legacy-live-compare-matrix .artifacts/legacy-live-compare-matrix-aggregate
+
+      - name: Write aggregated legacy live compare summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f .artifacts/legacy-live-compare-matrix-aggregate/summary.md ]; then
+            cat .artifacts/legacy-live-compare-matrix-aggregate/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Legacy Live Compare Matrix Summary"
+              echo
+              echo "Aggregate summary was not produced."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload aggregated legacy live compare artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: legacy-live-compare-matrix-aggregate
+          path: .artifacts/legacy-live-compare-matrix-aggregate
+          if-no-files-found: ignore
