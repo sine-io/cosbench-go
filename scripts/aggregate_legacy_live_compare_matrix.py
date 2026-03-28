@@ -10,6 +10,8 @@ EXPECTED_ROWS = ["s3", "sio"]
 
 def find_summary_path(root: Path, backend: str):
     candidates = [
+        root / f"legacy-live-compare-{backend}" / "result.json",
+        root / f"legacy-live-compare-{backend}" / backend / "result.json",
         root / f"legacy-live-compare-{backend}" / "summary.json",
         root / f"legacy-live-compare-{backend}" / backend / "summary.json",
     ]
@@ -23,11 +25,16 @@ def classify_row(backend: str, summary_path: Path | None):
     if summary_path is None:
         return {"backend": backend, "status": "missing"}
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
-    if payload.get("status") == "skipped":
+    if payload.get("result") == "skipped" or payload.get("status") == "skipped":
         return {
             "backend": backend,
             "status": "skipped",
             "reason": payload.get("reason", ""),
+        }
+    if payload.get("result") == "executed":
+        return {
+            "backend": backend,
+            "status": "executed",
         }
     return {
         "backend": backend,

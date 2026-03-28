@@ -72,6 +72,15 @@ jobs:
           GO=go go run ./cmd/cosbench-go .artifacts/legacy-live-compare/rendered-workload.xml -backend '${{ matrix.backend }}' -json -quiet -summary-file .artifacts/legacy-live-compare/summary.json \
             > .artifacts/legacy-live-compare/run.log 2>&1
 
+      - name: Summarize legacy live compare
+        if: always()
+        run: |
+          python3 ./scripts/summarize_legacy_live_compare.py \
+            .artifacts/legacy-live-compare/summary.json \
+            .artifacts/legacy-live-compare/result.json \
+            '${{ matrix.fixture }}' \
+            '${{ matrix.backend }}'
+
       - name: Write legacy compare summary
         if: always()
         shell: bash
@@ -85,6 +94,12 @@ jobs:
               echo
               echo '```json'
               cat .artifacts/legacy-live-compare/summary.json
+              echo '```'
+            fi
+            if [ -f .artifacts/legacy-live-compare/result.json ]; then
+              echo
+              echo '```json'
+              cat .artifacts/legacy-live-compare/result.json
               echo '```'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
