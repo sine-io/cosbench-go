@@ -230,3 +230,55 @@ func TestMissionReportingIsIdempotentPerBatch(t *testing.T) {
 		t.Fatalf("result = %#v", result)
 	}
 }
+
+func TestClaimMissionRejectsStaleUnhealthyDriver(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	staleDriver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-stale", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	freshDriver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-fresh", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	staleAt := time.Now().UTC().Add(-2 * driverHeartbeatTimeout)
+	staleDriver.LastHeartbeatAt = &staleAt
+	staleDriver.Status = domain.DriverStatusHealthy
+	if err := mgr.PutDriverNode(staleDriver); err != nil {
+		t.Fatal(err)
+	}
+
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-stale-driver">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok, err := mgr.ClaimMission(staleDriver.ID, 30*time.Second); err == nil {
+		t.Fatalf("expected stale driver claim error, ok=%v", ok)
+	}
+
+	claimed, ok, err := mgr.ClaimMission(freshDriver.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("fresh driver claim: mission=%#v ok=%v err=%v", claimed, ok, err)
+	}
+}

@@ -48,14 +48,19 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 	if leaseTTL <= 0 {
 		leaseTTL = 30 * time.Second
 	}
-	if _, ok := m.GetDriverNode(driverID); !ok {
-		return domain.Mission{}, false, errors.New("driver not found")
-	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	now := time.Now().UTC()
 	m.expireLeasesLocked(now)
+	m.refreshDriverHealthLocked(now)
+	driver, ok := m.drivers[driverID]
+	if !ok {
+		return domain.Mission{}, false, errors.New("driver not found")
+	}
+	if driver.Status != domain.DriverStatusHealthy {
+		return domain.Mission{}, false, errors.New("driver is not healthy")
+	}
 
 	candidates := make([]domain.Mission, 0, len(m.missions))
 	for _, mission := range m.missions {

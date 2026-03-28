@@ -8,7 +8,10 @@ import (
 )
 
 func (m *Manager) GetDriverOverview(driverID string) (domain.DriverOverview, bool) {
-	driver, ok := m.GetDriverNode(driverID)
+	m.mu.Lock()
+	m.refreshDriverHealthLocked(time.Now().UTC())
+	driver, ok := m.drivers[driverID]
+	m.mu.Unlock()
 	if !ok {
 		return domain.DriverOverview{}, false
 	}
