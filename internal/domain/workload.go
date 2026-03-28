@@ -9,6 +9,7 @@ type Workload struct {
 	Description string        `json:"description,omitempty"`
 	Trigger     string        `json:"trigger,omitempty"`
 	Config      string        `json:"config,omitempty"`
+	Auth        *AuthSpec     `json:"auth,omitempty"`
 	Storage     *StorageSpec  `json:"storage,omitempty"`
 	Workflow    Workflow      `json:"workflow"`
 }
@@ -23,6 +24,7 @@ type Stage struct {
 	ClosureDelay int           `json:"closure_delay,omitempty"`
 	Trigger      string        `json:"trigger,omitempty"`
 	Config       string        `json:"config,omitempty"`
+	Auth         *AuthSpec     `json:"auth,omitempty"`
 	Storage      *StorageSpec  `json:"storage,omitempty"`
 	Works        []Work        `json:"works"`
 }
@@ -41,6 +43,7 @@ type Work struct {
 	TotalBytes int64        `json:"total_bytes,omitempty"`
 	Driver     string       `json:"driver,omitempty"`
 	Config     string       `json:"config,omitempty"`
+	Auth       *AuthSpec    `json:"auth,omitempty"`
 	Storage    *StorageSpec `json:"storage,omitempty"`
 	Operations []Operation  `json:"operations"`
 }
@@ -64,6 +67,7 @@ func WorkloadFromLegacy(src legacyworkload.Workload) Workload {
 		Description: src.Description,
 		Trigger:     src.Trigger,
 		Config:      src.Config,
+		Auth:        authFromLegacy(src.Auth),
 		Storage:     storageFromLegacy(src.Storage),
 		Workflow: Workflow{
 			Config: src.Workflow.Config,
@@ -76,6 +80,7 @@ func WorkloadFromLegacy(src legacyworkload.Workload) Workload {
 			ClosureDelay: stage.ClosureDelay,
 			Trigger:      stage.Trigger,
 			Config:       stage.Config,
+			Auth:         authFromLegacy(stage.Auth),
 			Storage:      storageFromLegacy(stage.Storage),
 			Works:        make([]Work, 0, len(stage.Works)),
 		}
@@ -94,6 +99,7 @@ func WorkloadFromLegacy(src legacyworkload.Workload) Workload {
 				TotalBytes: work.TotalBytes,
 				Driver:     work.Driver,
 				Config:     work.Config,
+				Auth:       authFromLegacy(work.Auth),
 				Storage:    storageFromLegacy(work.Storage),
 				Operations: make([]Operation, 0, len(work.Operations)),
 			}
@@ -119,6 +125,7 @@ func (w Workload) ToLegacy() legacyworkload.Workload {
 		Description: w.Description,
 		Trigger:     w.Trigger,
 		Config:      w.Config,
+		Auth:        authToLegacy(w.Auth),
 		Storage:     storageToLegacy(w.Storage),
 		Workflow: legacyworkload.Workflow{
 			Config: w.Workflow.Config,
@@ -131,6 +138,7 @@ func (w Workload) ToLegacy() legacyworkload.Workload {
 			ClosureDelay: stage.ClosureDelay,
 			Trigger:      stage.Trigger,
 			Config:       stage.Config,
+			Auth:         authToLegacy(stage.Auth),
 			Storage:      storageToLegacy(stage.Storage),
 			Works:        make([]legacyworkload.Work, 0, len(stage.Works)),
 		}
@@ -149,6 +157,7 @@ func (w Workload) ToLegacy() legacyworkload.Workload {
 				TotalBytes: work.TotalBytes,
 				Driver:     work.Driver,
 				Config:     work.Config,
+				Auth:       authToLegacy(work.Auth),
 				Storage:    storageToLegacy(work.Storage),
 				Operations: make([]legacyworkload.Operation, 0, len(work.Operations)),
 			}
@@ -183,6 +192,7 @@ func (w Work) ToLegacy() legacyworkload.Work {
 		TotalBytes: w.TotalBytes,
 		Driver:     w.Driver,
 		Config:     w.Config,
+		Auth:       authToLegacy(w.Auth),
 		Storage:    storageToLegacy(w.Storage),
 		Operations: make([]legacyworkload.Operation, 0, len(w.Operations)),
 	}
@@ -205,9 +215,23 @@ func storageFromLegacy(src *legacyworkload.StorageSpec) *StorageSpec {
 	return &StorageSpec{Type: src.Type, Config: src.Config}
 }
 
+func authFromLegacy(src *legacyworkload.AuthSpec) *AuthSpec {
+	if src == nil {
+		return nil
+	}
+	return &AuthSpec{Type: src.Type, Config: src.Config}
+}
+
 func storageToLegacy(src *StorageSpec) *legacyworkload.StorageSpec {
 	if src == nil {
 		return nil
 	}
 	return &legacyworkload.StorageSpec{Type: src.Type, Config: src.Config}
+}
+
+func authToLegacy(src *AuthSpec) *legacyworkload.AuthSpec {
+	if src == nil {
+		return nil
+	}
+	return &legacyworkload.AuthSpec{Type: src.Type, Config: src.Config}
 }

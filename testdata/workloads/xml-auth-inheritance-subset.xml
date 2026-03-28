@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<workload name="xml-auth-inheritance-subset" description="auth inheritance subset">
+  <auth type="basic" config="username=workload;password=root" />
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main-with-stage-auth">
+      <auth type="basic" config="username=stage;password=override" />
+      <work name="inherited-work" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=auth;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+      <work name="explicit-work" workers="1" totalOps="1">
+        <auth type="basic" config="username=work;password=leaf" />
+        <operation type="write" ratio="100" config="cprefix=auth;containers=c(1);objects=c(2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="fallback-stage">
+      <work name="fallback-work" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=auth;containers=c(1);objects=c(3);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>

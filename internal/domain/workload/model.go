@@ -5,6 +5,7 @@ type Workload struct {
 	Description string
 	Trigger     string
 	Config      string
+	Auth        *AuthSpec
 	Storage     *StorageSpec
 	Workflow    Workflow
 }
@@ -19,6 +20,7 @@ type Stage struct {
 	ClosureDelay int
 	Trigger      string
 	Config       string
+	Auth         *AuthSpec
 	Storage      *StorageSpec
 	Works        []Work
 }
@@ -37,6 +39,7 @@ type Work struct {
 	TotalBytes int64
 	Driver     string
 	Config     string
+	Auth       *AuthSpec
 	Storage    *StorageSpec
 	Operations []Operation
 }
