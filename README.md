@@ -102,6 +102,12 @@ To trigger the full remote smoke matrix:
 gh workflow run "Remote Smoke Matrix" --repo sine-io/cosbench-go
 ```
 
+To trigger the dedicated recovery workflow:
+
+```bash
+gh workflow run "Remote Smoke Recovery" --repo sine-io/cosbench-go
+```
+
 ## Legacy Comparison
 - The current comparison checklist and runbook live in `docs/legacy-comparison-matrix.md`
 - Code-level S3/SIO delta notes live in `docs/storage-driver-comparison-notes.md`
