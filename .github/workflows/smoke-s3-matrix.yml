@@ -1,0 +1,99 @@
+name: Smoke S3 Matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: Optional region override
+        required: false
+        default: ""
+      path_style:
+        description: Optional path-style access override
+        required: false
+        default: ""
+      bucket_prefix:
+        description: Optional bucket prefix override
+        required: false
+        default: ""
+
+jobs:
+  smoke-s3-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: s3
+          - backend: sio
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      COSBENCH_SMOKE_ENDPOINT: ${{ secrets.COSBENCH_SMOKE_ENDPOINT }}
+      COSBENCH_SMOKE_ACCESS_KEY: ${{ secrets.COSBENCH_SMOKE_ACCESS_KEY }}
+      COSBENCH_SMOKE_SECRET_KEY: ${{ secrets.COSBENCH_SMOKE_SECRET_KEY }}
+      COSBENCH_SMOKE_BACKEND: ${{ matrix.backend }}
+      COSBENCH_SMOKE_REGION: ${{ inputs.region }}
+      COSBENCH_SMOKE_PATH_STYLE: ${{ inputs.path_style }}
+      COSBENCH_SMOKE_BUCKET_PREFIX: ${{ inputs.bucket_prefix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Run smoke s3 matrix row
+        run: GO=go make smoke-s3 | tee smoke-s3-output.txt
+
+      - name: Upload smoke s3 output
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: smoke-s3-${{ matrix.backend }}
+          path: smoke-s3-output.txt
+
+      - name: Write smoke summary
+        if: always()
+        run: cat smoke-s3-output.txt >> "$GITHUB_STEP_SUMMARY"
+
+  aggregate:
+    if: always()
+    needs: smoke-s3-matrix
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Download smoke s3 artifacts
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: smoke-s3-*
+          path: .artifacts/smoke-s3-matrix
+
+      - name: Aggregate smoke s3 outputs
+        run: python3 ./scripts/aggregate_smoke_s3_matrix.py .artifacts/smoke-s3-matrix .artifacts/smoke-s3-matrix-aggregate
+
+      - name: Write aggregated smoke s3 summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f .artifacts/smoke-s3-matrix-aggregate/summary.md ]; then
+            cat .artifacts/smoke-s3-matrix-aggregate/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Smoke S3 Matrix Summary"
+              echo
+              echo "Aggregate summary was not produced."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload aggregated smoke s3 artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: smoke-s3-matrix-aggregate
+          path: .artifacts/smoke-s3-matrix-aggregate
+          if-no-files-found: ignore
