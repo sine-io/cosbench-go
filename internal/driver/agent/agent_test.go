@@ -210,9 +210,16 @@ func TestAgentProcessOneCanReclaimExpiredMissionLease(t *testing.T) {
 	if !processed {
 		t.Fatal("expected expired mission to be reclaimed and processed")
 	}
-	reloaded, ok := mgr.GetMission(claimed.ID)
-	if !ok || reloaded.Status != domain.MissionStatusSucceeded {
-		t.Fatalf("reloaded mission = %#v", reloaded)
+	attempts := mgr.ListMissionAttempts()
+	foundSucceeded := false
+	for _, attempt := range attempts {
+		if attempt.WorkUnitID == claimed.WorkUnitID && attempt.Status == domain.MissionStatusSucceeded {
+			foundSucceeded = true
+			break
+		}
+	}
+	if !foundSucceeded {
+		t.Fatalf("expected succeeded attempt for work unit %s, attempts=%#v", claimed.WorkUnitID, attempts)
 	}
 }
 

@@ -10,6 +10,8 @@ import (
 	"github.com/sine-io/cosbench-go/internal/reporting"
 )
 
+const maxAttemptsPerWorkUnit = 3
+
 func (m *Manager) ScheduleJobStage(jobID string) ([]domain.Mission, error) {
 	job, ok := m.GetJob(jobID)
 	if !ok {
@@ -51,19 +53,7 @@ func (m *Manager) ScheduleJobStage(jobID string) ([]domain.Mission, error) {
 			if err := m.PutWorkUnit(unit); err != nil {
 				return nil, err
 			}
-			mission := domain.Mission{
-				ID:         newID("mission"),
-				WorkUnitID: unit.ID,
-				WorkUnit:   unit,
-				JobID:      jobID,
-				StageName:  stage.Name,
-				WorkName:   work.Name,
-				Work:       unitWork,
-				Attempt:    1,
-				Status:     domain.MissionAttemptStatusPending,
-				CreatedAt:  now,
-				UpdatedAt:  now,
-			}
+			mission := m.createMissionAttemptLocked(unit, now, 1)
 			if err := m.PutMission(mission); err != nil {
 				return nil, err
 			}
@@ -93,7 +83,7 @@ func (m *Manager) ClaimMission(driverID string, leaseTTL time.Duration) (domain.
 
 	candidates := make([]domain.Mission, 0, len(m.missions))
 	for _, mission := range m.missions {
-		if mission.Status == domain.MissionAttemptStatusPending || mission.Status == domain.MissionStatusExpired {
+		if mission.Status == domain.MissionAttemptStatusPending {
 			candidates = append(candidates, mission)
 		}
 	}
@@ -150,6 +140,11 @@ func (m *Manager) expireLeasesLocked(now time.Time) {
 			unit.UpdatedAt = now
 			m.workUnits[unit.ID] = unit
 			_ = m.store.SaveWorkUnit(unit)
+			if mission.Attempt < maxAttemptsPerWorkUnit {
+				retry := m.createMissionAttemptLocked(unit, now, mission.Attempt+1)
+				m.missions[retry.ID] = retry
+				_ = m.store.SaveMission(retry)
+			}
 		}
 		delete(m.missionSamples, missionID)
 		_ = m.store.SaveMission(mission)
@@ -246,13 +241,22 @@ func (m *Manager) CompleteMission(missionID string, status domain.MissionStatus,
 		case domain.MissionStatusSucceeded:
 			unit.Status = domain.WorkUnitStatusSucceeded
 		case domain.MissionStatusFailed:
-			unit.Status = domain.WorkUnitStatusFailed
+			if mission.Attempt >= maxAttemptsPerWorkUnit {
+				unit.Status = domain.WorkUnitStatusFailed
+			} else {
+				unit.Status = domain.WorkUnitStatusPending
+			}
 		default:
 			unit.Status = domain.WorkUnitStatusRunning
 		}
 		unit.UpdatedAt = mission.UpdatedAt
 		m.workUnits[unit.ID] = unit
 		_ = m.store.SaveWorkUnit(unit)
+		if status == domain.MissionStatusFailed && mission.Attempt < maxAttemptsPerWorkUnit {
+			retry := m.createMissionAttemptLocked(unit, mission.UpdatedAt, mission.Attempt+1)
+			m.missions[retry.ID] = retry
+			_ = m.store.SaveMission(retry)
+		}
 	}
 	if err := m.store.SaveMission(mission); err != nil {
 		return err
@@ -435,4 +439,20 @@ func containsBatchID(items []string, batchID string) bool {
 		}
 	}
 	return false
+}
+
+func (m *Manager) createMissionAttemptLocked(unit domain.WorkUnit, now time.Time, attempt int) domain.Mission {
+	return domain.Mission{
+		ID:         newID("mission"),
+		WorkUnitID: unit.ID,
+		WorkUnit:   unit,
+		JobID:      unit.JobID,
+		StageName:  unit.StageName,
+		WorkName:   unit.WorkName,
+		Work:       unit.Work,
+		Attempt:    attempt,
+		Status:     domain.MissionAttemptStatusPending,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
 }
