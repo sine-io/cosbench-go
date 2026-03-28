@@ -13,7 +13,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - XML parsing, normalization, storage config, local execution, snapshots, and web flows are landed
 - The local-only v1 closure now includes stronger start-time preflight checks, modeled auth inheritance, real file-backed `filewrite` / `mfilewrite` behavior, prefetch/range read request shaping, and work-level reporting in exports and job detail views
 - The controller-facing closure now includes matrix, config, advanced-config, stage-detail, timeline, timeline CSV, Prometheus, and controller artifact endpoints under the unified Go service
-- The remote split now includes persisted driver/mission state, registration/heartbeat/claim endpoints, a driver agent, and combined-mode loopback execution; broader scheduling and protocol depth still remain ahead
+- The remote split now includes persisted driver/mission state, registration/heartbeat/claim endpoints, a driver agent, combined-mode loopback execution, and a shared bearer token on driver write endpoints
 - The unified service now also includes driver-facing overview, missions, mission detail, workers, and logs pages under `/driver/...`
 
 ## Local CLI
@@ -29,6 +29,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Go-native rewrite, not line-by-line Java translation
 - Clean boundaries across `internal/controlplane`, `internal/executor`, `internal/driver`, `internal/reporting`, and `internal/snapshot`
 - Core dependencies are the Go standard library and AWS SDK v2 for S3/SIO-compatible access
+- Remote driver write endpoints use `Authorization: Bearer <token>` with `COSBENCH_DRIVER_SHARED_TOKEN` as the current shared-token source
 
 ## Smoke Tests
 - Live smoke coverage is opt-in and does not run by default in `go test ./...`
