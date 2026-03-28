@@ -1,0 +1,83 @@
+package controlplane
+
+import (
+	"testing"
+	"time"
+
+	"github.com/sine-io/cosbench-go/internal/domain"
+	"github.com/sine-io/cosbench-go/internal/snapshot"
+)
+
+func TestManagerRegistersDriversSchedulesMissionsAndClaimsWork(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	driverA, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatalf("RegisterDriverNode(driver-a): %v", err)
+	}
+	driverB, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-b", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatalf("RegisterDriverNode(driver-b): %v", err)
+	}
+	if driverA.Status != domain.DriverStatusHealthy || driverB.Status != domain.DriverStatusHealthy {
+		t.Fatalf("drivers not healthy: %#v %#v", driverA, driverB)
+	}
+
+	now := time.Now().UTC()
+	if err := mgr.RecordDriverHeartbeat(driverA.ID, now); err != nil {
+		t.Fatalf("RecordDriverHeartbeat(): %v", err)
+	}
+	loadedA, ok := mgr.GetDriverNode(driverA.ID)
+	if !ok || loadedA.LastHeartbeatAt == nil || !loadedA.LastHeartbeatAt.Equal(now) {
+		t.Fatalf("driver heartbeat = %#v", loadedA)
+	}
+
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-schedule">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="work-a" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+      <work name="work-b" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	missions, err := mgr.ScheduleJobStage(job.ID)
+	if err != nil {
+		t.Fatalf("ScheduleJobStage(): %v", err)
+	}
+	if len(missions) != 2 {
+		t.Fatalf("missions = %#v", missions)
+	}
+
+	claimA, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil {
+		t.Fatalf("ClaimMission(driver-a): %v", err)
+	}
+	if !ok || claimA.Lease == nil || claimA.Lease.DriverID != driverA.ID || claimA.Status != domain.MissionStatusClaimed {
+		t.Fatalf("claimA = %#v", claimA)
+	}
+
+	claimB, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil {
+		t.Fatalf("ClaimMission(driver-b): %v", err)
+	}
+	if !ok || claimB.Lease == nil || claimB.Lease.DriverID != driverB.ID || claimB.ID == claimA.ID {
+		t.Fatalf("claimB = %#v", claimB)
+	}
+}
