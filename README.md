@@ -52,6 +52,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now consumes those structured `Smoke S3` summary artifacts first and only falls back to raw text parsing for older artifacts
 - `smoke-ready` now also consumes structured remote smoke and remote recovery summaries first, rather than relying only on workflow conclusions
 - the readiness summary now also shows which remote workflow supplied the latest aggregated happy-path and recovery result
+- the readiness summary now also includes direct run URLs for the latest real-endpoint, legacy-live, and aggregated remote evidence
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - The latest verified GitHub-hosted `Smoke S3` run is `23695743149`, and it uploaded both `smoke-s3-output.txt` and `.artifacts/smoke-s3-summary/summary.json` with `{"result":"skipped"}`
 - The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23695743153`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`

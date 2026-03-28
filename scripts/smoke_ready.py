@@ -505,6 +505,12 @@ def pick_latest_result(workflow_latest, names):
     return latest_name
 
 
+def latest_url(workflow_latest, workflow_name):
+    if not workflow_name:
+        return ""
+    return (workflow_latest.get(workflow_name) or {}).get("url", "")
+
+
 def build_payload():
     repo, repo_error = resolve_repo()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
@@ -601,16 +607,22 @@ def build_payload():
             "real_endpoint_matrix_latest_success": real_endpoint_matrix_latest_success,
             "real_endpoint_latest_result": real_endpoint_latest_result,
             "real_endpoint_matrix_latest_result": real_endpoint_matrix_latest_result,
+            "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
+            "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "legacy_live_latest_success": legacy_live_latest_success,
             "legacy_live_matrix_latest_success": legacy_live_matrix_latest_success,
             "legacy_live_latest_result": legacy_live_latest_result,
             "legacy_live_matrix_latest_result": legacy_live_matrix_latest_result,
+            "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
+            "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "remote_happy_latest_success": remote_happy_latest_success,
             "remote_recovery_latest_success": remote_recovery_latest_success,
             "remote_happy_latest_result": remote_happy_latest_result,
             "remote_recovery_latest_result": remote_recovery_latest_result,
             "remote_happy_latest_source": remote_happy_latest_name or "none",
             "remote_recovery_latest_source": remote_recovery_latest_name or "none",
+            "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
+            "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "ready": ready,
         },
         "blockers": blockers,
@@ -690,16 +702,22 @@ def print_text(payload):
     print(f"- Real Endpoint Matrix Latest Success: `{yes_no(payload['summary']['real_endpoint_matrix_latest_success'])}`")
     print(f"- Real Endpoint Latest Result: `{payload['summary']['real_endpoint_latest_result']}`")
     print(f"- Real Endpoint Matrix Latest Result: `{payload['summary']['real_endpoint_matrix_latest_result']}`")
+    print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
+    print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
     print(f"- Legacy Live Latest Success: `{yes_no(payload['summary']['legacy_live_latest_success'])}`")
     print(f"- Legacy Live Matrix Latest Success: `{yes_no(payload['summary']['legacy_live_matrix_latest_success'])}`")
     print(f"- Legacy Live Latest Result: `{payload['summary']['legacy_live_latest_result']}`")
     print(f"- Legacy Live Matrix Latest Result: `{payload['summary']['legacy_live_matrix_latest_result']}`")
+    print(f"- Legacy Live Latest URL: `{payload['summary']['legacy_live_latest_url']}`")
+    print(f"- Legacy Live Matrix Latest URL: `{payload['summary']['legacy_live_matrix_latest_url']}`")
     print(f"- Remote Happy Latest Success: `{yes_no(payload['summary']['remote_happy_latest_success'])}`")
     print(f"- Remote Recovery Latest Success: `{yes_no(payload['summary']['remote_recovery_latest_success'])}`")
     print(f"- Remote Happy Latest Result: `{payload['summary']['remote_happy_latest_result']}`")
     print(f"- Remote Recovery Latest Result: `{payload['summary']['remote_recovery_latest_result']}`")
     print(f"- Remote Happy Latest Source: `{payload['summary']['remote_happy_latest_source']}`")
     print(f"- Remote Recovery Latest Source: `{payload['summary']['remote_recovery_latest_source']}`")
+    print(f"- Remote Happy Latest URL: `{payload['summary']['remote_happy_latest_url']}`")
+    print(f"- Remote Recovery Latest URL: `{payload['summary']['remote_recovery_latest_url']}`")
     print(f"- Overall ready: `{yes_no(payload['summary']['ready'])}`")
     print()
     print("## Blockers")
