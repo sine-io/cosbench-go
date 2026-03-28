@@ -16,6 +16,14 @@ type Agent struct {
 	DriverID string
 	Name     string
 	Mode     domain.DriverMode
+	Mirror   LocalMirror
+}
+
+type LocalMirror interface {
+	PutDriverNode(domain.DriverNode) error
+	PutMission(domain.Mission) error
+	AppendMissionEventsBatch(string, string, []domain.JobEvent) error
+	CompleteMission(string, domain.MissionStatus, string) error
 }
 
 func (a *Agent) ProcessOne(ctx context.Context) (bool, error) {
@@ -34,9 +42,16 @@ func (a *Agent) ProcessOne(ctx context.Context) (bool, error) {
 			return false, err
 		}
 		a.DriverID = driver.ID
+		if a.Mirror != nil {
+			_ = a.Mirror.PutDriverNode(driver)
+		}
 	}
-	if _, err := a.Client.Heartbeat(a.DriverID, time.Now().UTC()); err != nil {
+	driver, err := a.Client.Heartbeat(a.DriverID, time.Now().UTC())
+	if err != nil {
 		return false, err
+	}
+	if a.Mirror != nil {
+		_ = a.Mirror.PutDriverNode(driver)
 	}
 	mission, ok, err := a.Client.ClaimMission(a.DriverID, 30*time.Second)
 	if err != nil {
@@ -45,10 +60,17 @@ func (a *Agent) ProcessOne(ctx context.Context) (bool, error) {
 	if !ok {
 		return false, nil
 	}
+	if a.Mirror != nil {
+		_ = a.Mirror.PutMission(mission)
+	}
 
 	startEvent := domain.JobEvent{OccurredAt: time.Now().UTC(), Level: domain.EventLevelInfo, Message: "mission started"}
-	if err := a.Client.UploadEvents(mission.ID, []domain.JobEvent{startEvent}); err != nil {
+	startBatchID := fmt.Sprintf("events-start-%d", time.Now().UnixNano())
+	if err := a.Client.UploadEventsBatch(mission.ID, startBatchID, []domain.JobEvent{startEvent}); err != nil {
 		return false, err
+	}
+	if a.Mirror != nil {
+		_ = a.Mirror.AppendMissionEventsBatch(mission.ID, startBatchID, []domain.JobEvent{startEvent})
 	}
 
 	adapter, err := storagefactory.NewAdapter(mission.Work.Storage.Type, mission.Work.Storage.Config)
@@ -62,7 +84,8 @@ func (a *Agent) ProcessOne(ctx context.Context) (bool, error) {
 
 	stageExecutor := executor.StageExecutor{Storage: adapter}
 	workResult := stageExecutor.RunWork(ctx, mission.Work)
-	if err := a.Client.UploadSamples(mission.ID, workResult.Samples); err != nil {
+	sampleBatchID := fmt.Sprintf("samples-%d", time.Now().UnixNano())
+	if err := a.Client.UploadSamplesBatch(mission.ID, sampleBatchID, workResult.Samples); err != nil {
 		return false, err
 	}
 
@@ -76,15 +99,23 @@ func (a *Agent) ProcessOne(ctx context.Context) (bool, error) {
 		finishLevel = domain.EventLevelError
 		finishMessage = "mission finished with failure"
 	}
-	if err := a.Client.UploadEvents(mission.ID, []domain.JobEvent{{
+	finishBatchID := fmt.Sprintf("events-finish-%d", time.Now().UnixNano())
+	finishEvents := []domain.JobEvent{{
 		OccurredAt: time.Now().UTC(),
 		Level:      finishLevel,
 		Message:    finishMessage,
-	}}); err != nil {
+	}}
+	if err := a.Client.UploadEventsBatch(mission.ID, finishBatchID, finishEvents); err != nil {
 		return false, err
+	}
+	if a.Mirror != nil {
+		_ = a.Mirror.AppendMissionEventsBatch(mission.ID, finishBatchID, finishEvents)
 	}
 	if err := a.Client.CompleteMission(mission.ID, status, errorMessage); err != nil {
 		return false, err
+	}
+	if a.Mirror != nil {
+		_ = a.Mirror.CompleteMission(mission.ID, status, errorMessage)
 	}
 	return true, nil
 }

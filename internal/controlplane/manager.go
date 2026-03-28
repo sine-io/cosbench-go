@@ -28,6 +28,7 @@ type Manager struct {
 	workUnits map[string]domain.WorkUnit
 	missions  map[string]domain.Mission
 	missionSamples map[string][]legacyexec.Sample
+	remoteScheduling bool
 	endpoints map[string]domain.EndpointConfig
 	running   map[string]context.CancelFunc
 }
@@ -213,6 +214,14 @@ func (m *Manager) StartJob(ctx context.Context, jobID string) error {
 	m.appendEventLocked(jobID, domain.EventLevelInfo, "job started")
 	m.persistLocked(jobID)
 	m.mu.Unlock()
+	if m.remoteScheduling {
+		_, err := m.ScheduleJobStage(jobID)
+		if err != nil {
+			m.failJob(jobID, job.Stages, 0, err.Error())
+			return err
+		}
+		return nil
+	}
 	go m.runJob(runCtx, jobID)
 	return nil
 }

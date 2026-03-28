@@ -14,6 +14,12 @@ func (m *Manager) PutDriverNode(driver domain.DriverNode) error {
 	return m.store.SaveDriverNode(driver)
 }
 
+func (m *Manager) SetRemoteScheduling(enabled bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.remoteScheduling = enabled
+}
+
 func (m *Manager) ListDriverNodes() []domain.DriverNode {
 	m.mu.Lock()
 	m.refreshDriverHealthLocked(time.Now().UTC())

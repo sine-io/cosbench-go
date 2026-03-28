@@ -1,13 +1,17 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/sine-io/cosbench-go/internal/controlplane"
+	"github.com/sine-io/cosbench-go/internal/domain"
 	driveragent "github.com/sine-io/cosbench-go/internal/driver/agent"
 	"github.com/sine-io/cosbench-go/internal/snapshot"
 	"github.com/sine-io/cosbench-go/internal/web"
@@ -18,6 +22,9 @@ type Config struct {
 	ViewDir string
 	Mode    Mode
 	DriverSharedToken string
+	ControllerURL string
+	DriverName string
+	DriverPollInterval time.Duration
 }
 
 type App struct {
@@ -25,7 +32,11 @@ type App struct {
 	Manager      *controlplane.Manager
 	Handler      http.Handler
 	DriverSharedToken string
+	ControllerURL string
+	DriverName string
+	DriverPollInterval time.Duration
 	loopbackAgent *driveragent.Agent
+	backgroundOnce sync.Once
 }
 
 func New(cfg Config) (*App, error) {
@@ -45,6 +56,18 @@ func New(cfg Config) (*App, error) {
 	if driverSharedToken == "" {
 		driverSharedToken = strings.TrimSpace(os.Getenv("COSBENCH_DRIVER_SHARED_TOKEN"))
 	}
+	controllerURL := strings.TrimSpace(cfg.ControllerURL)
+	if controllerURL == "" {
+		controllerURL = strings.TrimSpace(os.Getenv("COSBENCH_CONTROLLER_URL"))
+	}
+	driverName := strings.TrimSpace(cfg.DriverName)
+	if driverName == "" {
+		driverName = strings.TrimSpace(os.Getenv("COSBENCH_DRIVER_NAME"))
+	}
+	driverPollInterval := cfg.DriverPollInterval
+	if driverPollInterval <= 0 {
+		driverPollInterval = 100 * time.Millisecond
+	}
 	store, err := snapshot.New(dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot store: %w", err)
@@ -53,9 +76,58 @@ func New(cfg Config) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("controlplane: %w", err)
 	}
+	if mode == ModeControllerOnly {
+		manager.SetRemoteScheduling(true)
+	}
 	handler, err := web.NewHandler(manager, viewDir, driverSharedToken)
 	if err != nil {
 		return nil, err
 	}
-	return &App{Mode: mode, Manager: manager, Handler: handler, DriverSharedToken: driverSharedToken}, nil
+	return &App{
+		Mode: mode,
+		Manager: manager,
+		Handler: handler,
+		DriverSharedToken: driverSharedToken,
+		ControllerURL: controllerURL,
+		DriverName: driverName,
+		DriverPollInterval: driverPollInterval,
+	}, nil
+}
+
+func (a *App) StartBackground(ctx context.Context) error {
+	if a.Mode != ModeDriverOnly {
+		return nil
+	}
+	if strings.TrimSpace(a.ControllerURL) == "" {
+		return fmt.Errorf("driver-only mode requires controller url")
+	}
+	a.backgroundOnce.Do(func() {
+		agent := &driveragent.Agent{
+			Client: &driveragent.HTTPClient{
+				BaseURL: a.ControllerURL,
+				SharedToken: a.DriverSharedToken,
+			},
+			Name:  a.DriverName,
+			Mode:  domain.DriverModeDriver,
+			Mirror: a.Manager,
+		}
+		go func() {
+			ticker := time.NewTicker(a.DriverPollInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				_, _ = agent.ProcessOne(ctx)
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+				}
+			}
+		}()
+	})
+	return nil
 }
