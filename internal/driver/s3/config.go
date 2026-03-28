@@ -50,6 +50,9 @@ func ParseConfigMap(backend string, values map[string]string) (Config, error) {
 	if cfg.Region == "" {
 		cfg.Region = "us-east-1"
 	}
+	if kind == "s3" && cfg.Endpoint == "" {
+		cfg.Endpoint = "http://s3.amazonaws.com"
+	}
 	if kind == "sio" && values["path_style_access"] == "" {
 		cfg.PathStyle = true
 	}

@@ -68,6 +68,16 @@ func (s *stubStorage) RestoreObject(ctx context.Context, bucket, key string, day
 	return nil
 }
 
+type stubReadOptionsStorage struct {
+	stubStorage
+	readOptions ports.ReadOptions
+}
+
+func (s *stubReadOptionsStorage) GetObjectWithOptions(ctx context.Context, bucket, key string, opts ports.ReadOptions) (io.ReadCloser, error) {
+	s.readOptions = opts
+	return io.NopCloser(strings.NewReader("abc")), nil
+}
+
 func TestEngineRunTotalOps(t *testing.T) {
 	e := Engine{Work: workload.Work{Workers: 2, TotalOps: 4, Operations: []workload.Operation{{Type: "read", Ratio: 100, Config: "containers=c(1);objects=c(1)"}}}, Storage: &stubStorage{}}
 	res := e.Run(context.Background())
@@ -218,6 +228,30 @@ func TestResolvedStorageConfigIncludesAuthAndStorageConfig(t *testing.T) {
 	}
 	if !strings.Contains(raw, "username=work;password=secret") {
 		t.Fatalf("missing auth config in %q", raw)
+	}
+}
+
+func TestExecuteOpReadUsesConfiguredReadOptions(t *testing.T) {
+	storage := &stubReadOptionsStorage{}
+	n, err := executeOp(context.Background(), storage, "", workload.Operation{
+		Type:   "read",
+		Ratio:  100,
+		Config: "containers=c(1);objects=c(1);is_prefetch=true;is_range_request=true;file_length=15000000;chunk_length=5000000",
+	}, 1, 1, rand.New(rand.NewSource(1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 3 {
+		t.Fatalf("bytes = %d", n)
+	}
+	if !storage.readOptions.Prefetch {
+		t.Fatal("expected prefetch option")
+	}
+	if !storage.readOptions.HasRange {
+		t.Fatal("expected range option")
+	}
+	if storage.readOptions.RangeStart != 0 || storage.readOptions.RangeEnd != 4999999 {
+		t.Fatalf("range = %#v", storage.readOptions)
 	}
 }
 

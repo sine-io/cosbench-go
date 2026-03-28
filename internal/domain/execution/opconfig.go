@@ -24,6 +24,10 @@ type ParsedOpConfig struct {
 	PartSize      int64
 	RestoreDays   int
 	Delay         time.Duration
+	IsPrefetch    bool
+	IsRangeRequest bool
+	FileLength    int64
+	ChunkLength   int64
 }
 
 type SizeGenerator interface {
@@ -62,6 +66,10 @@ func parseOpConfigMap(m map[string]string) (*ParsedOpConfig, error) {
 		PartSize:      parseInt64Or(m["part_size"], 5*1024*1024),
 		RestoreDays:   parseIntOr(m["restore_days"], 1),
 		Delay:         parseDurationOr(m["duration"], m["delay"]),
+		IsPrefetch:    parseBoolOr(m["is_prefetch"]),
+		IsRangeRequest: parseBoolOr(m["is_range_request"]),
+		FileLength:    parseInt64Or(m["file_length"], 0),
+		ChunkLength:   parseInt64Or(m["chunk_length"], 0),
 	}
 	if s := strings.TrimSpace(m["containers"]); s != "" {
 		g, err := ParseIntGenerator(s)
@@ -221,6 +229,15 @@ func parseInt64Or(v string, def int64) int64 {
 		return def
 	}
 	return n
+}
+
+func parseBoolOr(v string) bool {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 func parseDurationOr(v string, fallback string) time.Duration {

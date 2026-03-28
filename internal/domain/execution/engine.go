@@ -122,7 +122,15 @@ func executeOp(ctx context.Context, sa ports.StorageAdapter, storageRaw string, 
 		body := bytes.NewReader(make([]byte, t.Size))
 		return t.Size, sa.MultipartPut(ctx, t.Bucket, t.Key, body, t.Size, pc.PartSize)
 	case "read":
-		rc, err := sa.GetObject(ctx, t.Bucket, t.Key)
+		var (
+			rc  io.ReadCloser
+			err error
+		)
+		if advanced, ok := sa.(ports.ReadOptionsStorageAdapter); ok && (pc.IsPrefetch || pc.IsRangeRequest) {
+			rc, err = advanced.GetObjectWithOptions(ctx, t.Bucket, t.Key, readOptionsFromParsed(pc))
+		} else {
+			rc, err = sa.GetObject(ctx, t.Bucket, t.Key)
+		}
 		if err != nil {
 			return 0, err
 		}
@@ -229,6 +237,27 @@ func storageConfig(spec *workload.StorageSpec, auth *workload.AuthSpec) string {
 
 func ResolvedStorageConfig(spec *workload.StorageSpec, auth *workload.AuthSpec) string {
 	return storageConfig(spec, auth)
+}
+
+func readOptionsFromParsed(pc *ParsedOpConfig) ports.ReadOptions {
+	opts := ports.ReadOptions{Prefetch: pc.IsPrefetch}
+	if !pc.IsRangeRequest {
+		return opts
+	}
+	end := pc.ChunkLength - 1
+	if end < 0 {
+		end = 0
+	}
+	if pc.FileLength > 0 && end >= pc.FileLength {
+		end = pc.FileLength - 1
+	}
+	if end < 0 {
+		end = 0
+	}
+	opts.HasRange = true
+	opts.RangeStart = 0
+	opts.RangeEnd = end
+	return opts
 }
 
 func openInputFile(path string) (*os.File, int64, error) {

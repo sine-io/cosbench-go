@@ -297,3 +297,21 @@ func TestParseAuthInheritanceSubsetWorkload(t *testing.T) {
 		t.Fatalf("fallback work auth = %#v", fallbackWork.Auth)
 	}
 }
+
+func TestParseFileWriteSubsetWorkload(t *testing.T) {
+	path := filepath.Clean("../../../testdata/workloads/xml-filewrite-subset.xml")
+	wl, err := ParseWorkloadFile(path)
+	if err != nil {
+		t.Fatalf("ParseWorkloadFile(): %v", err)
+	}
+	work := wl.Workflow.Stages[0].Works[0]
+	if work.Storage == nil || work.Storage.Type != "sio" {
+		t.Fatalf("work storage = %#v", work.Storage)
+	}
+	if len(work.Operations) != 1 || work.Operations[0].Type != "filewrite" {
+		t.Fatalf("work operations = %#v", work.Operations)
+	}
+	if !strings.Contains(work.Operations[0].Config, "files=/tmp/input.bin") {
+		t.Fatalf("operation config = %q", work.Operations[0].Config)
+	}
+}

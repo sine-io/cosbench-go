@@ -16,7 +16,7 @@ func NewAdapter(storageType, rawConfig string) (ports.StorageAdapter, error) {
 	case "s3":
 		return newdriver.NewAdapter("s3", rawConfig), nil
 	case "sio", "siov1", "gdas":
-		return newdriver.NewAdapter("sio", rawConfig), nil
+		return newdriver.NewAdapter(strings.ToLower(strings.TrimSpace(storageType)), rawConfig), nil
 	default:
 		return nil, fmt.Errorf("unsupported storage type: %q", storageType)
 	}
