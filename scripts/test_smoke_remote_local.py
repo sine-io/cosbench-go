@@ -40,6 +40,16 @@ def test_remote_sio_multistage_smoke_fixture_has_two_stages_and_two_workers():
     assert 'name="stage-b"' in text
 
 
+def test_remote_recovery_smoke_fixture_has_delay_and_two_workers():
+    fixture = pathlib.Path("testdata/workloads/remote-smoke-s3-recovery-two-driver.xml")
+    text = fixture.read_text(encoding="utf-8")
+    assert text.count("<workstage ") == 1
+    assert 'workers="2"' in text
+    assert 'storage type="s3"' in text
+    assert 'operation type="delay"' in text
+    assert 'duration=45s' in text
+
+
 def test_build_summary_json_shape():
     summary = smoke.build_summary(
         backend="s3",
@@ -55,6 +65,8 @@ def test_build_summary_json_shape():
         byte_count=2000,
         stage_names=["main"],
         stages_seen=1,
+        recovery_observed=None,
+        reclaimed_units=None,
         checks={"drivers_healthy": "pass", "units_distributed": "pass"},
     )
     assert summary["controller_url"] == "http://127.0.0.1:19088"
@@ -65,6 +77,30 @@ def test_build_summary_json_shape():
     assert summary["stage_names"] == ["main"]
     assert summary["stages_seen"] == 1
     assert summary["overall"] == "pass"
+    json.dumps(summary)
+
+
+def test_build_summary_can_include_recovery_fields():
+    summary = smoke.build_summary(
+        backend="s3",
+        scenario="recovery",
+        controller_url="http://127.0.0.1:19088",
+        driver_urls=["http://127.0.0.1:18081", "http://127.0.0.1:18082"],
+        job_id="job-1",
+        job_status="succeeded",
+        drivers_seen=2,
+        units_claimed=2,
+        drivers_participated=2,
+        operation_count=2,
+        byte_count=0,
+        stage_names=["main"],
+        stages_seen=1,
+        recovery_observed=True,
+        reclaimed_units=1,
+        checks={"recovery_observed": "pass"},
+    )
+    assert summary["recovery_observed"] is True
+    assert summary["reclaimed_units"] == 1
     json.dumps(summary)
 
 
@@ -84,6 +120,7 @@ def test_fixture_path_selection_by_backend_and_scenario():
     assert smoke.fixture_for_selection("s3", "single").name == "remote-smoke-s3-two-driver.xml"
     assert smoke.fixture_for_selection("s3", "multistage").name == "remote-smoke-s3-multistage-two-driver.xml"
     assert smoke.fixture_for_selection("sio", "multistage").name == "remote-smoke-sio-multistage-two-driver.xml"
+    assert smoke.fixture_for_selection("s3", "recovery").name == "remote-smoke-s3-recovery-two-driver.xml"
 
 
 def test_unknown_backend_is_rejected():

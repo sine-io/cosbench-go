@@ -22,6 +22,7 @@ S3_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-two-driver.xml"
 SIO_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-sio-two-driver.xml"
 S3_MULTISTAGE_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-multistage-two-driver.xml"
 SIO_MULTISTAGE_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-sio-multistage-two-driver.xml"
+S3_RECOVERY_FIXTURE = ROOT / "testdata" / "workloads" / "remote-smoke-s3-recovery-two-driver.xml"
 DEFAULT_MINIO = ROOT / ".artifacts" / "minio" / "bin" / "minio"
 DEFAULT_MINIO_DATA = ROOT / ".artifacts" / "remote-smoke" / "minio-data"
 DEFAULT_MINIO_URL = "https://dl.min.io/server/minio/release/linux-amd64/minio"
@@ -46,10 +47,12 @@ def build_summary(
     byte_count,
     stage_names,
     stages_seen,
+    recovery_observed=None,
+    reclaimed_units=None,
     checks,
 ):
     overall = "pass" if all(value == "pass" for value in checks.values()) else "fail"
-    return {
+    summary = {
         "backend": backend,
         "scenario": scenario,
         "controller_url": controller_url,
@@ -66,6 +69,11 @@ def build_summary(
         "checks": checks,
         "overall": overall,
     }
+    if recovery_observed is not None:
+        summary["recovery_observed"] = recovery_observed
+    if reclaimed_units is not None:
+        summary["reclaimed_units"] = reclaimed_units
+    return summary
 
 
 def build_failure_summary(failed_at, error):
@@ -92,6 +100,8 @@ def render_summary_md(summary):
         "byte_count",
         "stage_names",
         "stages_seen",
+        "recovery_observed",
+        "reclaimed_units",
         "overall",
     ]:
         if key in summary:
@@ -135,6 +145,8 @@ def run_mock():
             byte_count=2000,
             stage_names=["main"],
             stages_seen=1,
+            recovery_observed=None,
+            reclaimed_units=None,
             checks={
                 "process_ready": "pass",
                 "drivers_healthy": "pass",
@@ -195,7 +207,7 @@ def normalize_scenario(scenario):
     normalized = scenario.strip().lower()
     if not normalized:
         return "single"
-    if normalized in {"single", "multistage"}:
+    if normalized in {"single", "multistage", "recovery"}:
         return normalized
     raise ValueError(f"unsupported scenario: {scenario}")
 
@@ -205,6 +217,10 @@ def fixture_for_selection(backend, scenario):
     scenario = normalize_scenario(scenario)
     if scenario == "single":
         return fixture_for_backend(backend)
+    if scenario == "recovery":
+        if backend == "s3":
+            return S3_RECOVERY_FIXTURE
+        raise ValueError(f"unsupported remote smoke scenario: backend={backend} scenario={scenario}")
     if backend == "s3":
         return S3_MULTISTAGE_FIXTURE
     if backend == "sio":
@@ -341,6 +357,42 @@ def load_json_rows(directory):
     return rows
 
 
+def wait_for_driver_id(controller_data, driver_name, timeout_seconds=20):
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        drivers = load_json_rows(controller_data / "drivers")
+        for driver in drivers:
+            if driver.get("name") == driver_name:
+                return driver.get("id")
+        time.sleep(0.1)
+    raise RuntimeError(f"driver did not register in time: {driver_name}")
+
+
+def wait_for_claim_by_driver(controller_data, driver_id, timeout_seconds=20):
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        missions = load_json_rows(controller_data / "missions")
+        for mission in missions:
+            lease = mission.get("lease") or {}
+            if lease.get("driver_id") == driver_id and mission.get("status") in {"claimed", "running"}:
+                return mission
+        time.sleep(0.1)
+    raise RuntimeError(f"driver did not claim mission in time: {driver_id}")
+
+
+def count_reclaimed_units(missions, original_work_unit_id, original_attempt):
+    reclaimed = 0
+    seen_retry = False
+    for mission in missions:
+        if mission.get("work_unit_id") != original_work_unit_id:
+            continue
+        if int(mission.get("attempt", 0)) > original_attempt:
+            seen_retry = True
+    if seen_retry:
+        reclaimed += 1
+    return reclaimed
+
+
 def run_real():
     backend = os.environ.get("SMOKE_REMOTE_LOCAL_BACKEND", "s3").strip().lower()
     scenario = normalize_scenario(os.environ.get("SMOKE_REMOTE_LOCAL_SCENARIO", "single"))
@@ -436,19 +488,43 @@ def run_real():
         status = post_empty(controller_url + f"/jobs/{job_id}/start")
         if status not in (200, 303):
             raise RuntimeError(f"unexpected start status: {status}")
-        payload = wait_for_job(controller_url, job_id)
+        recovery_driver_id = None
+        recovery_claim = None
+        reclaimed_units = None
+        if scenario == "recovery":
+            recovery_driver_id = wait_for_driver_id(controller_data, "driver-1")
+            recovery_claim = wait_for_claim_by_driver(controller_data, recovery_driver_id, timeout_seconds=20)
+            stop_process(driver1_proc, driver1_log)
+            processes = [(proc, log_file) for proc, log_file in processes if proc.pid != driver1_proc.pid]
+            payload = wait_for_job(controller_url, job_id, timeout_seconds=180)
+        else:
+            payload = wait_for_job(controller_url, job_id)
 
         controller_drivers = load_json_rows(controller_data / "drivers")
         controller_missions = load_json_rows(controller_data / "missions")
         job_stages = payload["job"].get("stages", [])
         stage_names = [item.get("name") for item in job_stages if item.get("name")]
+        lease_driver_ids = {item.get("lease", {}).get("driver_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}}
+        lease_driver_ids.discard(None)
+        observed_driver_ids = set(lease_driver_ids)
+        if scenario == "recovery" and recovery_driver_id:
+            observed_driver_ids.add(recovery_driver_id)
+        drivers_participated = len(observed_driver_ids)
         checks = {
             "process_ready": "pass",
-            "drivers_healthy": "pass" if len(controller_drivers) == 2 and all(item.get("status") == "healthy" for item in controller_drivers) else "fail",
-            "units_distributed": "pass" if len({item.get("lease", {}).get("driver_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}}) >= 2 else "fail",
             "job_succeeded": "pass" if payload["job"]["status"] == "succeeded" else "fail",
             "visibility": "pass",
         }
+        if scenario == "recovery":
+            checks.update({
+                "drivers_registered": "pass" if len(controller_drivers) == 2 else "fail",
+                "units_distributed": "pass" if drivers_participated >= 2 else "fail",
+            })
+        else:
+            checks.update({
+                "drivers_healthy": "pass" if len(controller_drivers) == 2 and all(item.get("status") == "healthy" for item in controller_drivers) else "fail",
+                "units_distributed": "pass" if len(lease_driver_ids) >= 2 else "fail",
+            })
         if scenario == "multistage":
             mission_stage_names = {item.get("stage_name") for item in controller_missions if item.get("stage_name")}
             stage_totals = payload["result"].get("stage_totals", [])
@@ -458,20 +534,32 @@ def run_real():
                 "stage_barrier": "pass" if multistage_barrier_holds(job_stages) else "fail",
                 "stage_aggregation": "pass" if len(stage_totals) >= 2 else "fail",
             })
+        if scenario == "recovery":
+            reclaimed_units = count_reclaimed_units(
+                controller_missions,
+                recovery_claim.get("work_unit_id"),
+                int(recovery_claim.get("attempt", 0)),
+            )
+            checks.update({
+                "recovery_observed": "pass" if reclaimed_units >= 1 else "fail",
+                "recovery_job_succeeded": "pass" if payload["job"]["status"] == "succeeded" else "fail",
+            })
 
         driver_ids = [item["id"] for item in controller_drivers]
         # prove driver APIs are live
-        if driver_ids:
+        if driver_ids and scenario != "recovery":
             fetch_json(driver1_url + f"/api/driver/self?driver_id={urllib.parse.quote(driver_ids[0])}")
             fetch_json(driver2_url + f"/api/driver/self?driver_id={urllib.parse.quote(driver_ids[-1])}")
+        if scenario == "recovery":
+            driver2_id = wait_for_driver_id(controller_data, "driver-2")
+            fetch_json(driver2_url + f"/api/driver/self?driver_id={urllib.parse.quote(driver2_id)}")
         fetch_json(controller_url + f"/api/controller/jobs/{job_id}/timeline")
         fetch_json(controller_url + "/api/controller/jobs")
         if scenario == "multistage":
             for stage_name in stage_names:
                 fetch_json(controller_url + f"/api/controller/jobs/{job_id}/stages/{urllib.parse.quote(stage_name)}")
 
-        drivers_participated = len({item.get("lease", {}).get("driver_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}})
-        units_claimed = len({item.get("work_unit_id") for item in controller_missions if item.get("lease") and item.get("status") in {"claimed", "running", "succeeded", "failed"}})
+        units_claimed = len({item.get("work_unit_id") for item in controller_missions if item.get("work_unit_id")})
         summary = build_summary(
             backend=backend,
             scenario=scenario,
@@ -486,6 +574,8 @@ def run_real():
             byte_count=payload["result"]["metrics"]["byte_count"],
             stage_names=stage_names,
             stages_seen=len(stage_names),
+            recovery_observed=(reclaimed_units >= 1 if scenario == "recovery" else None),
+            reclaimed_units=reclaimed_units,
             checks=checks,
         )
         write_summary(summary)
