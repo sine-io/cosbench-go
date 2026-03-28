@@ -37,7 +37,23 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Check live compare credentials
+        id: preflight
+        shell: bash
+        run: |
+          mkdir -p .artifacts/legacy-live-compare
+          if [ -z "$COSBENCH_SMOKE_ENDPOINT" ] || [ -z "$COSBENCH_SMOKE_ACCESS_KEY" ] || [ -z "$COSBENCH_SMOKE_SECRET_KEY" ]; then
+            cat > .artifacts/legacy-live-compare/summary.json <<'EOF'
+          {"status":"skipped","reason":"missing COSBENCH_SMOKE_ENDPOINT / COSBENCH_SMOKE_ACCESS_KEY / COSBENCH_SMOKE_SECRET_KEY secrets"}
+          EOF
+            printf '%s\n' "missing live compare secrets; skipping rendered workload execution" > .artifacts/legacy-live-compare/run.log
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Render legacy fixture
+        if: steps.preflight.outputs.should_run == 'true'
         run: |
           mkdir -p .artifacts/legacy-live-compare
           python3 ./scripts/render_legacy_live_compare_workload.py \
@@ -51,6 +67,7 @@ jobs:
             '${{ inputs.path_style }}'
 
       - name: Run legacy live compare
+        if: steps.preflight.outputs.should_run == 'true'
         run: |
           GO=go go run ./cmd/cosbench-go .artifacts/legacy-live-compare/rendered-workload.xml -backend '${{ inputs.backend }}' -json -quiet -summary-file .artifacts/legacy-live-compare/summary.json \
             > .artifacts/legacy-live-compare/run.log 2>&1

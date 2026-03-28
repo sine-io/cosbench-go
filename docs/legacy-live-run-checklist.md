@@ -34,13 +34,14 @@ Treat the environment as ready when at least one of these is true:
 
 - the local shell already exposes the required `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`
 - the repository has the manual `Smoke Local` workflow available and you only need remote proof that the smoke path still works against a temporary local MinIO endpoint
+- the repository has the manual `Smoke S3` or `Legacy Live Compare` workflows available and the required `COSBENCH_SMOKE_*` repository secrets are configured
 
-Current readiness snapshot as of 2026-03-28:
+Current readiness snapshot as of 2026-03-29:
 
 - local shell: required `COSBENCH_SMOKE_*` variables not present
-- repository workflow availability: manual `Smoke Local` workflow exists for GitHub-hosted proof without external credentials
+- repository workflow availability: manual `Smoke Local`, `Smoke S3`, `Smoke S3 Matrix`, and `Legacy Live Compare` workflows exist
 - local live-endpoint evidence: a temporary MinIO server passed `make smoke-s3` on 2026-03-28 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
-- GitHub-hosted evidence: `Smoke Local` run `23674189806` and `Compare Local` run `23674204221` both passed on the current mainline head `0248e19`
+- GitHub-hosted evidence: `Smoke S3` runs `23692178816` (`s3`) and `23692209829` (`sio`) both passed on 2026-03-29; `Legacy Live Compare` is now expected to emit a clean `skipped` result when `COSBENCH_SMOKE_*` repository secrets are absent instead of failing with empty rendered config
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 
@@ -53,6 +54,11 @@ GO=$(which go || echo /snap/bin/go) make smoke-s3
 ```
 
 If you only need remote evidence that the local live-endpoint smoke path is still healthy on GitHub-hosted runners, trigger the manual `Smoke Local` workflow and use its job summary plus uploaded `smoke-local-output` artifact as the recorded precheck evidence.
+
+If you want to use `Legacy Live Compare`, treat it as a workload-level follow-on to this smoke precheck:
+
+- when repository live secrets are present, it renders the chosen legacy fixture and runs it against the selected backend
+- when repository live secrets are absent, it now records `skipped` in its artifact and job summary; treat that as an environment blocker, not as fixture failure
 
 Example GitHub workflow trigger:
 

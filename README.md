@@ -104,6 +104,8 @@ To trigger a manual legacy live compare run:
 gh workflow run "Legacy Live Compare" --repo sine-io/cosbench-go
 ```
 
+If the repository does not have `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY` configured, `Legacy Live Compare` now records a clean `skipped` result instead of failing with an empty rendered storage config.
+
 To trigger the SIO variant:
 
 ```bash
