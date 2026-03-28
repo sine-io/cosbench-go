@@ -22,7 +22,8 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - dedicated manual GitHub workflows for remote happy-path and recovery smoke
 - non-blocking GitHub workflows for remote happy-path and recovery matrices, including aggregate summaries and aggregate artifacts
 - a manual `Legacy Live Compare` workflow for rendering representative legacy XML against a real S3/SIO-compatible endpoint, with clean `skipped` behavior when repository live secrets are absent
-- `smoke-ready` / `smoke-ready-json` reporting for local readiness, real-endpoint smoke readiness, legacy live compare readiness, remote happy-path readiness, remote recovery readiness, and the latest known workflow run state across those surfaces
+- a manual `Legacy Live Compare Matrix` workflow for the representative `s3` and `sio` legacy samples, with per-row artifacts plus an aggregate summary/artifact and the same clean `skipped` behavior when repository live secrets are absent
+- `smoke-ready` / `smoke-ready-json` reporting for local readiness, real-endpoint smoke readiness, legacy live compare readiness, legacy live compare matrix readiness, remote happy-path readiness, remote recovery readiness, and the latest known workflow run state across those surfaces
 
 ## Closed for the Local v1 Boundary
 
@@ -38,6 +39,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - S3/SIO paths are implemented, but broader live-environment validation is still pending
 - auth, retry, and storage-specific edge behavior is not fully characterized against real systems
 - `Legacy Live Compare` now has a stable manual GitHub Actions entrypoint, but the latest repository-hosted run on 2026-03-28 (`23693647646`) was a successful `skipped` result because `COSBENCH_SMOKE_*` repository secrets were not configured; that proves workflow ergonomics, not endpoint parity
+- `Legacy Live Compare Matrix` now also has a stable manual GitHub Actions entrypoint, but the latest repository-hosted run on 2026-03-28 (`23694053504`) completed with both `s3` and `sio` rows in `skipped` state for the same missing-secret reason; that proves matrix ergonomics and aggregation, not endpoint parity
 - the current comparison checklist, runbook, and seed findings now live in `docs/legacy-comparison-matrix.md`
 
 ## Deferred By Design
