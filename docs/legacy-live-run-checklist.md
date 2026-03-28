@@ -40,6 +40,7 @@ Current readiness snapshot as of 2026-03-28:
 - local shell: required `COSBENCH_SMOKE_*` variables not present
 - repository workflow availability: manual `Smoke Local` workflow exists for GitHub-hosted proof without external credentials
 - local live-endpoint evidence: a temporary MinIO server passed `make smoke-s3` on 2026-03-28 for both `COSBENCH_SMOKE_BACKEND=s3` and `COSBENCH_SMOKE_BACKEND=sio` (with `COSBENCH_SMOKE_PATH_STYLE=true`)
+- GitHub-hosted evidence: `Smoke Local` run `23674189806` and `Compare Local` run `23674204221` both passed on the current mainline head `0248e19`
 
 If the environment is not available, keep matrix rows in their current pending/live-unverified state.
 

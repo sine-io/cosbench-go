@@ -120,8 +120,10 @@ Owner: Ross
 - Duplicate compare-local unsafe-path test removed and `make validate` restored to green
 - Curated compare-local evidence refreshed on 2026-03-27
 - Local worktree cleanup completed; stale and prune-candidate counts reduced to zero
-- Manual `Compare Local` workflow verified green on 2026-03-27 (`23641740849`) after GitHub Actions runtime upgrades
+- Manual `Compare Local` workflow verified green on 2026-03-28 (`23674204221`) on the current mainline head
 - Local MinIO-backed smoke evidence refreshed on 2026-03-28 for `s3` object lifecycle and `sio` multipart lifecycle
+- Manual `Smoke Local` workflow verified green on 2026-03-28 (`23674189806`) on the current mainline head
+- Mainline `CI` verified green on 2026-03-28 (`23674142477`) after the latest smoke and docs updates
 - In-repo checklist / board established
 
 ## Deferred
