@@ -47,6 +47,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON
 - That readiness view now also includes both `Legacy Live Compare` and `Legacy Live Compare Matrix` as separate legacy live-validation signals, distinct from the `Smoke S3` real-endpoint smoke path, and it now distinguishes workflow availability from the latest legacy live result (`executed`, `skipped`, or `failed`)
 - That same readiness view now also includes `Smoke S3 Matrix` as a separate real-endpoint matrix signal, distinct from the single-run `Smoke S3` path
+- Real-endpoint smoke signals now also distinguish workflow availability from the latest real smoke result (`executed`, `skipped`, or `failed`)
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
