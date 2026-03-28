@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sine-io/cosbench-go/internal/domain"
+	legacyexec "github.com/sine-io/cosbench-go/internal/domain/execution"
 	"github.com/sine-io/cosbench-go/internal/executor"
 	"github.com/sine-io/cosbench-go/internal/infrastructure/config"
 	storagefactory "github.com/sine-io/cosbench-go/internal/infrastructure/storage"
@@ -22,6 +23,7 @@ type Manager struct {
 	jobs      map[string]domain.Job
 	results   map[string]domain.JobResult
 	events    map[string][]domain.JobEvent
+	timelines map[string]domain.JobTimeline
 	endpoints map[string]domain.EndpointConfig
 	running   map[string]context.CancelFunc
 }
@@ -32,6 +34,7 @@ func New(store *snapshot.Store) (*Manager, error) {
 		jobs:      map[string]domain.Job{},
 		results:   map[string]domain.JobResult{},
 		events:    map[string][]domain.JobEvent{},
+		timelines: map[string]domain.JobTimeline{},
 		endpoints: map[string]domain.EndpointConfig{},
 		running:   map[string]context.CancelFunc{},
 	}
@@ -79,6 +82,9 @@ func (m *Manager) loadSnapshots() error {
 		}
 		if events, err := m.store.LoadEvents(job.ID); err == nil {
 			m.events[job.ID] = events
+		}
+		if timeline, err := m.store.LoadTimeline(job.ID); err == nil {
+			m.timelines[job.ID] = timeline
 		}
 	}
 	return nil
@@ -252,6 +258,8 @@ func (m *Manager) runJob(ctx context.Context, jobID string) {
 	copy(stageStates, job.Stages)
 	stageTotals := make([]domain.StageState, 0, len(job.Workload.Workflow.Stages))
 	var overall []domain.MetricsSummary
+	jobSamples := make([]legacyexec.Sample, 0)
+	stageTimelines := make(map[string][]domain.TimelinePoint, len(job.Workload.Workflow.Stages))
 	adapters := storagefactory.NewRunAdapters()
 	defer adapters.Close()
 
@@ -264,6 +272,7 @@ func (m *Manager) runJob(ctx context.Context, jobID string) {
 
 		stageSummaries := make([]domain.MetricsSummary, 0, len(stage.Works))
 		workSummaries := make([]domain.WorkSummary, 0, len(stage.Works))
+		stageSamples := make([]legacyexec.Sample, 0)
 		for _, work := range stage.Works {
 			storageType, rawConfig := resolveStorage(work.Storage, endpoint)
 			if storageType == "" {
@@ -284,8 +293,11 @@ func (m *Manager) runJob(ctx context.Context, jobID string) {
 				if errors.Is(workResult.Err, context.Canceled) {
 					stageSummaries = append(stageSummaries, workResult.Summary)
 					workSummaries = append(workSummaries, domain.WorkSummary{Name: work.Name, Metrics: workResult.Summary, ErrorMessage: "job cancelled by user"})
+					stageSamples = append(stageSamples, workResult.Samples...)
+					jobSamples = append(jobSamples, workResult.Samples...)
 					stageState.WorkResults = workSummaries
 					stageState.Metrics = reporting.Merge(stageSummaries...)
+					stageTimelines[stage.Name] = reporting.BuildTimeline(stageSamples, time.Second)
 					m.cancelJob(jobID, stageStates, stageIndex, "job cancelled by user")
 					return
 				}
@@ -295,6 +307,8 @@ func (m *Manager) runJob(ctx context.Context, jobID string) {
 			}
 			stageSummaries = append(stageSummaries, workResult.Summary)
 			workSummaries = append(workSummaries, domain.WorkSummary{Name: work.Name, Metrics: workResult.Summary})
+			stageSamples = append(stageSamples, workResult.Samples...)
+			jobSamples = append(jobSamples, workResult.Samples...)
 			m.appendEvent(jobID, domain.EventLevelInfo, fmt.Sprintf("work %s finished", work.Name))
 		}
 		stageEnd := time.Now().UTC()
@@ -304,6 +318,7 @@ func (m *Manager) runJob(ctx context.Context, jobID string) {
 		stageState.WorkResults = workSummaries
 		stageTotals = append(stageTotals, *stageState)
 		overall = append(overall, stageState.Metrics)
+		stageTimelines[stage.Name] = reporting.BuildTimeline(stageSamples, time.Second)
 		m.updateJobStages(jobID, stageStates, domain.EventLevelInfo, fmt.Sprintf("stage %s finished", stage.Name))
 	}
 
@@ -327,6 +342,12 @@ func (m *Manager) runJob(ctx context.Context, jobID string) {
 	}
 	m.jobs[jobID] = job
 	m.results[jobID] = domain.JobResult{JobID: jobID, UpdatedAt: finished, Metrics: job.Metrics, StageTotals: stageTotals}
+	m.timelines[jobID] = domain.JobTimeline{
+		JobID:     jobID,
+		UpdatedAt: updateTimelineUpdatedAt(finished, stageTimelines, reporting.BuildTimeline(jobSamples, time.Second)),
+		Job:       reporting.BuildTimeline(jobSamples, time.Second),
+		Stages:    cloneStageTimelines(stageTimelines),
+	}
 	m.appendEventLocked(jobID, domain.EventLevelInfo, "job finished")
 	m.persistLocked(jobID)
 	m.mu.Unlock()
@@ -402,6 +423,9 @@ func (m *Manager) persistLocked(jobID string) {
 	_ = m.store.SaveJob(m.jobs[jobID])
 	if result, ok := m.results[jobID]; ok {
 		_ = m.store.SaveResult(result)
+	}
+	if timeline, ok := m.timelines[jobID]; ok {
+		_ = m.store.SaveTimeline(timeline)
 	}
 	_ = m.store.SaveEvents(jobID, m.events[jobID])
 }

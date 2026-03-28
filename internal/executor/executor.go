@@ -22,6 +22,7 @@ type StageResult struct {
 type WorkResult struct {
 	WorkName string
 	Summary domain.MetricsSummary
+	Samples []legacyexec.Sample
 	Err     error
 }
 
@@ -30,9 +31,9 @@ func (e StageExecutor) RunWork(ctx context.Context, work domain.Work) WorkResult
 	result := engine.Run(ctx)
 	summary := reporting.Summarize(result.Samples)
 	if result.Err != nil {
-		return WorkResult{WorkName: work.Name, Summary: summary, Err: result.Err}
+		return WorkResult{WorkName: work.Name, Summary: summary, Samples: result.Samples, Err: result.Err}
 	}
-	return WorkResult{WorkName: work.Name, Summary: summary}
+	return WorkResult{WorkName: work.Name, Summary: summary, Samples: result.Samples}
 }
 
 func (e StageExecutor) RunStage(ctx context.Context, stage domain.Stage) StageResult {

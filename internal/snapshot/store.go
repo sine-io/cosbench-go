@@ -22,6 +22,7 @@ func New(root string) (*Store, error) {
 		filepath.Join(root, "results"),
 		filepath.Join(root, "events"),
 		filepath.Join(root, "endpoints"),
+		filepath.Join(root, "timelines"),
 	}
 	for _, path := range paths {
 		if err := os.MkdirAll(path, 0o755); err != nil {
@@ -45,6 +46,10 @@ func (s *Store) SaveEndpoint(endpoint domain.EndpointConfig) error {
 
 func (s *Store) SaveEvents(jobID string, events []domain.JobEvent) error {
 	return writeJSON(filepath.Join(s.root, "events", jobID+".json"), events)
+}
+
+func (s *Store) SaveTimeline(timeline domain.JobTimeline) error {
+	return writeJSON(filepath.Join(s.root, "timelines", timeline.JobID+".json"), timeline)
 }
 
 func (s *Store) LoadJobs() ([]domain.Job, error) {
@@ -81,6 +86,12 @@ func (s *Store) LoadEvents(jobID string) ([]domain.JobEvent, error) {
 		return nil, err
 	}
 	return events, nil
+}
+
+func (s *Store) LoadTimeline(jobID string) (domain.JobTimeline, error) {
+	var timeline domain.JobTimeline
+	err := readJSON(filepath.Join(s.root, "timelines", jobID+".json"), &timeline)
+	return timeline, err
 }
 
 func writeJSON(path string, value any) error {
