@@ -49,8 +49,10 @@ type Mission struct {
 	JobID     string         `json:"job_id"`
 	StageName string         `json:"stage_name"`
 	WorkName  string         `json:"work_name"`
+	Work      Work           `json:"work"`
 	Status    MissionStatus  `json:"status"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
+	ErrorMessage string      `json:"error_message,omitempty"`
 	Lease     *MissionLease  `json:"lease,omitempty"`
 }

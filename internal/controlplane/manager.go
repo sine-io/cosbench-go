@@ -26,6 +26,7 @@ type Manager struct {
 	timelines map[string]domain.JobTimeline
 	drivers   map[string]domain.DriverNode
 	missions  map[string]domain.Mission
+	missionSamples map[string][]legacyexec.Sample
 	endpoints map[string]domain.EndpointConfig
 	running   map[string]context.CancelFunc
 }
@@ -39,6 +40,7 @@ func New(store *snapshot.Store) (*Manager, error) {
 		timelines: map[string]domain.JobTimeline{},
 		drivers:   map[string]domain.DriverNode{},
 		missions:  map[string]domain.Mission{},
+		missionSamples: map[string][]legacyexec.Sample{},
 		endpoints: map[string]domain.EndpointConfig{},
 		running:   map[string]context.CancelFunc{},
 	}

@@ -88,6 +88,7 @@ func (h *Handler) routes() {
 	h.mux.HandleFunc("/api/driver/register", h.driverRegister)
 	h.mux.HandleFunc("/api/driver/heartbeat", h.driverHeartbeat)
 	h.mux.HandleFunc("/api/driver/missions/claim", h.driverClaimMission)
+	h.mux.HandleFunc("/api/driver/missions/", h.driverMissionRoute)
 	h.mux.HandleFunc("/controller/matrix", h.controllerMatrixPage)
 	h.mux.HandleFunc("/controller/jobs/", h.controllerJobPageRoute)
 	h.mux.HandleFunc("/workloads/new", h.workloadForm)
