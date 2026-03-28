@@ -29,6 +29,10 @@ SMOKE_S3_WORKFLOW = "Smoke S3"
 SMOKE_S3_MATRIX_WORKFLOW = "Smoke S3 Matrix"
 LEGACY_LIVE_WORKFLOW = "Legacy Live Compare"
 LEGACY_LIVE_MATRIX_WORKFLOW = "Legacy Live Compare Matrix"
+REMOTE_SMOKE_LOCAL_WORKFLOW = "Remote Smoke Local"
+REMOTE_SMOKE_MATRIX_WORKFLOW = "Remote Smoke Matrix"
+REMOTE_SMOKE_RECOVERY_WORKFLOW = "Remote Smoke Recovery"
+REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW = "Remote Smoke Recovery Matrix"
 LEGACY_STEP_NAME = "Run legacy live compare"
 
 
@@ -249,6 +253,67 @@ def load_real_endpoint_details(repo, workflow_latest):
     return details, True, ""
 
 
+def load_remote_workflow_details(repo, workflow_latest):
+    if "SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON" in os.environ:
+        details = json.loads(os.environ["SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON"])
+        return {
+            REMOTE_SMOKE_LOCAL_WORKFLOW: details.get(REMOTE_SMOKE_LOCAL_WORKFLOW),
+            REMOTE_SMOKE_MATRIX_WORKFLOW: details.get(REMOTE_SMOKE_MATRIX_WORKFLOW),
+            REMOTE_SMOKE_RECOVERY_WORKFLOW: details.get(REMOTE_SMOKE_RECOVERY_WORKFLOW),
+            REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW: details.get(REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW),
+        }, True, ""
+
+    details = {}
+
+    single_targets = [
+        (REMOTE_SMOKE_LOCAL_WORKFLOW, "remote-smoke-output"),
+        (REMOTE_SMOKE_RECOVERY_WORKFLOW, "remote-smoke-recovery-summary"),
+    ]
+    for workflow_name, artifact_name in single_targets:
+        latest = workflow_latest.get(workflow_name) or {}
+        run_id = latest.get("database_id")
+        if not run_id:
+            details[workflow_name] = None
+            continue
+        with tempfile.TemporaryDirectory(prefix="smoke-ready-remote-smoke-") as tmpdir:
+            proc = run("gh", "run", "download", str(run_id), "--repo", repo, "-n", artifact_name, "-D", tmpdir)
+            if proc.returncode == 0:
+                summary_path = os.path.join(tmpdir, "summary.json")
+                if not os.path.exists(summary_path):
+                    summary_path = os.path.join(tmpdir, "remote-smoke", "summary.json")
+                if os.path.exists(summary_path):
+                    with open(summary_path, "r", encoding="utf-8") as f:
+                        details[workflow_name] = json.load(f)
+            elif latest.get("status") == "completed":
+                return {}, False, (proc.stderr or proc.stdout).strip()
+        if workflow_name not in details:
+            details[workflow_name] = None
+
+    matrix_targets = [
+        (REMOTE_SMOKE_MATRIX_WORKFLOW, "remote-smoke-matrix-aggregate"),
+        (REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW, "remote-smoke-recovery-matrix-aggregate"),
+    ]
+    for workflow_name, artifact_name in matrix_targets:
+        latest = workflow_latest.get(workflow_name) or {}
+        run_id = latest.get("database_id")
+        if not run_id:
+            details[workflow_name] = None
+            continue
+        with tempfile.TemporaryDirectory(prefix="smoke-ready-remote-smoke-matrix-") as tmpdir:
+            proc = run("gh", "run", "download", str(run_id), "--repo", repo, "-n", artifact_name, "-D", tmpdir)
+            if proc.returncode == 0:
+                summary_path = os.path.join(tmpdir, "summary.json")
+                if os.path.exists(summary_path):
+                    with open(summary_path, "r", encoding="utf-8") as f:
+                        details[workflow_name] = json.load(f)
+            elif latest.get("status") == "completed":
+                return {}, False, (proc.stderr or proc.stdout).strip()
+        if workflow_name not in details:
+            details[workflow_name] = None
+
+    return details, True, ""
+
+
 def step_state(job, step_name):
     for step in job.get("steps", []):
         if step.get("name") == step_name:
@@ -397,6 +462,49 @@ def smoke_matrix_result(latest, detail):
     return "partial"
 
 
+def remote_single_result(latest, detail):
+    if not latest:
+        return "none"
+    if latest.get("status") != "completed":
+        return "pending"
+    if not detail:
+        return "failed"
+    if detail.get("overall") == "pass":
+        return "executed"
+    if detail.get("overall") == "fail":
+        return "failed"
+    return "failed"
+
+
+def remote_matrix_result(latest, detail):
+    if not latest:
+        return "none"
+    if latest.get("status") != "completed":
+        return "pending"
+    if not detail:
+        return "failed"
+    overall = detail.get("overall", "")
+    if overall == "pass":
+        return "executed"
+    if overall == "partial":
+        return "partial"
+    if overall == "fail":
+        return "failed"
+    return "failed"
+
+
+def pick_latest_result(workflow_latest, names):
+    latest_name = None
+    latest_created_at = ""
+    for name in names:
+        row = workflow_latest.get(name) or {}
+        created_at = row.get("created_at", "")
+        if created_at >= latest_created_at:
+            latest_name = name
+            latest_created_at = created_at
+    return latest_name
+
+
 def build_payload():
     repo, repo_error = resolve_repo()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
@@ -407,6 +515,7 @@ def build_payload():
     workflow_latest, workflow_runs_accessible, workflow_runs_error = load_workflow_latest_runs(repo)
     legacy_details, legacy_details_accessible, legacy_details_error = load_legacy_workflow_details(repo, workflow_latest)
     real_endpoint_details, real_endpoint_details_accessible, real_endpoint_details_error = load_real_endpoint_details(repo, workflow_latest)
+    remote_details, remote_details_accessible, remote_details_error = load_remote_workflow_details(repo, workflow_latest)
 
     repo_secret_presence = {name: name in repo_secret_names for name in REQUIRED_SECRETS}
     workflow_presence = {name: name in workflow_names for name in WORKFLOW_NAMES}
@@ -421,18 +530,24 @@ def build_payload():
     real_endpoint_matrix_latest_result = smoke_matrix_result(workflow_latest.get(SMOKE_S3_MATRIX_WORKFLOW), real_endpoint_details.get(SMOKE_S3_MATRIX_WORKFLOW))
     legacy_live_latest_result = classify_single_legacy_result(workflow_latest.get(LEGACY_LIVE_WORKFLOW), legacy_details.get(LEGACY_LIVE_WORKFLOW))
     legacy_live_matrix_latest_result = classify_matrix_legacy_result(workflow_latest.get(LEGACY_LIVE_MATRIX_WORKFLOW), legacy_details.get(LEGACY_LIVE_MATRIX_WORKFLOW))
+    remote_happy_latest_name = pick_latest_result(workflow_latest, [REMOTE_SMOKE_LOCAL_WORKFLOW, REMOTE_SMOKE_MATRIX_WORKFLOW])
+    remote_recovery_latest_name = pick_latest_result(workflow_latest, [REMOTE_SMOKE_RECOVERY_WORKFLOW, REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW])
+    remote_happy_latest_result = (
+        remote_single_result(workflow_latest.get(REMOTE_SMOKE_LOCAL_WORKFLOW), remote_details.get(REMOTE_SMOKE_LOCAL_WORKFLOW))
+        if remote_happy_latest_name == REMOTE_SMOKE_LOCAL_WORKFLOW
+        else remote_matrix_result(workflow_latest.get(REMOTE_SMOKE_MATRIX_WORKFLOW), remote_details.get(REMOTE_SMOKE_MATRIX_WORKFLOW))
+    )
+    remote_recovery_latest_result = (
+        remote_single_result(workflow_latest.get(REMOTE_SMOKE_RECOVERY_WORKFLOW), remote_details.get(REMOTE_SMOKE_RECOVERY_WORKFLOW))
+        if remote_recovery_latest_name == REMOTE_SMOKE_RECOVERY_WORKFLOW
+        else remote_matrix_result(workflow_latest.get(REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW), remote_details.get(REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW))
+    )
     real_endpoint_latest_success = real_endpoint_latest_result == "executed"
     real_endpoint_matrix_latest_success = real_endpoint_matrix_latest_result == "executed"
     legacy_live_latest_success = legacy_live_latest_result == "executed"
     legacy_live_matrix_latest_success = legacy_live_matrix_latest_result == "executed"
-    remote_happy_latest_success = any(
-        (workflow_latest.get(name) or {}).get("conclusion") == "success"
-        for name in ("Remote Smoke Local", "Remote Smoke Matrix")
-    )
-    remote_recovery_latest_success = any(
-        (workflow_latest.get(name) or {}).get("conclusion") == "success"
-        for name in ("Remote Smoke Recovery", "Remote Smoke Recovery Matrix")
-    )
+    remote_happy_latest_success = remote_happy_latest_result == "executed"
+    remote_recovery_latest_success = remote_recovery_latest_result == "executed"
     ready = local_ready or local_workflow_ready
 
     blockers = []
@@ -450,6 +565,8 @@ def build_payload():
         blockers.append(f"unable to query workflow runs: {workflow_runs_error}")
     if workflow_runs_accessible and not real_endpoint_details_accessible and real_endpoint_details_error:
         blockers.append(f"unable to query real-endpoint workflow details: {real_endpoint_details_error}")
+    if workflow_runs_accessible and not remote_details_accessible and remote_details_error:
+        blockers.append(f"unable to query remote workflow details: {remote_details_error}")
     if workflow_runs_accessible and not legacy_details_accessible and legacy_details_error:
         blockers.append(f"unable to query legacy workflow details: {legacy_details_error}")
 
@@ -490,6 +607,8 @@ def build_payload():
             "legacy_live_matrix_latest_result": legacy_live_matrix_latest_result,
             "remote_happy_latest_success": remote_happy_latest_success,
             "remote_recovery_latest_success": remote_recovery_latest_success,
+            "remote_happy_latest_result": remote_happy_latest_result,
+            "remote_recovery_latest_result": remote_recovery_latest_result,
             "ready": ready,
         },
         "blockers": blockers,
@@ -575,6 +694,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Result: `{payload['summary']['legacy_live_matrix_latest_result']}`")
     print(f"- Remote Happy Latest Success: `{yes_no(payload['summary']['remote_happy_latest_success'])}`")
     print(f"- Remote Recovery Latest Success: `{yes_no(payload['summary']['remote_recovery_latest_success'])}`")
+    print(f"- Remote Happy Latest Result: `{payload['summary']['remote_happy_latest_result']}`")
+    print(f"- Remote Recovery Latest Result: `{payload['summary']['remote_recovery_latest_result']}`")
     print(f"- Overall ready: `{yes_no(payload['summary']['ready'])}`")
     print()
     print("## Blockers")

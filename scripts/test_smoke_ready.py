@@ -106,6 +106,34 @@ def run_helper(*args, env_overrides=None):
                     },
                 ]
             },
+            "Remote Smoke Local": {
+                "summary": {
+                    "overall": "pass",
+                    "job_status": "succeeded",
+                }
+            },
+            "Remote Smoke Matrix": {
+                "rows": [
+                    {"backend": "s3", "scenario": "single", "status": "present", "summary": {"overall": "pass"}},
+                    {"backend": "s3", "scenario": "multistage", "status": "present", "summary": {"overall": "pass"}},
+                    {"backend": "sio", "scenario": "single", "status": "present", "summary": {"overall": "pass"}},
+                    {"backend": "sio", "scenario": "multistage", "status": "present", "summary": {"overall": "pass"}},
+                ],
+                "overall": "pass",
+            },
+            "Remote Smoke Recovery": {
+                "summary": {
+                    "overall": "pass",
+                    "job_status": "succeeded",
+                }
+            },
+            "Remote Smoke Recovery Matrix": {
+                "rows": [
+                    {"backend": "s3", "scenario": "recovery", "status": "present", "summary": {"overall": "pass"}},
+                    {"backend": "sio", "scenario": "recovery", "status": "present", "summary": {"overall": "pass"}},
+                ],
+                "overall": "pass",
+            },
             "Legacy Live Compare": {
                 "result": {
                     "result": "skipped",
@@ -173,8 +201,10 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_latest_success"] is False
     assert summary["legacy_live_latest_result"] == "skipped"
     assert summary["legacy_live_matrix_latest_result"] == "skipped"
-    assert "remote_happy_latest_success" in summary
-    assert "remote_recovery_latest_success" in summary
+    assert summary["remote_happy_latest_success"] is True
+    assert summary["remote_recovery_latest_success"] is True
+    assert summary["remote_happy_latest_result"] == "executed"
+    assert summary["remote_recovery_latest_result"] == "executed"
     assert "ready" in summary
 
 
@@ -207,6 +237,8 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Legacy Live Matrix Latest Success" in text
     assert "Legacy Live Latest Result" in text
     assert "Legacy Live Matrix Latest Result" in text
+    assert "Remote Happy Latest Result" in text
+    assert "Remote Recovery Latest Result" in text
     assert "skipped" in text
     assert "Remote Happy Latest Success" in text
     assert "Remote Recovery Latest Success" in text
