@@ -37,12 +37,12 @@ func (a *App) ProcessCombinedMission(ctx context.Context) (bool, error) {
 	defer server.Close()
 	if a.loopbackAgent == nil {
 		a.loopbackAgent = &driveragent.Agent{
-			Client: &driveragent.HTTPClient{BaseURL: server.URL},
+			Client: &driveragent.HTTPClient{BaseURL: server.URL, SharedToken: a.DriverSharedToken},
 			Name:   "combined-loopback",
 			Mode:   domain.DriverModeCombined,
 		}
 	} else {
-		a.loopbackAgent.Client = &driveragent.HTTPClient{BaseURL: server.URL}
+		a.loopbackAgent.Client = &driveragent.HTTPClient{BaseURL: server.URL, SharedToken: a.DriverSharedToken}
 	}
 	return a.loopbackAgent.ProcessOne(ctx)
 }

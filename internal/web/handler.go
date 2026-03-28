@@ -21,6 +21,7 @@ type Handler struct {
 	manager   *controlplane.Manager
 	templates map[string]*template.Template
 	mux       *http.ServeMux
+	driverSharedToken string
 }
 
 type pageData struct {
@@ -47,8 +48,12 @@ type pageData struct {
 	RawXML        string
 }
 
-func NewHandler(manager *controlplane.Manager, viewDir string) (*Handler, error) {
-	h := &Handler{manager: manager, mux: http.NewServeMux()}
+func NewHandler(manager *controlplane.Manager, viewDir string, driverSharedToken ...string) (*Handler, error) {
+	token := ""
+	if len(driverSharedToken) > 0 {
+		token = driverSharedToken[0]
+	}
+	h := &Handler{manager: manager, mux: http.NewServeMux(), driverSharedToken: token}
 	if err := h.loadTemplates(viewDir); err != nil {
 		return nil, err
 	}

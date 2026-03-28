@@ -309,6 +309,10 @@ func TestDriverLogsPageAndSharedNavigation(t *testing.T) {
 }
 
 func newTestHandler(t *testing.T) *Handler {
+	return newTestHandlerWithToken(t, "")
+}
+
+func newTestHandlerWithToken(t *testing.T, token string) *Handler {
 	t.Helper()
 	store, err := snapshot.New(t.TempDir())
 	if err != nil {
@@ -326,7 +330,7 @@ func newTestHandler(t *testing.T) *Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h, err := NewHandler(mgr, filepath.Join(root, "web", "templates"))
+	h, err := NewHandler(mgr, filepath.Join(root, "web", "templates"), token)
 	if err != nil {
 		t.Fatal(err)
 	}

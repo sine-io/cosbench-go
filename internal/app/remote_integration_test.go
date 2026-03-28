@@ -15,7 +15,7 @@ func TestNewAppSupportsExplicitModes(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, mode := range []Mode{ModeControllerOnly, ModeDriverOnly, ModeCombined} {
-		application, err := New(Config{DataDir: t.TempDir(), ViewDir: viewDir, Mode: mode})
+		application, err := New(Config{DataDir: t.TempDir(), ViewDir: viewDir, Mode: mode, DriverSharedToken: "shared-token"})
 		if err != nil {
 			t.Fatalf("New(%s): %v", mode, err)
 		}
@@ -33,7 +33,7 @@ func TestCombinedModeProcessesMissionViaLoopback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	application, err := New(Config{DataDir: t.TempDir(), ViewDir: viewDir, Mode: ModeCombined})
+	application, err := New(Config{DataDir: t.TempDir(), ViewDir: viewDir, Mode: ModeCombined, DriverSharedToken: "shared-token"})
 	if err != nil {
 		t.Fatalf("New(): %v", err)
 	}

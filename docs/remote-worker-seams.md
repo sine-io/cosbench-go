@@ -52,5 +52,16 @@ The repository now has a first remote-capable skeleton:
 - a driver agent that can claim work, execute it locally, upload samples/events, and complete a mission
 - runtime modes for `controller-only`, `driver-only`, and `combined`
 - a `combined` loopback path that exercises the same HTTP driver protocol in-process for tests
+- a shared bearer token protecting driver write endpoints
 
 The remaining gaps are now about deepening the protocol rather than introducing it from scratch.
+
+## Current Auth Model
+
+The current controller/driver protocol now uses one shared token for driver write operations:
+
+- configure the controller with `COSBENCH_DRIVER_SHARED_TOKEN`
+- drivers send `Authorization: Bearer <token>` on write requests
+- `combined` mode injects the same token into the loopback driver agent automatically
+
+This is intentionally minimal and exists to protect the machine-to-machine write surface until a stronger credential model is needed.

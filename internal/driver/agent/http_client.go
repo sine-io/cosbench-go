@@ -15,6 +15,7 @@ import (
 type HTTPClient struct {
 	BaseURL    string
 	HTTPClient *http.Client
+	SharedToken string
 }
 
 func (c *HTTPClient) client() *http.Client {
@@ -118,5 +119,8 @@ func (c *HTTPClient) doPost(path string, payload any) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if strings.TrimSpace(c.SharedToken) != "" {
+		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(c.SharedToken))
+	}
 	return c.client().Do(req)
 }
