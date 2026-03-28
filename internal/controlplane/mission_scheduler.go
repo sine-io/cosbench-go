@@ -20,7 +20,10 @@ func (m *Manager) ScheduleJobStage(jobID string) ([]domain.Mission, error) {
 	if len(job.Workload.Workflow.Stages) == 0 {
 		return nil, errors.New("job has no stages")
 	}
-	stage := job.Workload.Workflow.Stages[0]
+	if job.ActiveStageIndex < 0 || job.ActiveStageIndex >= len(job.Workload.Workflow.Stages) {
+		return nil, errors.New("job active stage is out of range")
+	}
+	stage := job.Workload.Workflow.Stages[job.ActiveStageIndex]
 	endpoint, _ := m.GetEndpoint(job.EndpointID)
 	now := time.Now().UTC()
 	missions := make([]domain.Mission, 0, len(stage.Works))
@@ -151,7 +154,7 @@ func (m *Manager) expireLeasesLocked(now time.Time) {
 		affectedJobs[mission.JobID] = struct{}{}
 	}
 	for jobID := range affectedJobs {
-		m.refreshJobFromMissionsLocked(jobID)
+		_ = m.refreshJobFromMissionsLocked(jobID)
 	}
 }
 
@@ -224,12 +227,13 @@ func (m *Manager) AppendMissionSamplesBatch(missionID string, batchID string, sa
 
 func (m *Manager) CompleteMission(missionID string, status domain.MissionStatus, errorMessage string) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	mission, ok := m.missions[missionID]
 	if !ok {
+		m.mu.Unlock()
 		return errors.New("mission not found")
 	}
 	if mission.Status == domain.MissionStatusSucceeded || mission.Status == domain.MissionStatusFailed {
+		m.mu.Unlock()
 		return nil
 	}
 	mission.Status = status
@@ -259,16 +263,21 @@ func (m *Manager) CompleteMission(missionID string, status domain.MissionStatus,
 		}
 	}
 	if err := m.store.SaveMission(mission); err != nil {
+		m.mu.Unlock()
 		return err
 	}
-	m.refreshJobFromMissionsLocked(mission.JobID)
+	progressed := m.refreshJobFromMissionsLocked(mission.JobID)
+	m.mu.Unlock()
+	if progressed {
+		_, _ = m.ScheduleJobStage(mission.JobID)
+	}
 	return nil
 }
 
-func (m *Manager) refreshJobFromMissionsLocked(jobID string) {
+func (m *Manager) refreshJobFromMissionsLocked(jobID string) bool {
 	job, ok := m.jobs[jobID]
 	if !ok {
-		return
+		return false
 	}
 	stageStates := domain.NewStageStates(job.Workload)
 	stageTotals := make([]domain.StageState, 0, len(job.Workload.Workflow.Stages))
@@ -277,6 +286,7 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) {
 	anyRunning := false
 	anyFailed := false
 	allSucceeded := len(job.Workload.Workflow.Stages) > 0
+	progressed := false
 
 	for stageIndex, stage := range job.Workload.Workflow.Stages {
 		stageState := stageStates[stageIndex]
@@ -353,14 +363,22 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) {
 
 	job.Stages = stageStates
 	job.Metrics = reporting.Merge(extractStageMetrics(stageStates)...)
-	switch {
-	case anyFailed:
+	activeStage := job.ActiveStageIndex
+	if anyFailed {
 		job.Status = domain.JobStatusFailed
-	case allSucceeded:
+	} else if activeStage >= 0 && activeStage < len(stageStates) && stageStates[activeStage].Status == domain.JobStatusSucceeded {
+		if activeStage+1 < len(job.Workload.Workflow.Stages) {
+			job.ActiveStageIndex++
+			job.Status = domain.JobStatusRunning
+			progressed = true
+		} else {
+			job.Status = domain.JobStatusSucceeded
+		}
+	} else if allSucceeded {
 		job.Status = domain.JobStatusSucceeded
-	case anyRunning:
+	} else if anyRunning {
 		job.Status = domain.JobStatusRunning
-	default:
+	} else {
 		job.Status = domain.JobStatusCreated
 	}
 	m.jobs[jobID] = job
@@ -377,6 +395,7 @@ func (m *Manager) refreshJobFromMissionsLocked(jobID string) {
 		Stages:    cloneStageTimelines(stageTimelines),
 	}
 	m.persistLocked(jobID)
+	return progressed
 }
 
 func findMissionForWork(missions map[string]domain.Mission, jobID, stageName, workName string) (domain.Mission, bool) {

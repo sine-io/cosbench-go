@@ -33,6 +33,7 @@ type Job struct {
 	StartedAt    *time.Time    `json:"started_at,omitempty"`
 	FinishedAt   *time.Time    `json:"finished_at,omitempty"`
 	ErrorMessage string        `json:"error_message,omitempty"`
+	ActiveStageIndex int       `json:"active_stage_index,omitempty"`
 	Stages       []StageState  `json:"stages"`
 	Metrics      MetricsSummary `json:"metrics"`
 }

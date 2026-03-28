@@ -1,6 +1,7 @@
 package controlplane
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -469,5 +470,151 @@ func TestSuccessfulUnitsAggregateBackToWorkStageAndJob(t *testing.T) {
 	}
 	if result.StageTotals[0].Status != domain.JobStatusSucceeded {
 		t.Fatalf("stage totals = %#v", result.StageTotals)
+	}
+}
+
+func TestRemoteJobProgressesToNextStageOnlyAfterCurrentStageSucceeds(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr.SetRemoteScheduling(true)
+	driverA, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	driverB, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-b", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-multistage">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="stage-a">
+      <work name="fanout-a" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="stage-b">
+      <work name="fanout-b" workers="2" totalOps="2">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(3,4);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.StartJob(context.Background(), job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	firstA, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-a/stage-a): mission=%#v ok=%v err=%v", firstA, ok, err)
+	}
+	firstB, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-b/stage-a): mission=%#v ok=%v err=%v", firstB, ok, err)
+	}
+	if firstA.StageName != "stage-a" || firstB.StageName != "stage-a" {
+		t.Fatalf("unexpected first-stage claims: %#v %#v", firstA, firstB)
+	}
+	if _, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second); err != nil || ok {
+		t.Fatalf("expected no stage-b claim before stage-a completion, ok=%v err=%v", ok, err)
+	}
+
+	sampleA := []legacyexec.Sample{{Timestamp: time.Now().UTC(), OpType: "write", OpCount: 1, ByteCount: 1000, TotalTimeMs: 10}}
+	sampleB := []legacyexec.Sample{{Timestamp: time.Now().UTC(), OpType: "write", OpCount: 1, ByteCount: 1000, TotalTimeMs: 10}}
+	if err := mgr.AppendMissionSamplesBatch(firstA.ID, "a-1", sampleA); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.AppendMissionSamplesBatch(firstB.ID, "b-1", sampleB); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.CompleteMission(firstA.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.CompleteMission(firstB.ID, domain.MissionStatusSucceeded, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	secondA, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-a/stage-b): mission=%#v ok=%v err=%v", secondA, ok, err)
+	}
+	secondB, ok, err := mgr.ClaimMission(driverB.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-b/stage-b): mission=%#v ok=%v err=%v", secondB, ok, err)
+	}
+	if secondA.StageName != "stage-b" || secondB.StageName != "stage-b" {
+		t.Fatalf("unexpected second-stage claims: %#v %#v", secondA, secondB)
+	}
+}
+
+func TestRemoteJobDoesNotProgressPastFailedStage(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr.SetRemoteScheduling(true)
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-stop-on-failure">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="stage-a">
+      <work name="fanout-a" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+    <workstage name="stage-b">
+      <work name="fanout-b" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(2,2);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.StartJob(context.Background(), job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	for attemptNo := 1; attemptNo <= maxAttemptsPerWorkUnit; attemptNo++ {
+		claim, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second)
+		if err != nil || !ok {
+			t.Fatalf("ClaimMission attempt %d: mission=%#v ok=%v err=%v", attemptNo, claim, ok, err)
+		}
+		if claim.StageName != "stage-a" {
+			t.Fatalf("unexpected stage claim: %#v", claim)
+		}
+		if err := mgr.CompleteMission(claim.ID, domain.MissionStatusFailed, "boom"); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if _, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second); err != nil || ok {
+		t.Fatalf("expected no stage-b claim after failed stage-a, ok=%v err=%v", ok, err)
+	}
+	loaded, ok := mgr.GetJob(job.ID)
+	if !ok || loaded.Status != domain.JobStatusFailed {
+		t.Fatalf("job = %#v", loaded)
+	}
+	if len(loaded.Stages) < 2 || loaded.Stages[1].Status != domain.JobStatusCreated {
+		t.Fatalf("job stages = %#v", loaded.Stages)
 	}
 }
