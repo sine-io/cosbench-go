@@ -87,3 +87,11 @@ jobs:
               echo "Aggregate summary was not produced."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Upload aggregated matrix artifact
+        if: always()
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: remote-smoke-matrix-aggregate
+          path: .artifacts/remote-smoke-matrix-aggregate
+          if-no-files-found: ignore

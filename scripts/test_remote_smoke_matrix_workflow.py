@@ -19,3 +19,6 @@ def test_remote_smoke_matrix_workflow_shape():
     assert "aggregate_remote_smoke_matrix.py" in workflow
     aggregate_section = workflow.split("aggregate:", 1)[1]
     assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in aggregate_section
+    assert "uses: actions/upload-artifact@v6.0.0" in aggregate_section
+    assert "remote-smoke-matrix-aggregate" in aggregate_section
+    assert ".artifacts/remote-smoke-matrix-aggregate" in aggregate_section
