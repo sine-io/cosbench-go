@@ -63,6 +63,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - A manual GitHub Actions workflow can run `make compare-local` on demand
 - A separate manual GitHub Actions workflow can run `make smoke-local` without external secrets to verify the local live-endpoint path on GitHub-hosted runners
 - A manual GitHub Actions workflow can run the remote multi-process MinIO smoke path on demand
+- A separate non-blocking GitHub Actions workflow can run the full remote smoke matrix on a schedule or on demand
 - GitHub-hosted runners no longer attempt real `make smoke-s3`; that path remains for local or private-network execution only
 - The manual `compare-local` workflow uploads `.artifacts/compare-local/` as a downloadable artifact
 - That manual workflow also writes a GitHub job summary from `.artifacts/compare-local/index.json`
@@ -91,6 +92,12 @@ To trigger the multistage SIO variant:
 
 ```bash
 gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go -f backend=sio -f scenario=multistage
+```
+
+To trigger the full remote smoke matrix:
+
+```bash
+gh workflow run "Remote Smoke Matrix" --repo sine-io/cosbench-go
 ```
 
 ## Legacy Comparison
