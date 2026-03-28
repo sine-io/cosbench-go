@@ -30,6 +30,16 @@ def test_remote_multistage_smoke_fixture_has_two_stages_and_two_workers():
     assert 'name="stage-b"' in text
 
 
+def test_remote_sio_multistage_smoke_fixture_has_two_stages_and_two_workers():
+    fixture = pathlib.Path("testdata/workloads/remote-smoke-sio-multistage-two-driver.xml")
+    text = fixture.read_text(encoding="utf-8")
+    assert text.count("<workstage ") == 2
+    assert text.count('workers="2"') == 2
+    assert 'storage type="sio"' in text
+    assert 'name="stage-a"' in text
+    assert 'name="stage-b"' in text
+
+
 def test_build_summary_json_shape():
     summary = smoke.build_summary(
         backend="s3",
@@ -73,15 +83,7 @@ def test_fixture_path_selection_by_backend():
 def test_fixture_path_selection_by_backend_and_scenario():
     assert smoke.fixture_for_selection("s3", "single").name == "remote-smoke-s3-two-driver.xml"
     assert smoke.fixture_for_selection("s3", "multistage").name == "remote-smoke-s3-multistage-two-driver.xml"
-
-
-def test_multistage_requires_supported_backend():
-    try:
-        smoke.fixture_for_selection("sio", "multistage")
-    except ValueError as err:
-        assert "unsupported remote smoke scenario" in str(err)
-    else:
-        raise AssertionError("expected unsupported multistage backend error")
+    assert smoke.fixture_for_selection("sio", "multistage").name == "remote-smoke-sio-multistage-two-driver.xml"
 
 
 def test_unknown_backend_is_rejected():
