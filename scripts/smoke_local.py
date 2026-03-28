@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_VENV = ROOT / ".artifacts" / "moto-venv"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_GO = os.environ.get("GO", "/snap/bin/go")
+DEFAULT_REQUIREMENTS = ROOT / "requirements-smoke-local.txt"
 
 
 def print_summary(endpoint, s3_status, sio_status):
@@ -56,7 +57,11 @@ def ensure_moto_server():
     subprocess.run([python_bin, "-m", "venv", str(DEFAULT_VENV)], check=True)
     pip_bin = DEFAULT_VENV / "bin" / "python"
     subprocess.run([str(pip_bin), "-m", "pip", "install", "--upgrade", "pip"], check=True)
-    subprocess.run([str(DEFAULT_VENV / "bin" / "pip"), "install", "moto[server]"], check=True)
+    requirements = Path(os.environ.get("SMOKE_LOCAL_REQUIREMENTS", str(DEFAULT_REQUIREMENTS)))
+    if requirements.exists():
+        subprocess.run([str(DEFAULT_VENV / "bin" / "pip"), "install", "-r", str(requirements)], check=True)
+    else:
+        subprocess.run([str(DEFAULT_VENV / "bin" / "pip"), "install", "moto[server]"], check=True)
     return str(moto_server)
 
 

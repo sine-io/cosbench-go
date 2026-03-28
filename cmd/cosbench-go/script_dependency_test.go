@@ -20,6 +20,7 @@ var scriptTestDependencies = []string{
 	"scripts/worktree_cleanup_report.py",
 	"scripts/worktree_output.py",
 	"scripts/worktree_prune_plan.py",
+	"requirements-smoke-local.txt",
 	"testdata/workloads/compare-local-fixtures.txt",
 	"testdata/workloads/mock-stage-aware.xml",
 }
