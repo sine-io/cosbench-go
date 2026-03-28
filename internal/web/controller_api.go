@@ -93,6 +93,11 @@ func (h *Handler) controllerJobAPIRoute(w http.ResponseWriter, r *http.Request) 
 			writeJSON(w, http.StatusOK, timeline)
 			return
 		}
+	case "artifacts":
+		if len(parts) == 3 {
+			h.exportControllerArtifact(w, r, jobID, parts[2])
+			return
+		}
 	}
 
 	if len(parts) == 2 && parts[1] == "timeline.csv" {

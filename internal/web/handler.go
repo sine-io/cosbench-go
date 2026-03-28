@@ -84,6 +84,7 @@ func (h *Handler) routes() {
 	h.mux.HandleFunc("/", h.dashboard)
 	h.mux.HandleFunc("/api/controller/jobs", h.controllerJobsAPI)
 	h.mux.HandleFunc("/api/controller/jobs/", h.controllerJobAPIRoute)
+	h.mux.HandleFunc("/api/controller/metrics/prometheus", h.controllerPrometheus)
 	h.mux.HandleFunc("/controller/matrix", h.controllerMatrixPage)
 	h.mux.HandleFunc("/controller/jobs/", h.controllerJobPageRoute)
 	h.mux.HandleFunc("/workloads/new", h.workloadForm)

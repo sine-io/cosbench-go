@@ -134,6 +134,41 @@ func TestControllerAPITimelineJSONAndCSV(t *testing.T) {
 	}
 }
 
+func TestControllerAPIPrometheusAndArtifacts(t *testing.T) {
+	h := newTestHandler(t)
+	job := createCompletedControllerAPIJob(t, h.manager)
+
+	promRec := httptest.NewRecorder()
+	promReq := httptest.NewRequest(http.MethodGet, "/api/controller/metrics/prometheus", nil)
+	h.ServeHTTP(promRec, promReq)
+	if promRec.Code != http.StatusOK {
+		t.Fatalf("prometheus status = %d body=%s", promRec.Code, promRec.Body.String())
+	}
+	if body := promRec.Body.String(); !strings.Contains(body, "cosbench_job_operation_count") {
+		t.Fatalf("unexpected prometheus body: %s", body)
+	}
+
+	configRec := httptest.NewRecorder()
+	configReq := httptest.NewRequest(http.MethodGet, "/api/controller/jobs/"+job.ID+"/artifacts/config", nil)
+	h.ServeHTTP(configRec, configReq)
+	if configRec.Code != http.StatusOK {
+		t.Fatalf("config artifact status = %d body=%s", configRec.Code, configRec.Body.String())
+	}
+	if body := configRec.Body.String(); !strings.Contains(body, "<workload") {
+		t.Fatalf("unexpected config artifact: %s", body)
+	}
+
+	logRec := httptest.NewRecorder()
+	logReq := httptest.NewRequest(http.MethodGet, "/api/controller/jobs/"+job.ID+"/artifacts/log", nil)
+	h.ServeHTTP(logRec, logReq)
+	if logRec.Code != http.StatusOK {
+		t.Fatalf("log artifact status = %d body=%s", logRec.Code, logRec.Body.String())
+	}
+	if body := logRec.Body.String(); !strings.Contains(strings.ToLower(body), "job finished") {
+		t.Fatalf("unexpected log artifact: %s", body)
+	}
+}
+
 func createCompletedControllerAPIJob(t *testing.T, mgr *controlplane.Manager) domain.Job {
 	t.Helper()
 	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
