@@ -87,6 +87,12 @@ To trigger the multistage S3 variant:
 gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go -f backend=s3 -f scenario=multistage
 ```
 
+To trigger the multistage SIO variant:
+
+```bash
+gh workflow run "Remote Smoke Local" --repo sine-io/cosbench-go -f backend=sio -f scenario=multistage
+```
+
 ## Legacy Comparison
 - The current comparison checklist and runbook live in `docs/legacy-comparison-matrix.md`
 - Code-level S3/SIO delta notes live in `docs/storage-driver-comparison-notes.md`
