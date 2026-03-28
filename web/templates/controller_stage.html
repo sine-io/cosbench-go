@@ -1,0 +1,10 @@
+{{define "controller_stage.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Stage Detail</h1>
+  <p>Job: {{.Job.Name}}</p>
+  <p>Stage: {{.Stage.Name}}</p>
+  <p>Status: {{.Stage.Status}}</p>
+  <p>Ops: {{.Stage.Metrics.OperationCount}}</p>
+</section>
+{{end}}

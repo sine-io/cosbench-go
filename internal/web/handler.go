@@ -26,9 +26,13 @@ type Handler struct {
 type pageData struct {
 	Title         string
 	Jobs          []domain.Job
+	MatrixRows    []domain.JobMatrixRow
 	Job           domain.Job
 	JobResult     domain.JobResult
 	JobEvents     []domain.JobEvent
+	Timeline      domain.JobTimeline
+	Stage         domain.StageState
+	NormalizedWorkload domain.Workload
 	RecentErrors  []domain.JobEvent
 	Endpoints     []domain.EndpointConfig
 	Error         string
@@ -49,7 +53,18 @@ func NewHandler(manager *controlplane.Manager, viewDir string) (*Handler, error)
 
 func (h *Handler) loadTemplates(viewDir string) error {
 	baseFiles := []string{filepath.Join(viewDir, "layout.html")}
-	pages := []string{"dashboard.html", "workload_upload.html", "endpoints.html", "job_detail.html", "history.html"}
+	pages := []string{
+		"dashboard.html",
+		"workload_upload.html",
+		"endpoints.html",
+		"job_detail.html",
+		"history.html",
+		"controller_matrix.html",
+		"controller_job_config.html",
+		"controller_advanced_config.html",
+		"controller_stage.html",
+		"controller_timeline.html",
+	}
 	h.templates = map[string]*template.Template{}
 	for _, page := range pages {
 		pageTemplate, err := template.New(page).ParseFiles(append(baseFiles, filepath.Join(viewDir, page))...)
@@ -69,6 +84,8 @@ func (h *Handler) routes() {
 	h.mux.HandleFunc("/", h.dashboard)
 	h.mux.HandleFunc("/api/controller/jobs", h.controllerJobsAPI)
 	h.mux.HandleFunc("/api/controller/jobs/", h.controllerJobAPIRoute)
+	h.mux.HandleFunc("/controller/matrix", h.controllerMatrixPage)
+	h.mux.HandleFunc("/controller/jobs/", h.controllerJobPageRoute)
 	h.mux.HandleFunc("/workloads/new", h.workloadForm)
 	h.mux.HandleFunc("/workloads", h.createWorkload)
 	h.mux.HandleFunc("/endpoints", h.endpoints)

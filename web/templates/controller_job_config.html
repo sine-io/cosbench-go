@@ -1,0 +1,8 @@
+{{define "controller_job_config.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Job Config</h1>
+  <p>Job: {{.Job.Name}}</p>
+  <pre class="code-block">{{.RawXML}}</pre>
+</section>
+{{end}}

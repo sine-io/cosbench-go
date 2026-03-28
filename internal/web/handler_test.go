@@ -220,6 +220,34 @@ func TestCancellingJobDetailHidesCancelAction(t *testing.T) {
 	}
 }
 
+func TestControllerPagesRender(t *testing.T) {
+	h := newTestHandler(t)
+	job := createCompletedControllerAPIJob(t, h.manager)
+
+	cases := []struct {
+		path string
+		want string
+	}{
+		{path: "/controller/matrix", want: "Controller Matrix"},
+		{path: "/controller/jobs/" + job.ID + "/config", want: "Job Config"},
+		{path: "/controller/jobs/" + job.ID + "/config/advanced", want: "Advanced Config"},
+		{path: "/controller/jobs/" + job.ID + "/stages/main", want: "Stage Detail"},
+		{path: "/controller/jobs/" + job.ID + "/timeline", want: "Job Timeline"},
+	}
+
+	for _, tc := range cases {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status = %d body=%s", tc.path, rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), tc.want) {
+			t.Fatalf("%s body = %s", tc.path, rec.Body.String())
+		}
+	}
+}
+
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	store, err := snapshot.New(t.TempDir())

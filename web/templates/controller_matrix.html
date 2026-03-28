@@ -1,0 +1,21 @@
+{{define "controller_matrix.html"}}{{template "layout" .}}{{end}}
+{{define "page_content"}}
+<section class="card">
+  <h1>Controller Matrix</h1>
+  <table>
+    <thead><tr><th>Job</th><th>Status</th><th>Stages</th><th>Ops</th><th>Bytes</th><th>Errors</th></tr></thead>
+    <tbody>
+    {{range .MatrixRows}}
+    <tr>
+      <td><a href="/jobs/{{.JobID}}">{{.Name}}</a></td>
+      <td>{{.Status}}</td>
+      <td>{{.StageCount}}</td>
+      <td>{{.OperationCount}}</td>
+      <td>{{.ByteCount}}</td>
+      <td>{{.ErrorCount}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}
