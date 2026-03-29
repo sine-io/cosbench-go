@@ -79,8 +79,8 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The latest verified GitHub-hosted `Smoke Ready Validate` run is `23720334275`, and it uploaded both `smoke-ready-validate-output` and `smoke-ready-validate-summary`; `smoke-ready` now prefers the summary artifact, the emitted `smoke-ready.json` includes `*_latest_age_seconds`, and the finalized payload reports both `schema_validation_current=true` and `schema_validation_current_reason=current` for the run that produced the artifact
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23720334785` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23720335342`
-- The latest verified GitHub-hosted `Smoke S3` run is `23695743149`, and it uploaded both `smoke-s3-output.txt` and `.artifacts/smoke-s3-summary/summary.json` with `{"result":"skipped"}`
-- The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23695743153`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`
+- The latest verified GitHub-hosted `Smoke S3` run is `23720461773`, and it still uploaded a structured summary with `result=skipped`
+- The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23720462380`, and its aggregate artifact still reports both `s3` and `sio` rows as `skipped`
 - The latest verified GitHub-hosted `Remote Smoke Matrix` run is `23720334785`, and its aggregate artifact still reports all four supported combinations as passing
 - The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23720335342`, and its aggregate artifact still reports both recovery backends as passing
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
