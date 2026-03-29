@@ -66,6 +66,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports the latest run id for each evidence surface, so automation does not need to parse it back out of the URL
 - `smoke-ready` now also reports the latest duration in seconds for each evidence surface, so dashboards and scripts can track workflow cost without scraping GitHub
 - `smoke-ready` now also reports the latest age in seconds for each evidence surface, so scripts can tell how stale each evidence record is without re-deriving it from timestamps
+- `smoke-ready` now also reports `*_latest_fresh` booleans plus a `freshness_thresholds_seconds` block, so machine consumers can make freshness decisions without embedding their own thresholds
 - `smoke-ready` now also reports the latest head SHA for each evidence surface, so you can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also reports the latest head branch for each evidence surface, so you can tell whether that evidence came from `main` or another branch without opening GitHub
 - `smoke-ready` now also reports whether each latest-evidence surface matches the current checkout HEAD, so you can tell at a glance whether evidence is stale for the code you are on

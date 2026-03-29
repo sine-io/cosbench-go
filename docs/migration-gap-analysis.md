@@ -31,6 +31,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - `smoke-ready` now also exposes the latest run id for each evidence surface, so machine consumers can join evidence back to GitHub runs without parsing URLs
 - `smoke-ready` now also exposes the latest duration in seconds for each evidence surface, so machine consumers can reason about workflow timing without scraping GitHub
 - `smoke-ready` now also exposes the latest age in seconds for each evidence surface, so machine consumers can detect evidence staleness directly instead of re-deriving it from timestamps
+- `smoke-ready` now also exposes `*_latest_fresh` booleans and a shared `freshness_thresholds_seconds` block, so machine consumers can apply the repository's freshness policy directly instead of re-encoding it
 - `smoke-ready` now also exposes the latest head SHA for each evidence surface, so machine consumers can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also exposes the latest head branch for each evidence surface, so machine consumers can distinguish `main` evidence from non-main evidence without extra GitHub queries
 - `smoke-ready` now also exposes whether each latest-evidence surface matches the current checkout HEAD, so machine consumers can detect stale evidence without re-implementing SHA comparison logic
