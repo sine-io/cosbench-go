@@ -76,13 +76,13 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports the latest head branch for each evidence surface, so you can tell whether that evidence came from `main` or another branch without opening GitHub
 - `smoke-ready` now also reports whether each latest-evidence surface matches the current checkout HEAD, so you can tell at a glance whether evidence is stale for the code you are on
 - `smoke-ready` now also reports `current_head_branch` alongside `current_head_sha`, so local tooling can identify the active checkout without shelling out to Git
-- The latest verified GitHub-hosted `Smoke Ready Validate` run is `23720574474`, and it uploaded both `smoke-ready-validate-output` and `smoke-ready-validate-summary`; `smoke-ready` now prefers the summary artifact, the emitted `smoke-ready.json` includes `*_latest_age_seconds`, and the finalized payload reports both `schema_validation_current=true` and `schema_validation_current_reason=current` for the run that produced the artifact
+- The latest verified GitHub-hosted `Smoke Ready Validate` run is `23720831159`, and it uploaded both `smoke-ready-validate-output` and `smoke-ready-validate-summary`; `smoke-ready` now prefers the summary artifact, the emitted `smoke-ready.json` includes `*_latest_age_seconds`, and the finalized payload reports both `schema_validation_current=true` and `schema_validation_current_reason=current` for the run that produced the artifact
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
-- `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23720574969` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23720575481`
-- The latest verified GitHub-hosted `Smoke S3` run is `23720575994`, and it still uploaded a structured summary with `result=skipped`
-- The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23720576461`, and its aggregate artifact still reports both `s3` and `sio` rows as `skipped`
-- The latest verified GitHub-hosted `Remote Smoke Matrix` run is `23720574969`, and its aggregate artifact still reports all four supported combinations as passing
-- The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23720575481`, and its aggregate artifact still reports both recovery backends as passing
+- `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23720831651` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23720832212`
+- The latest verified GitHub-hosted `Smoke S3` run is `23720832798`, and it still uploaded a structured summary with `result=skipped`
+- The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23720833429`, and its aggregate artifact still reports both `s3` and `sio` rows as `skipped`
+- The latest verified GitHub-hosted `Remote Smoke Matrix` run is `23720831651`, and its aggregate artifact still reports all four supported combinations as passing
+- The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23720832212`, and its aggregate artifact still reports both recovery backends as passing
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
@@ -146,9 +146,9 @@ If the repository does not have `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCES
 
 `Legacy Live Compare` and `Legacy Live Compare Matrix` now also publish normalized structured result summaries in addition to the raw CLI summary JSON.
 
-The latest verified GitHub-hosted `Legacy Live Compare` run is `23720720293`, and it uploaded `result.json` with `{"result":"skipped","backend":"sio"}`.
+The latest verified GitHub-hosted `Legacy Live Compare` run is `23720833987`, and it uploaded `result.json` with `{"result":"skipped","backend":"sio"}`.
 
-The latest verified GitHub-hosted `Legacy Live Compare Matrix` run is `23720720835`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`.
+The latest verified GitHub-hosted `Legacy Live Compare Matrix` run is `23720834522`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`.
 
 To trigger the representative two-row legacy live compare matrix:
 
