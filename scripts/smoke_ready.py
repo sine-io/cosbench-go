@@ -613,6 +613,8 @@ def build_payload():
             "real_endpoint_matrix_latest_success": real_endpoint_matrix_latest_success,
             "real_endpoint_latest_result": real_endpoint_latest_result,
             "real_endpoint_matrix_latest_result": real_endpoint_matrix_latest_result,
+            "real_endpoint_latest_source": SMOKE_S3_WORKFLOW,
+            "real_endpoint_matrix_latest_source": SMOKE_S3_MATRIX_WORKFLOW,
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "real_endpoint_latest_created_at": latest_created_at(workflow_latest, SMOKE_S3_WORKFLOW),
@@ -621,6 +623,8 @@ def build_payload():
             "legacy_live_matrix_latest_success": legacy_live_matrix_latest_success,
             "legacy_live_latest_result": legacy_live_latest_result,
             "legacy_live_matrix_latest_result": legacy_live_matrix_latest_result,
+            "legacy_live_latest_source": LEGACY_LIVE_WORKFLOW,
+            "legacy_live_matrix_latest_source": LEGACY_LIVE_MATRIX_WORKFLOW,
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_created_at": latest_created_at(workflow_latest, LEGACY_LIVE_WORKFLOW),
@@ -714,6 +718,8 @@ def print_text(payload):
     print(f"- Real Endpoint Matrix Latest Success: `{yes_no(payload['summary']['real_endpoint_matrix_latest_success'])}`")
     print(f"- Real Endpoint Latest Result: `{payload['summary']['real_endpoint_latest_result']}`")
     print(f"- Real Endpoint Matrix Latest Result: `{payload['summary']['real_endpoint_matrix_latest_result']}`")
+    print(f"- Real Endpoint Latest Source: `{payload['summary']['real_endpoint_latest_source']}`")
+    print(f"- Real Endpoint Matrix Latest Source: `{payload['summary']['real_endpoint_matrix_latest_source']}`")
     print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
     print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
     print(f"- Real Endpoint Latest Created At: `{payload['summary']['real_endpoint_latest_created_at']}`")
@@ -722,6 +728,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Success: `{yes_no(payload['summary']['legacy_live_matrix_latest_success'])}`")
     print(f"- Legacy Live Latest Result: `{payload['summary']['legacy_live_latest_result']}`")
     print(f"- Legacy Live Matrix Latest Result: `{payload['summary']['legacy_live_matrix_latest_result']}`")
+    print(f"- Legacy Live Latest Source: `{payload['summary']['legacy_live_latest_source']}`")
+    print(f"- Legacy Live Matrix Latest Source: `{payload['summary']['legacy_live_matrix_latest_source']}`")
     print(f"- Legacy Live Latest URL: `{payload['summary']['legacy_live_latest_url']}`")
     print(f"- Legacy Live Matrix Latest URL: `{payload['summary']['legacy_live_matrix_latest_url']}`")
     print(f"- Legacy Live Latest Created At: `{payload['summary']['legacy_live_latest_created_at']}`")
