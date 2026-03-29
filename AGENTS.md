@@ -12,6 +12,8 @@ Use the `Makefile` for the common paths:
 - `make compare-local` runs the curated mock-backed comparison fixture set through the CLI
 - `make --no-print-directory smoke-ready` reports local and GitHub smoke readiness in human-readable form
 - `make --no-print-directory smoke-ready-json` reports the same readiness view as JSON
+- `make --no-print-directory smoke-ready-validate` validates the current `smoke-ready-json` output against `docs/smoke-ready.schema.json`
+- `make --no-print-directory smoke-ready-validate-json` reports the same schema-validation result as JSON
 - `make --no-print-directory smoke-local` starts a temporary local MinIO endpoint and runs the S3 and SIO smoke paths against it
 - `make validate` runs `go vet`, tests, and a full build for CI-style verification
 - `make smoke-s3` runs the opt-in live endpoint smoke test for `internal/driver/s3`
@@ -30,11 +32,14 @@ If `/snap/bin/go` is not your Go binary, override the Makefile variable, for exa
 Live smoke tests require `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCESS_KEY`, and `COSBENCH_SMOKE_SECRET_KEY`; without them the smoke suite skips.
 Use `make --no-print-directory smoke-ready` when you want a fast readiness summary before attempting live smoke coverage.
 Use `make --no-print-directory smoke-ready-json` when you want the same readiness state in machine-readable form.
+Use `make --no-print-directory smoke-ready-validate` when you want a human-readable check that the current readiness payload still matches the published schema.
+Use `make --no-print-directory smoke-ready-validate-json` when you want the same schema-validation state in machine-readable form.
 Use `make --no-print-directory smoke-local` when you want local live-endpoint evidence without external credentials.
 Repository CI runs `make validate`; keep smoke tests opt-in and out of the default CI path.
 In `-json` mode, stdout is reserved for machine-readable JSON.
 `make compare-local` is the fastest way to refresh local comparison evidence without live credentials.
 There is also a manual GitHub Actions workflow for `make smoke-s3`; it reads `COSBENCH_SMOKE_*` from repository secrets and optional workflow inputs.
+There is also a manual GitHub Actions workflow for `smoke-ready-validate`; it now also runs on a non-blocking daily schedule to refresh schema-validation evidence.
 GitHub-hosted runners no longer execute real `make smoke-s3`; use `make --no-print-directory smoke-local` or the manual `Smoke Local` workflow when you need remote smoke evidence without a public endpoint.
 `make compare-local-list` prints the valid curated fixture names for `COMPARE_LOCAL_FILTER`.
 `make compare-local-list-json` prints the curated fixture names and workload paths as JSON.
