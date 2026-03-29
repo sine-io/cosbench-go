@@ -188,6 +188,9 @@
         "real_endpoint_latest_source",
         "real_endpoint_matrix_latest_source",
         "schema_validation_latest_source",
+        "real_endpoint_latest_event",
+        "real_endpoint_matrix_latest_event",
+        "schema_validation_latest_event",
         "real_endpoint_latest_url",
         "real_endpoint_matrix_latest_url",
         "schema_validation_latest_url",
@@ -203,6 +206,8 @@
         "legacy_live_matrix_latest_result",
         "legacy_live_latest_source",
         "legacy_live_matrix_latest_source",
+        "legacy_live_latest_event",
+        "legacy_live_matrix_latest_event",
         "legacy_live_latest_url",
         "legacy_live_matrix_latest_url",
         "legacy_live_latest_artifact",
@@ -215,6 +220,8 @@
         "remote_recovery_latest_result",
         "remote_happy_latest_source",
         "remote_recovery_latest_source",
+        "remote_happy_latest_event",
+        "remote_recovery_latest_event",
         "remote_happy_latest_url",
         "remote_recovery_latest_url",
         "remote_happy_latest_artifact",
@@ -242,6 +249,9 @@
         "real_endpoint_latest_source": { "type": "string" },
         "real_endpoint_matrix_latest_source": { "type": "string" },
         "schema_validation_latest_source": { "type": "string" },
+        "real_endpoint_latest_event": { "type": "string" },
+        "real_endpoint_matrix_latest_event": { "type": "string" },
+        "schema_validation_latest_event": { "type": "string" },
         "real_endpoint_latest_url": { "type": "string" },
         "real_endpoint_matrix_latest_url": { "type": "string" },
         "schema_validation_latest_url": { "type": "string" },
@@ -257,6 +267,8 @@
         "legacy_live_matrix_latest_result": { "type": "string" },
         "legacy_live_latest_source": { "type": "string" },
         "legacy_live_matrix_latest_source": { "type": "string" },
+        "legacy_live_latest_event": { "type": "string" },
+        "legacy_live_matrix_latest_event": { "type": "string" },
         "legacy_live_latest_url": { "type": "string" },
         "legacy_live_matrix_latest_url": { "type": "string" },
         "legacy_live_latest_artifact": { "type": "string" },
@@ -269,6 +281,8 @@
         "remote_recovery_latest_result": { "type": "string" },
         "remote_happy_latest_source": { "type": "string" },
         "remote_recovery_latest_source": { "type": "string" },
+        "remote_happy_latest_event": { "type": "string" },
+        "remote_recovery_latest_event": { "type": "string" },
         "remote_happy_latest_url": { "type": "string" },
         "remote_recovery_latest_url": { "type": "string" },
         "remote_happy_latest_artifact": { "type": "string" },
@@ -326,6 +340,7 @@
             "database_id",
             "status",
             "conclusion",
+            "event",
             "created_at",
             "url"
           ],
@@ -340,6 +355,9 @@
               "type": "string"
             },
             "conclusion": {
+              "type": "string"
+            },
+            "event": {
               "type": "string"
             },
             "created_at": {
