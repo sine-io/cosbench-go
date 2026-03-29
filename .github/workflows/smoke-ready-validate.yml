@@ -1,7 +1,9 @@
 name: Smoke Ready Validate
 
-on:
+"on":
   workflow_dispatch:
+  schedule:
+    - cron: "7 4 * * *"
 
 jobs:
   smoke-ready-validate:

@@ -59,7 +59,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready-json` now also includes a top-level `schema_version` for machine consumers
 - machine consumers can also validate that payload against [docs/smoke-ready.schema.json](docs/smoke-ready.schema.json)
 - run `make --no-print-directory smoke-ready-validate` or `make --no-print-directory smoke-ready-validate-json` when you want the repository to validate the current helper output against that schema directly
-- trigger the same validation remotely with `gh workflow run "Smoke Ready Validate" --repo sine-io/cosbench-go`
+- trigger the same validation remotely with `gh workflow run "Smoke Ready Validate" --repo sine-io/cosbench-go`; the workflow also runs on a non-blocking daily schedule
 - `smoke-ready` now also reports `Smoke Ready Validate` as a separate contract-surface signal, including its latest result, URL, artifact, and timestamp
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657083` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657085`
