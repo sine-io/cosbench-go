@@ -146,9 +146,9 @@ If the repository does not have `COSBENCH_SMOKE_ENDPOINT`, `COSBENCH_SMOKE_ACCES
 
 `Legacy Live Compare` and `Legacy Live Compare Matrix` now also publish normalized structured result summaries in addition to the raw CLI summary JSON.
 
-The latest verified GitHub-hosted `Legacy Live Compare` run is `23696226320`, and it uploaded `result.json` with `{"result":"skipped","backend":"sio"}`.
+The latest verified GitHub-hosted `Legacy Live Compare` run is `23720720293`, and it uploaded `result.json` with `{"result":"skipped","backend":"sio"}`.
 
-The latest verified GitHub-hosted `Legacy Live Compare Matrix` run is `23696226307`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`.
+The latest verified GitHub-hosted `Legacy Live Compare Matrix` run is `23720720835`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`.
 
 To trigger the representative two-row legacy live compare matrix:
 
