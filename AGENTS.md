@@ -34,7 +34,7 @@ Use `make --no-print-directory smoke-ready` when you want a fast readiness summa
 Use `make --no-print-directory smoke-ready-json` when you want the same readiness state in machine-readable form.
 Use `make --no-print-directory smoke-ready-validate` when you want a human-readable check that the current readiness payload still matches the published schema.
 Use `make --no-print-directory smoke-ready-validate-json` when you want the same schema-validation state in machine-readable form.
-The `smoke-ready` summary now reports latest-evidence metadata as a consistent `result/source/event/head_sha/head_branch/run_id/url/artifact/duration_seconds/age_seconds/created_at` shape across the current evidence surfaces, plus `*_latest_matches_head`, `*_latest_fresh`, and `*_current` booleans relative to the current checkout head and documented freshness thresholds.
+The `smoke-ready` summary now reports latest-evidence metadata as a consistent `result/source/event/head_sha/head_branch/run_id/url/artifact/duration_seconds/age_seconds/created_at` shape across the current evidence surfaces, plus `*_latest_matches_head`, `*_latest_fresh`, `*_current`, and `*_current_reason` signals relative to the current checkout head and documented freshness thresholds.
 The human-readable `smoke-ready` output also prints those freshness/current signals and the threshold block directly, not just the JSON form.
 The top-level payload now also reports `current_head_branch` alongside `current_head_sha`.
 That same readiness view now also includes `Smoke Ready Validate` as a separate contract-surface signal alongside local, real-endpoint, legacy-live, and remote smoke evidence.
