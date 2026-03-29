@@ -4,6 +4,8 @@ from pathlib import Path
 def test_smoke_ready_validate_workflow_shape():
     workflow = Path(".github/workflows/smoke-ready-validate.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch:" in workflow
+    assert "schedule:" in workflow
+    assert '- cron: "7 4 * * *"' in workflow
     assert "GH_TOKEN: ${{ github.token }}" in workflow
     assert "make --no-print-directory smoke-ready-json" in workflow
     assert "make --no-print-directory smoke-ready-validate-json" in workflow
