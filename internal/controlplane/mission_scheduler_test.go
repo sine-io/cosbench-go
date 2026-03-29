@@ -155,6 +155,75 @@ func TestClaimMissionReclaimsExpiredLeaseButNotActiveLease(t *testing.T) {
 	}
 }
 
+func TestSweepExpiredLeasesRequeuesWithoutNewClaim(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	driverA, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-a", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="remote-sweep-requeue">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	claimed, ok, err := mgr.ClaimMission(driverA.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(driver-a): mission=%#v ok=%v err=%v", claimed, ok, err)
+	}
+	expiredAt := time.Now().UTC().Add(-time.Second)
+	claimed.Status = domain.MissionStatusRunning
+	claimed.Lease.ExpiresAt = expiredAt
+	claimed.UpdatedAt = expiredAt
+	if err := mgr.PutMission(claimed); err != nil {
+		t.Fatalf("PutMission(): %v", err)
+	}
+
+	mgr.SweepExpiredLeases(time.Now().UTC())
+
+	attempts := mgr.ListMissionAttempts()
+	if len(attempts) != 2 {
+		t.Fatalf("attempts = %#v", attempts)
+	}
+	foundExpired := false
+	foundRetry := false
+	for _, attempt := range attempts {
+		switch {
+		case attempt.ID == claimed.ID:
+			foundExpired = attempt.Status == domain.MissionStatusExpired
+		case attempt.WorkUnitID == claimed.WorkUnitID && attempt.Attempt == claimed.Attempt+1:
+			foundRetry = attempt.Status == domain.MissionAttemptStatusPending && attempt.Lease == nil
+		}
+	}
+	if !foundExpired || !foundRetry {
+		t.Fatalf("attempts after sweep = %#v", attempts)
+	}
+	units := mgr.ListWorkUnits(job.ID, "main", "main")
+	if len(units) != 1 || units[0].Status != domain.WorkUnitStatusPending {
+		t.Fatalf("units after sweep = %#v", units)
+	}
+}
+
 func TestMissionReportingIsIdempotentPerBatch(t *testing.T) {
 	store, err := snapshot.New(t.TempDir())
 	if err != nil {

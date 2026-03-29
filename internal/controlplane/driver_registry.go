@@ -54,6 +54,12 @@ func (m *Manager) RecordDriverHeartbeat(id string, at time.Time) error {
 	return m.store.SaveDriverNode(driver)
 }
 
+func (m *Manager) SweepExpiredLeases(at time.Time) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.expireLeasesLocked(at)
+}
+
 func (m *Manager) refreshDriverHealthLocked(now time.Time) {
 	for driverID, driver := range m.drivers {
 		if driver.LastHeartbeatAt == nil {
