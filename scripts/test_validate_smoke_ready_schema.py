@@ -7,6 +7,7 @@ def build_env():
     env = os.environ.copy()
     env["SMOKE_READY_MOCK_CURRENT_HEAD_SHA"] = "sha-smoke-ready-validate"
     env["SMOKE_READY_MOCK_CURRENT_HEAD_BRANCH"] = "feature/smoke-ready"
+    env["SMOKE_READY_MOCK_GENERATED_AT"] = "2026-03-29T01:00:00Z"
     env["SMOKE_READY_MOCK_REPO_SECRETS"] = "COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY"
     env["SMOKE_READY_MOCK_WORKFLOWS"] = ",".join(
         [

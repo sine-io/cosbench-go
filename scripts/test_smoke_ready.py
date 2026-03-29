@@ -7,6 +7,7 @@ def run_helper(*args, env_overrides=None):
     env = os.environ.copy()
     env["SMOKE_READY_MOCK_CURRENT_HEAD_SHA"] = "sha-smoke-ready-validate"
     env["SMOKE_READY_MOCK_CURRENT_HEAD_BRANCH"] = "feature/smoke-ready"
+    env["SMOKE_READY_MOCK_GENERATED_AT"] = "2026-03-29T01:00:00Z"
     env["SMOKE_READY_MOCK_REPO_SECRETS"] = "COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY"
     env["SMOKE_READY_MOCK_WORKFLOWS"] = ",".join(
         [
@@ -288,6 +289,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["schema_validation_latest_head_branch"] == "main"
     assert summary["schema_validation_latest_matches_head"] is True
     assert summary["schema_validation_latest_duration_seconds"] == 15
+    assert summary["schema_validation_latest_age_seconds"] == 3210
     assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
     assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-summary"
     assert summary["schema_validation_latest_created_at"] == "2026-03-29T00:06:30Z"
@@ -323,6 +325,8 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["real_endpoint_matrix_latest_matches_head"] is False
     assert summary["real_endpoint_latest_duration_seconds"] == 40
     assert summary["real_endpoint_matrix_latest_duration_seconds"] == 50
+    assert summary["real_endpoint_latest_age_seconds"] == 3300
+    assert summary["real_endpoint_matrix_latest_age_seconds"] == 3240
     assert summary["legacy_live_latest_source"] == "Legacy Live Compare"
     assert summary["legacy_live_matrix_latest_source"] == "Legacy Live Compare Matrix"
     assert summary["legacy_live_latest_event"] == "workflow_dispatch"
@@ -337,7 +341,11 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_latest_matches_head"] is False
     assert summary["legacy_live_latest_duration_seconds"] == 20
     assert summary["legacy_live_matrix_latest_duration_seconds"] == 30
+    assert summary["legacy_live_latest_age_seconds"] == 3180
+    assert summary["legacy_live_matrix_latest_age_seconds"] == 3120
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
+    assert summary["remote_happy_latest_age_seconds"] == 2400
+    assert summary["remote_recovery_latest_age_seconds"] == 1200
     assert summary["remote_recovery_latest_url"] == "https://example.test/remote-smoke-recovery-matrix"
     assert summary["remote_happy_latest_event"] == "schedule"
     assert summary["remote_recovery_latest_event"] == "schedule"

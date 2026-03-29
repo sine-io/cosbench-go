@@ -39,6 +39,8 @@ LEGACY_STEP_NAME = "Run legacy live compare"
 
 
 def generated_at():
+    if "SMOKE_READY_MOCK_GENERATED_AT" in os.environ:
+        return os.environ["SMOKE_READY_MOCK_GENERATED_AT"]
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
@@ -619,6 +621,24 @@ def latest_duration_seconds(workflow_latest, workflow_name):
     return duration
 
 
+def latest_age_seconds(workflow_latest, workflow_name, reference_time):
+    if not workflow_name or not reference_time:
+        return None
+    row = workflow_latest.get(workflow_name) or {}
+    created_at = row.get("created_at", "")
+    if not created_at:
+        return None
+    try:
+        created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        reference = datetime.fromisoformat(reference_time.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    age = int((reference - created).total_seconds())
+    if age < 0:
+        return None
+    return age
+
+
 def latest_event(workflow_latest, workflow_name):
     if not workflow_name:
         return ""
@@ -672,6 +692,7 @@ def build_payload():
     repo, repo_error = resolve_repo()
     current_head_sha, current_head_error = resolve_current_head_sha()
     current_head_branch, current_head_branch_error = resolve_current_head_branch()
+    payload_generated_at = generated_at()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
     local_ready = all(local_env.values())
 
@@ -749,7 +770,7 @@ def build_payload():
 
     return {
         "schema_version": 1,
-        "generated_at": generated_at(),
+        "generated_at": payload_generated_at,
         "repo": repo,
         "current_head_sha": current_head_sha,
         "current_head_branch": current_head_branch,
@@ -805,6 +826,9 @@ def build_payload():
             "real_endpoint_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
+            "real_endpoint_latest_age_seconds": latest_age_seconds(workflow_latest, SMOKE_S3_WORKFLOW, payload_generated_at),
+            "real_endpoint_matrix_latest_age_seconds": latest_age_seconds(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW, payload_generated_at),
+            "schema_validation_latest_age_seconds": latest_age_seconds(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW, payload_generated_at),
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -832,6 +856,8 @@ def build_payload():
             "legacy_live_matrix_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
+            "legacy_live_latest_age_seconds": latest_age_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW, payload_generated_at),
+            "legacy_live_matrix_latest_age_seconds": latest_age_seconds(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW, payload_generated_at),
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
@@ -856,6 +882,8 @@ def build_payload():
             "remote_recovery_latest_run_id": latest_run_id(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_recovery_latest_name),
+            "remote_happy_latest_age_seconds": latest_age_seconds(workflow_latest, remote_happy_latest_name, payload_generated_at),
+            "remote_recovery_latest_age_seconds": latest_age_seconds(workflow_latest, remote_recovery_latest_name, payload_generated_at),
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
@@ -968,6 +996,9 @@ def print_text(payload):
     print(f"- Real Endpoint Latest Duration Seconds: `{payload['summary']['real_endpoint_latest_duration_seconds']}`")
     print(f"- Real Endpoint Matrix Latest Duration Seconds: `{payload['summary']['real_endpoint_matrix_latest_duration_seconds']}`")
     print(f"- Schema Validation Latest Duration Seconds: `{payload['summary']['schema_validation_latest_duration_seconds']}`")
+    print(f"- Real Endpoint Latest Age Seconds: `{payload['summary']['real_endpoint_latest_age_seconds']}`")
+    print(f"- Real Endpoint Matrix Latest Age Seconds: `{payload['summary']['real_endpoint_matrix_latest_age_seconds']}`")
+    print(f"- Schema Validation Latest Age Seconds: `{payload['summary']['schema_validation_latest_age_seconds']}`")
     print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
     print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
     print(f"- Schema Validation Latest URL: `{payload['summary']['schema_validation_latest_url']}`")
@@ -995,6 +1026,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Run ID: `{payload['summary']['legacy_live_matrix_latest_run_id']}`")
     print(f"- Legacy Live Latest Duration Seconds: `{payload['summary']['legacy_live_latest_duration_seconds']}`")
     print(f"- Legacy Live Matrix Latest Duration Seconds: `{payload['summary']['legacy_live_matrix_latest_duration_seconds']}`")
+    print(f"- Legacy Live Latest Age Seconds: `{payload['summary']['legacy_live_latest_age_seconds']}`")
+    print(f"- Legacy Live Matrix Latest Age Seconds: `{payload['summary']['legacy_live_matrix_latest_age_seconds']}`")
     print(f"- Legacy Live Latest URL: `{payload['summary']['legacy_live_latest_url']}`")
     print(f"- Legacy Live Matrix Latest URL: `{payload['summary']['legacy_live_matrix_latest_url']}`")
     print(f"- Legacy Live Latest Artifact: `{payload['summary']['legacy_live_latest_artifact']}`")
@@ -1019,6 +1052,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Run ID: `{payload['summary']['remote_recovery_latest_run_id']}`")
     print(f"- Remote Happy Latest Duration Seconds: `{payload['summary']['remote_happy_latest_duration_seconds']}`")
     print(f"- Remote Recovery Latest Duration Seconds: `{payload['summary']['remote_recovery_latest_duration_seconds']}`")
+    print(f"- Remote Happy Latest Age Seconds: `{payload['summary']['remote_happy_latest_age_seconds']}`")
+    print(f"- Remote Recovery Latest Age Seconds: `{payload['summary']['remote_recovery_latest_age_seconds']}`")
     print(f"- Remote Happy Latest URL: `{payload['summary']['remote_happy_latest_url']}`")
     print(f"- Remote Recovery Latest URL: `{payload['summary']['remote_recovery_latest_url']}`")
     print(f"- Remote Happy Latest Artifact: `{payload['summary']['remote_happy_latest_artifact']}`")
