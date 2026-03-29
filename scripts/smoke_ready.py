@@ -64,6 +64,8 @@ def normalize_latest_run(row):
         "conclusion": row.get("conclusion", ""),
         "event": row.get("event", ""),
         "created_at": row.get("created_at", row.get("createdAt", "")),
+        "started_at": row.get("started_at", row.get("startedAt", "")),
+        "updated_at": row.get("updated_at", row.get("updatedAt", "")),
         "url": row.get("url", ""),
     }
 
@@ -123,7 +125,7 @@ def load_workflow_latest_runs(repo):
             "--limit",
             "1",
             "--json",
-            "databaseId,status,conclusion,event,createdAt,url",
+            "databaseId,status,conclusion,event,createdAt,startedAt,updatedAt,url",
         )
         if proc.returncode != 0:
             error = (proc.stderr or proc.stdout).strip()
@@ -569,6 +571,25 @@ def latest_created_at(workflow_latest, workflow_name):
     return (workflow_latest.get(workflow_name) or {}).get("created_at", "")
 
 
+def latest_duration_seconds(workflow_latest, workflow_name):
+    if not workflow_name:
+        return None
+    row = workflow_latest.get(workflow_name) or {}
+    started_at = row.get("started_at", "")
+    updated_at = row.get("updated_at", "")
+    if not started_at or not updated_at:
+        return None
+    try:
+        start = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    duration = int((end - start).total_seconds())
+    if duration < 0:
+        return None
+    return duration
+
+
 def latest_event(workflow_latest, workflow_name):
     if not workflow_name:
         return ""
@@ -705,6 +726,9 @@ def build_payload():
             "real_endpoint_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_run_id": latest_run_id(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
+            "real_endpoint_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_S3_WORKFLOW),
+            "real_endpoint_matrix_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
+            "schema_validation_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -724,6 +748,8 @@ def build_payload():
             "legacy_live_matrix_latest_event": latest_event(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
+            "legacy_live_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW),
+            "legacy_live_matrix_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
@@ -740,6 +766,8 @@ def build_payload():
             "remote_recovery_latest_event": latest_event(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_run_id": latest_run_id(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_run_id": latest_run_id(workflow_latest, remote_recovery_latest_name),
+            "remote_happy_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_happy_latest_name),
+            "remote_recovery_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
@@ -838,6 +866,9 @@ def print_text(payload):
     print(f"- Real Endpoint Latest Run ID: `{payload['summary']['real_endpoint_latest_run_id']}`")
     print(f"- Real Endpoint Matrix Latest Run ID: `{payload['summary']['real_endpoint_matrix_latest_run_id']}`")
     print(f"- Schema Validation Latest Run ID: `{payload['summary']['schema_validation_latest_run_id']}`")
+    print(f"- Real Endpoint Latest Duration Seconds: `{payload['summary']['real_endpoint_latest_duration_seconds']}`")
+    print(f"- Real Endpoint Matrix Latest Duration Seconds: `{payload['summary']['real_endpoint_matrix_latest_duration_seconds']}`")
+    print(f"- Schema Validation Latest Duration Seconds: `{payload['summary']['schema_validation_latest_duration_seconds']}`")
     print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
     print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
     print(f"- Schema Validation Latest URL: `{payload['summary']['schema_validation_latest_url']}`")
@@ -857,6 +888,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Event: `{payload['summary']['legacy_live_matrix_latest_event']}`")
     print(f"- Legacy Live Latest Run ID: `{payload['summary']['legacy_live_latest_run_id']}`")
     print(f"- Legacy Live Matrix Latest Run ID: `{payload['summary']['legacy_live_matrix_latest_run_id']}`")
+    print(f"- Legacy Live Latest Duration Seconds: `{payload['summary']['legacy_live_latest_duration_seconds']}`")
+    print(f"- Legacy Live Matrix Latest Duration Seconds: `{payload['summary']['legacy_live_matrix_latest_duration_seconds']}`")
     print(f"- Legacy Live Latest URL: `{payload['summary']['legacy_live_latest_url']}`")
     print(f"- Legacy Live Matrix Latest URL: `{payload['summary']['legacy_live_matrix_latest_url']}`")
     print(f"- Legacy Live Latest Artifact: `{payload['summary']['legacy_live_latest_artifact']}`")
@@ -873,6 +906,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Event: `{payload['summary']['remote_recovery_latest_event']}`")
     print(f"- Remote Happy Latest Run ID: `{payload['summary']['remote_happy_latest_run_id']}`")
     print(f"- Remote Recovery Latest Run ID: `{payload['summary']['remote_recovery_latest_run_id']}`")
+    print(f"- Remote Happy Latest Duration Seconds: `{payload['summary']['remote_happy_latest_duration_seconds']}`")
+    print(f"- Remote Recovery Latest Duration Seconds: `{payload['summary']['remote_recovery_latest_duration_seconds']}`")
     print(f"- Remote Happy Latest URL: `{payload['summary']['remote_happy_latest_url']}`")
     print(f"- Remote Recovery Latest URL: `{payload['summary']['remote_recovery_latest_url']}`")
     print(f"- Remote Happy Latest Artifact: `{payload['summary']['remote_happy_latest_artifact']}`")
