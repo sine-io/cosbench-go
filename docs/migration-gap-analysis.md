@@ -31,7 +31,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - `smoke-ready` now also exposes the latest run id for each evidence surface, so machine consumers can join evidence back to GitHub runs without parsing URLs
 - `smoke-ready` now also exposes the latest duration in seconds for each evidence surface, so machine consumers can reason about workflow timing without scraping GitHub
 - `smoke-ready` now also exposes the latest head SHA for each evidence surface, so machine consumers can tell exactly which commit produced the latest evidence
-- the latest repository-hosted `Smoke Ready Validate` run on 2026-03-29 (`23699563386`) completed successfully, uploaded `smoke-ready-validate-output`, and confirms that the schema-validation artifact chain still aligns with `smoke-ready` consumption on the current mainline head
+- the latest repository-hosted `Smoke Ready Validate` run on 2026-03-29 (`23701760866`) completed successfully, uploaded `smoke-ready-validate-output`, and confirms that the schema-validation artifact chain still aligns with `smoke-ready` consumption on the then-current mainline head `0a3518ac7ee93fdc91b303f99eb92821030ce883`
 
 ## Closed for the Local v1 Boundary
 
