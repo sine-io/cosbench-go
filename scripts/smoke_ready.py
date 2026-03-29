@@ -611,6 +611,16 @@ def latest_artifact(workflow_name):
     return artifact_map.get(workflow_name, "")
 
 
+def public_workflow_latest(workflow_latest):
+    public = {}
+    for name, row in workflow_latest.items():
+        if row is None:
+            public[name] = None
+            continue
+        public[name] = {k: v for k, v in row.items() if k not in {"started_at", "updated_at"}}
+    return public
+
+
 def build_payload():
     repo, repo_error = resolve_repo()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
@@ -682,6 +692,8 @@ def build_payload():
     if workflow_runs_accessible and not legacy_details_accessible and legacy_details_error:
         blockers.append(f"unable to query legacy workflow details: {legacy_details_error}")
 
+    workflow_latest_public = public_workflow_latest(workflow_latest)
+
     return {
         "schema_version": 1,
         "generated_at": generated_at(),
@@ -699,7 +711,7 @@ def build_payload():
             "present": workflow_presence,
             "latest_accessible": workflow_runs_accessible,
             "latest_error": workflow_runs_error,
-            "latest": workflow_latest,
+            "latest": workflow_latest_public,
         },
         "summary": {
             "local_env_ready": local_ready,
