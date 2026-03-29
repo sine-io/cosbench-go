@@ -1,6 +1,9 @@
 import json
 import os
 import subprocess
+from pathlib import Path
+
+import jsonschema
 
 
 def run_helper_json():
@@ -55,8 +58,15 @@ def run_helper_json():
     return json.loads(proc.stdout)
 
 
+def load_schema():
+    with Path("docs/smoke-ready.schema.json").open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def test_smoke_ready_schema_contract():
     payload = run_helper_json()
+    schema = load_schema()
+    jsonschema.validate(payload, schema)
     assert payload["schema_version"] == 1
     for key in ["repo", "required", "local_env", "repo_secrets", "workflows", "summary", "blockers"]:
         assert key in payload

@@ -53,6 +53,18 @@ def run(*args):
     return subprocess.run(args, check=False, text=True, capture_output=True)
 
 
+def normalize_latest_run(row):
+    if row is None:
+        return None
+    return {
+        "database_id": row.get("database_id", row.get("databaseId")),
+        "status": row.get("status", ""),
+        "conclusion": row.get("conclusion", ""),
+        "created_at": row.get("created_at", row.get("createdAt", "")),
+        "url": row.get("url", ""),
+    }
+
+
 def resolve_repo():
     if "SMOKE_READY_REPO" in os.environ:
         return os.environ["SMOKE_READY_REPO"], None
@@ -93,7 +105,8 @@ def load_workflow_names(repo):
 
 def load_workflow_latest_runs(repo):
     if "SMOKE_READY_MOCK_WORKFLOW_RUNS_JSON" in os.environ:
-        return json.loads(os.environ["SMOKE_READY_MOCK_WORKFLOW_RUNS_JSON"]), True, ""
+        rows = json.loads(os.environ["SMOKE_READY_MOCK_WORKFLOW_RUNS_JSON"])
+        return {name: normalize_latest_run(row) for name, row in rows.items()}, True, ""
     latest = {}
     for name in WORKFLOW_NAMES:
         proc = run(
@@ -114,14 +127,7 @@ def load_workflow_latest_runs(repo):
             return {}, False, error
         rows = json.loads(proc.stdout or "[]")
         if rows:
-            row = rows[0]
-            latest[name] = {
-                "database_id": row.get("databaseId"),
-                "status": row.get("status", ""),
-                "conclusion": row.get("conclusion", ""),
-                "created_at": row.get("createdAt", ""),
-                "url": row.get("url", ""),
-            }
+            latest[name] = normalize_latest_run(rows[0])
         else:
             latest[name] = None
     return latest, True, ""
