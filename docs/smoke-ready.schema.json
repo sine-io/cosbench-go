@@ -8,6 +8,7 @@
     "schema_version",
     "generated_at",
     "repo",
+    "current_head_sha",
     "required",
     "local_env",
     "repo_secrets",
@@ -24,6 +25,9 @@
       "type": "string"
     },
     "repo": {
+      "type": "string"
+    },
+    "current_head_sha": {
       "type": "string"
     },
     "required": {
@@ -197,6 +201,9 @@
         "real_endpoint_latest_head_branch",
         "real_endpoint_matrix_latest_head_branch",
         "schema_validation_latest_head_branch",
+        "real_endpoint_latest_matches_head",
+        "real_endpoint_matrix_latest_matches_head",
+        "schema_validation_latest_matches_head",
         "real_endpoint_latest_run_id",
         "real_endpoint_matrix_latest_run_id",
         "schema_validation_latest_run_id",
@@ -224,6 +231,8 @@
         "legacy_live_matrix_latest_head_sha",
         "legacy_live_latest_head_branch",
         "legacy_live_matrix_latest_head_branch",
+        "legacy_live_latest_matches_head",
+        "legacy_live_matrix_latest_matches_head",
         "legacy_live_latest_run_id",
         "legacy_live_matrix_latest_run_id",
         "legacy_live_latest_duration_seconds",
@@ -246,6 +255,8 @@
         "remote_recovery_latest_head_sha",
         "remote_happy_latest_head_branch",
         "remote_recovery_latest_head_branch",
+        "remote_happy_latest_matches_head",
+        "remote_recovery_latest_matches_head",
         "remote_happy_latest_run_id",
         "remote_recovery_latest_run_id",
         "remote_happy_latest_duration_seconds",
@@ -286,6 +297,9 @@
         "real_endpoint_latest_head_branch": { "type": "string" },
         "real_endpoint_matrix_latest_head_branch": { "type": "string" },
         "schema_validation_latest_head_branch": { "type": "string" },
+        "real_endpoint_latest_matches_head": { "type": "boolean" },
+        "real_endpoint_matrix_latest_matches_head": { "type": "boolean" },
+        "schema_validation_latest_matches_head": { "type": "boolean" },
         "real_endpoint_latest_run_id": { "type": ["integer", "null"] },
         "real_endpoint_matrix_latest_run_id": { "type": ["integer", "null"] },
         "schema_validation_latest_run_id": { "type": ["integer", "null"] },
@@ -313,6 +327,8 @@
         "legacy_live_matrix_latest_head_sha": { "type": "string" },
         "legacy_live_latest_head_branch": { "type": "string" },
         "legacy_live_matrix_latest_head_branch": { "type": "string" },
+        "legacy_live_latest_matches_head": { "type": "boolean" },
+        "legacy_live_matrix_latest_matches_head": { "type": "boolean" },
         "legacy_live_latest_run_id": { "type": ["integer", "null"] },
         "legacy_live_matrix_latest_run_id": { "type": ["integer", "null"] },
         "legacy_live_latest_duration_seconds": { "type": ["integer", "null"] },
@@ -335,6 +351,8 @@
         "remote_recovery_latest_head_sha": { "type": "string" },
         "remote_happy_latest_head_branch": { "type": "string" },
         "remote_recovery_latest_head_branch": { "type": "string" },
+        "remote_happy_latest_matches_head": { "type": "boolean" },
+        "remote_recovery_latest_matches_head": { "type": "boolean" },
         "remote_happy_latest_run_id": { "type": ["integer", "null"] },
         "remote_recovery_latest_run_id": { "type": ["integer", "null"] },
         "remote_happy_latest_duration_seconds": { "type": ["integer", "null"] },

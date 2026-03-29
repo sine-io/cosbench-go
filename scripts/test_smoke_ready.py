@@ -5,6 +5,7 @@ import subprocess
 
 def run_helper(*args, env_overrides=None):
     env = os.environ.copy()
+    env["SMOKE_READY_MOCK_CURRENT_HEAD_SHA"] = "sha-smoke-ready-validate"
     env["SMOKE_READY_MOCK_REPO_SECRETS"] = "COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY"
     env["SMOKE_READY_MOCK_WORKFLOWS"] = ",".join(
         [
@@ -231,6 +232,7 @@ def run_helper(*args, env_overrides=None):
 def test_smoke_ready_json_reports_full_workflow_surface():
     proc = run_helper("--json")
     payload = json.loads(proc.stdout)
+    assert payload["current_head_sha"] == "sha-smoke-ready-validate"
     present = payload["workflows"]["present"]
     assert present["Smoke Local"] is True
     assert present["Smoke S3"] is True
@@ -282,6 +284,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["schema_validation_latest_run_id"] == 1010
     assert summary["schema_validation_latest_head_sha"] == "sha-smoke-ready-validate"
     assert summary["schema_validation_latest_head_branch"] == "main"
+    assert summary["schema_validation_latest_matches_head"] is True
     assert summary["schema_validation_latest_duration_seconds"] == 15
     assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
     assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-output"
@@ -314,6 +317,8 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["real_endpoint_matrix_latest_head_sha"] == "sha-smoke-s3-matrix"
     assert summary["real_endpoint_latest_head_branch"] == "main"
     assert summary["real_endpoint_matrix_latest_head_branch"] == "main"
+    assert summary["real_endpoint_latest_matches_head"] is False
+    assert summary["real_endpoint_matrix_latest_matches_head"] is False
     assert summary["real_endpoint_latest_duration_seconds"] == 40
     assert summary["real_endpoint_matrix_latest_duration_seconds"] == 50
     assert summary["legacy_live_latest_source"] == "Legacy Live Compare"
@@ -326,6 +331,8 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_latest_head_sha"] == "sha-legacy-live-matrix"
     assert summary["legacy_live_latest_head_branch"] == "main"
     assert summary["legacy_live_matrix_latest_head_branch"] == "main"
+    assert summary["legacy_live_latest_matches_head"] is False
+    assert summary["legacy_live_matrix_latest_matches_head"] is False
     assert summary["legacy_live_latest_duration_seconds"] == 20
     assert summary["legacy_live_matrix_latest_duration_seconds"] == 30
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
@@ -338,6 +345,8 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["remote_recovery_latest_head_sha"] == "sha-remote-smoke-recovery-matrix"
     assert summary["remote_happy_latest_head_branch"] == "main"
     assert summary["remote_recovery_latest_head_branch"] == "main"
+    assert summary["remote_happy_latest_matches_head"] is False
+    assert summary["remote_recovery_latest_matches_head"] is False
     assert summary["remote_happy_latest_duration_seconds"] == 45
     assert summary["remote_recovery_latest_duration_seconds"] == 55
     assert summary["real_endpoint_latest_artifact"] == "smoke-s3-output"

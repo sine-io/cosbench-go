@@ -8,6 +8,7 @@ import jsonschema
 
 def run_helper_json():
     env = os.environ.copy()
+    env["SMOKE_READY_MOCK_CURRENT_HEAD_SHA"] = "sha-smoke-ready-validate"
     env["SMOKE_READY_MOCK_REPO_SECRETS"] = "COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY"
     env["SMOKE_READY_MOCK_WORKFLOWS"] = ",".join(
         [
@@ -71,6 +72,7 @@ def test_smoke_ready_schema_contract():
     schema = load_schema()
     jsonschema.validate(payload, schema)
     assert payload["schema_version"] == 1
+    assert payload["current_head_sha"] == "sha-smoke-ready-validate"
     for key in ["repo", "required", "local_env", "repo_secrets", "workflows", "summary", "blockers"]:
         assert key in payload
 
@@ -81,6 +83,7 @@ def test_smoke_ready_schema_contract():
         "real_endpoint_latest_event",
         "real_endpoint_latest_head_sha",
         "real_endpoint_latest_head_branch",
+        "real_endpoint_latest_matches_head",
         "real_endpoint_latest_run_id",
         "real_endpoint_latest_duration_seconds",
         "real_endpoint_latest_url",
@@ -93,6 +96,7 @@ def test_smoke_ready_schema_contract():
         "schema_validation_latest_event",
         "schema_validation_latest_head_sha",
         "schema_validation_latest_head_branch",
+        "schema_validation_latest_matches_head",
         "schema_validation_latest_run_id",
         "schema_validation_latest_duration_seconds",
         "schema_validation_latest_url",
@@ -103,6 +107,7 @@ def test_smoke_ready_schema_contract():
         "real_endpoint_matrix_latest_event",
         "real_endpoint_matrix_latest_head_sha",
         "real_endpoint_matrix_latest_head_branch",
+        "real_endpoint_matrix_latest_matches_head",
         "real_endpoint_matrix_latest_run_id",
         "real_endpoint_matrix_latest_duration_seconds",
         "real_endpoint_matrix_latest_url",
@@ -113,6 +118,7 @@ def test_smoke_ready_schema_contract():
         "legacy_live_latest_event",
         "legacy_live_latest_head_sha",
         "legacy_live_latest_head_branch",
+        "legacy_live_latest_matches_head",
         "legacy_live_latest_run_id",
         "legacy_live_latest_duration_seconds",
         "legacy_live_latest_url",
@@ -123,6 +129,7 @@ def test_smoke_ready_schema_contract():
         "legacy_live_matrix_latest_event",
         "legacy_live_matrix_latest_head_sha",
         "legacy_live_matrix_latest_head_branch",
+        "legacy_live_matrix_latest_matches_head",
         "legacy_live_matrix_latest_run_id",
         "legacy_live_matrix_latest_duration_seconds",
         "legacy_live_matrix_latest_url",
@@ -133,6 +140,7 @@ def test_smoke_ready_schema_contract():
         "remote_happy_latest_event",
         "remote_happy_latest_head_sha",
         "remote_happy_latest_head_branch",
+        "remote_happy_latest_matches_head",
         "remote_happy_latest_run_id",
         "remote_happy_latest_duration_seconds",
         "remote_happy_latest_url",
@@ -143,6 +151,7 @@ def test_smoke_ready_schema_contract():
         "remote_recovery_latest_event",
         "remote_recovery_latest_head_sha",
         "remote_recovery_latest_head_branch",
+        "remote_recovery_latest_matches_head",
         "remote_recovery_latest_run_id",
         "remote_recovery_latest_duration_seconds",
         "remote_recovery_latest_url",
