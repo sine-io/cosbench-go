@@ -24,6 +24,12 @@ jobs:
         run: |
           make --no-print-directory smoke-ready-validate-json > .artifacts/smoke-ready-validate/validation.json
 
+      - name: Capture current workflow run metadata
+        run: gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json databaseId,event,headSha,headBranch,createdAt,startedAt,updatedAt,url > .artifacts/smoke-ready-validate/current-run.json
+
+      - name: Finalize smoke-ready payload for current run
+        run: python3 ./scripts/finalize_smoke_ready_validate_payload.py .artifacts/smoke-ready-validate/smoke-ready.json .artifacts/smoke-ready-validate/validation.json .artifacts/smoke-ready-validate/current-run.json
+
       - name: Build smoke-ready validation summary artifact
         if: always()
         run: python3 ./scripts/build_smoke_ready_validate_summary.py .artifacts/smoke-ready-validate .artifacts/smoke-ready-validate-summary

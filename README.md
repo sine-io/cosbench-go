@@ -61,6 +61,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - run `make --no-print-directory smoke-ready-validate` or `make --no-print-directory smoke-ready-validate-json` when you want the repository to validate the current helper output against that schema directly
 - trigger the same validation remotely with `gh workflow run "Smoke Ready Validate" --repo sine-io/cosbench-go`; the workflow also runs on a non-blocking daily schedule
 - that workflow now uploads both the raw `smoke-ready-validate-output` artifact and a dedicated `smoke-ready-validate-summary` artifact with `summary.json` and `summary.md`, and `smoke-ready` now prefers the summary artifact when reading schema-validation evidence
+- `Smoke Ready Validate` now also finalizes its captured `smoke-ready.json` with the current workflow run metadata before upload, so `schema_validation_current` and the related latest schema-validation fields describe the run that produced the artifact rather than the previous completed validation run
 - `smoke-ready` now also reports `Smoke Ready Validate` as a separate contract-surface signal, including its latest result, URL, artifact, and timestamp
 - `smoke-ready` now also reports the latest trigger event for each evidence surface, so you can distinguish `workflow_dispatch`, `schedule`, and `push`
 - `smoke-ready` now also reports the latest run id for each evidence surface, so automation does not need to parse it back out of the URL
