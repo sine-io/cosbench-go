@@ -217,6 +217,12 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_latest_source"] == "Legacy Live Compare Matrix"
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
     assert summary["remote_recovery_latest_url"] == "https://example.test/remote-smoke-recovery-matrix"
+    assert summary["real_endpoint_latest_artifact"] == "smoke-s3-output"
+    assert summary["real_endpoint_matrix_latest_artifact"] == "smoke-s3-matrix-aggregate"
+    assert summary["legacy_live_latest_artifact"] == "legacy-live-compare-output"
+    assert summary["legacy_live_matrix_latest_artifact"] == "legacy-live-compare-matrix-aggregate"
+    assert summary["remote_happy_latest_artifact"] == "remote-smoke-matrix-aggregate"
+    assert summary["remote_recovery_latest_artifact"] == "remote-smoke-recovery-matrix-aggregate"
     assert summary["real_endpoint_latest_created_at"] == "2026-03-29T00:05:00Z"
     assert summary["real_endpoint_matrix_latest_created_at"] == "2026-03-29T00:06:00Z"
     assert summary["legacy_live_latest_created_at"] == "2026-03-29T00:07:00Z"
@@ -269,6 +275,12 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Legacy Live Matrix Latest Source" in text
     assert "Remote Happy Latest URL" in text
     assert "Remote Recovery Latest URL" in text
+    assert "Real Endpoint Latest Artifact" in text
+    assert "Real Endpoint Matrix Latest Artifact" in text
+    assert "Legacy Live Latest Artifact" in text
+    assert "Legacy Live Matrix Latest Artifact" in text
+    assert "Remote Happy Latest Artifact" in text
+    assert "Remote Recovery Latest Artifact" in text
     assert "Real Endpoint Latest Created At" in text
     assert "Real Endpoint Matrix Latest Created At" in text
     assert "Legacy Live Latest Created At" in text
