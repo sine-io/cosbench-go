@@ -11,6 +11,8 @@ def test_smoke_ready_validate_workflow_shape():
     assert "make --no-print-directory smoke-ready-validate-json" in workflow
     assert ".artifacts/smoke-ready-validate/smoke-ready.json" in workflow
     assert ".artifacts/smoke-ready-validate/validation.json" in workflow
+    assert "python3 ./scripts/build_smoke_ready_validate_summary.py .artifacts/smoke-ready-validate .artifacts/smoke-ready-validate-summary" in workflow
     assert "uses: actions/upload-artifact@v7.0.0" in workflow
     assert "name: smoke-ready-validate-output" in workflow
-    assert 'cat .artifacts/smoke-ready-validate/validation.json >> "$GITHUB_STEP_SUMMARY"' in workflow
+    assert "name: smoke-ready-validate-summary" in workflow
+    assert 'cat .artifacts/smoke-ready-validate-summary/summary.md >> "$GITHUB_STEP_SUMMARY"' in workflow

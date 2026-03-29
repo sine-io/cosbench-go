@@ -60,6 +60,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - machine consumers can also validate that payload against [docs/smoke-ready.schema.json](docs/smoke-ready.schema.json)
 - run `make --no-print-directory smoke-ready-validate` or `make --no-print-directory smoke-ready-validate-json` when you want the repository to validate the current helper output against that schema directly
 - trigger the same validation remotely with `gh workflow run "Smoke Ready Validate" --repo sine-io/cosbench-go`; the workflow also runs on a non-blocking daily schedule
+- that workflow now uploads both the raw `smoke-ready-validate-output` artifact and a dedicated `smoke-ready-validate-summary` artifact with `summary.json` and `summary.md`, and `smoke-ready` now prefers the summary artifact when reading schema-validation evidence
 - `smoke-ready` now also reports `Smoke Ready Validate` as a separate contract-surface signal, including its latest result, URL, artifact, and timestamp
 - `smoke-ready` now also reports the latest trigger event for each evidence surface, so you can distinguish `workflow_dispatch`, `schedule`, and `push`
 - `smoke-ready` now also reports the latest run id for each evidence surface, so automation does not need to parse it back out of the URL
@@ -68,7 +69,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports the latest head branch for each evidence surface, so you can tell whether that evidence came from `main` or another branch without opening GitHub
 - `smoke-ready` now also reports whether each latest-evidence surface matches the current checkout HEAD, so you can tell at a glance whether evidence is stale for the code you are on
 - `smoke-ready` now also reports `current_head_branch` alongside `current_head_sha`, so local tooling can identify the active checkout without shelling out to Git
-- The latest verified GitHub-hosted `Smoke Ready Validate` run is `23706278353`, and it uploaded `smoke-ready-validate-output` with `validation.json` showing `{"valid": true, "schema_version": 1}`
+- The latest verified GitHub-hosted `Smoke Ready Validate` run is `23706278353`, and it uploaded `smoke-ready-validate-output`; after the current mainline change, `smoke-ready` prefers the dedicated `smoke-ready-validate-summary` artifact for normalized schema-validation evidence
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657083` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657085`
 - The latest verified GitHub-hosted `Smoke S3` run is `23695743149`, and it uploaded both `smoke-s3-output.txt` and `.artifacts/smoke-s3-summary/summary.json` with `{"result":"skipped"}`

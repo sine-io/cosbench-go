@@ -24,13 +24,23 @@ jobs:
         run: |
           make --no-print-directory smoke-ready-validate-json > .artifacts/smoke-ready-validate/validation.json
 
+      - name: Build smoke-ready validation summary artifact
+        if: always()
+        run: python3 ./scripts/build_smoke_ready_validate_summary.py .artifacts/smoke-ready-validate .artifacts/smoke-ready-validate-summary
+
       - name: Write validation summary
         if: always()
         shell: bash
         run: |
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          cat .artifacts/smoke-ready-validate/validation.json >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f .artifacts/smoke-ready-validate-summary/summary.md ]; then
+            cat .artifacts/smoke-ready-validate-summary/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Smoke Ready Validate"
+              echo
+              echo "Smoke Ready validator failed before emitting .artifacts/smoke-ready-validate-summary/summary.md."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload validation artifact
         if: always()
@@ -38,3 +48,11 @@ jobs:
         with:
           name: smoke-ready-validate-output
           path: .artifacts/smoke-ready-validate
+
+      - name: Upload validation summary artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: smoke-ready-validate-summary
+          path: .artifacts/smoke-ready-validate-summary
+          if-no-files-found: ignore
