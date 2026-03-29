@@ -180,6 +180,11 @@
       "required": [
         "local_env_ready",
         "local_workflow_ready",
+        "contract_current_ready",
+        "real_endpoint_current_ready",
+        "legacy_live_current_ready",
+        "remote_happy_current_ready",
+        "remote_recovery_current_ready",
         "real_endpoint_ready",
         "real_endpoint_matrix_ready",
         "schema_validation_ready",
@@ -305,6 +310,11 @@
       "properties": {
         "local_env_ready": { "type": "boolean" },
         "local_workflow_ready": { "type": "boolean" },
+        "contract_current_ready": { "type": "boolean" },
+        "real_endpoint_current_ready": { "type": "boolean" },
+        "legacy_live_current_ready": { "type": "boolean" },
+        "remote_happy_current_ready": { "type": "boolean" },
+        "remote_recovery_current_ready": { "type": "boolean" },
         "real_endpoint_ready": { "type": "boolean" },
         "real_endpoint_matrix_ready": { "type": "boolean" },
         "schema_validation_ready": { "type": "boolean" },

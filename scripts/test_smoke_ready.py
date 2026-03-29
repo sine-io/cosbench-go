@@ -273,6 +273,11 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     summary = payload["summary"]
     assert "local_env_ready" in summary
     assert "local_workflow_ready" in summary
+    assert "contract_current_ready" in summary
+    assert "real_endpoint_current_ready" in summary
+    assert "legacy_live_current_ready" in summary
+    assert "remote_happy_current_ready" in summary
+    assert "remote_recovery_current_ready" in summary
     assert "schema_validation_ready" in summary
     assert "remote_happy_ready" in summary
     assert "remote_recovery_ready" in summary
@@ -293,6 +298,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["schema_validation_latest_fresh"] is True
     assert summary["schema_validation_current"] is True
     assert summary["schema_validation_current_reason"] == "current"
+    assert summary["contract_current_ready"] is True
     assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
     assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-summary"
     assert summary["schema_validation_latest_created_at"] == "2026-03-29T00:06:30Z"
@@ -336,6 +342,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["real_endpoint_matrix_current"] is False
     assert summary["real_endpoint_current_reason"] == "not_successful"
     assert summary["real_endpoint_matrix_current_reason"] == "not_successful"
+    assert summary["real_endpoint_current_ready"] is False
     assert summary["legacy_live_latest_source"] == "Legacy Live Compare"
     assert summary["legacy_live_matrix_latest_source"] == "Legacy Live Compare Matrix"
     assert summary["legacy_live_latest_event"] == "workflow_dispatch"
@@ -358,6 +365,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_current"] is False
     assert summary["legacy_live_current_reason"] == "not_successful"
     assert summary["legacy_live_matrix_current_reason"] == "not_successful"
+    assert summary["legacy_live_current_ready"] is False
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
     assert summary["remote_happy_latest_age_seconds"] == 2400
     assert summary["remote_recovery_latest_age_seconds"] == 1200
@@ -367,6 +375,8 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["remote_recovery_current"] is False
     assert summary["remote_happy_current_reason"] == "head_mismatch"
     assert summary["remote_recovery_current_reason"] == "head_mismatch"
+    assert summary["remote_happy_current_ready"] is False
+    assert summary["remote_recovery_current_ready"] is False
     assert summary["freshness_thresholds_seconds"] == {
         "schema_validation": 172800,
         "remote": 172800,
@@ -417,8 +427,13 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "completed/success" in text
     assert "Local Env Ready" in text
     assert "Local Workflow Ready" in text
+    assert "Contract Current Ready" in text
+    assert "Real Endpoint Current Ready" in text
+    assert "Legacy Live Current Ready" in text
     assert "Remote Happy Ready" in text
     assert "Remote Recovery Ready" in text
+    assert "Remote Happy Current Ready" in text
+    assert "Remote Recovery Current Ready" in text
     assert "Legacy Live Ready" in text
     assert "Legacy Live Matrix Ready" in text
     assert "Real Endpoint Latest Success" in text

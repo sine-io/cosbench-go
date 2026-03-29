@@ -34,6 +34,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - `smoke-ready` now also exposes `*_latest_fresh` booleans and a shared `freshness_thresholds_seconds` block, so machine consumers can apply the repository's freshness policy directly instead of re-encoding it
 - `smoke-ready` now also exposes `*_current` booleans, so machine consumers can ask the simpler question “is the latest evidence valid for this checkout?” without recombining success, freshness, and head-alignment themselves
 - `smoke-ready` now also exposes `*_current_reason`, so machine consumers and operators can tell whether a non-current signal comes from `not_successful`, `stale`, `head_mismatch`, or a currently valid record
+- `smoke-ready` now also exposes family-level `*_current_ready` booleans, so callers can answer “is current contract / real-endpoint / legacy-live / remote evidence available for this checkout?” without manually folding the lower-level per-surface fields
 - the human-readable `smoke-ready` output now also prints those freshness/current signals and the threshold block directly, so operators do not need to switch to JSON mode just to inspect them
 - `smoke-ready` now also exposes the latest head SHA for each evidence surface, so machine consumers can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also exposes the latest head branch for each evidence surface, so machine consumers can distinguish `main` evidence from non-main evidence without extra GitHub queries

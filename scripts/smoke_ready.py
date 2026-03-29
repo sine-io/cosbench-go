@@ -773,6 +773,20 @@ def build_payload():
     legacy_live_matrix_latest_success = legacy_live_matrix_latest_result == "executed"
     remote_happy_latest_success = remote_happy_latest_result == "executed"
     remote_recovery_latest_success = remote_recovery_latest_result == "executed"
+    real_endpoint_latest_fresh = is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"])
+    real_endpoint_matrix_latest_fresh = is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"])
+    schema_validation_latest_fresh = is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"])
+    legacy_live_latest_fresh = is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"])
+    legacy_live_matrix_latest_fresh = is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"])
+    remote_happy_latest_fresh = is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"])
+    remote_recovery_latest_fresh = is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"])
+    real_endpoint_current = is_current(real_endpoint_latest_success, real_endpoint_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW))
+    real_endpoint_matrix_current = is_current(real_endpoint_matrix_latest_success, real_endpoint_matrix_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW))
+    schema_validation_current = is_current(schema_validation_latest_success, schema_validation_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW))
+    legacy_live_current = is_current(legacy_live_latest_success, legacy_live_latest_fresh, matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW))
+    legacy_live_matrix_current = is_current(legacy_live_matrix_latest_success, legacy_live_matrix_latest_fresh, matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW))
+    remote_happy_current = is_current(remote_happy_latest_success, remote_happy_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name))
+    remote_recovery_current = is_current(remote_recovery_latest_success, remote_recovery_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name))
     ready = local_ready or local_workflow_ready
 
     blockers = []
@@ -827,6 +841,11 @@ def build_payload():
         "summary": {
             "local_env_ready": local_ready,
             "local_workflow_ready": local_workflow_ready,
+            "contract_current_ready": schema_validation_current,
+            "real_endpoint_current_ready": real_endpoint_current or real_endpoint_matrix_current,
+            "legacy_live_current_ready": legacy_live_current or legacy_live_matrix_current,
+            "remote_happy_current_ready": remote_happy_current,
+            "remote_recovery_current_ready": remote_recovery_current,
             "real_endpoint_ready": real_endpoint_ready,
             "real_endpoint_matrix_ready": real_endpoint_matrix_ready,
             "schema_validation_ready": schema_validation_ready,
@@ -864,15 +883,15 @@ def build_payload():
             "real_endpoint_latest_age_seconds": real_endpoint_latest_age_seconds,
             "real_endpoint_matrix_latest_age_seconds": real_endpoint_matrix_latest_age_seconds,
             "schema_validation_latest_age_seconds": schema_validation_latest_age_seconds,
-            "real_endpoint_latest_fresh": is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]),
-            "real_endpoint_matrix_latest_fresh": is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]),
-            "schema_validation_latest_fresh": is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]),
-            "real_endpoint_current": is_current(real_endpoint_latest_success, is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW)),
-            "real_endpoint_matrix_current": is_current(real_endpoint_matrix_latest_success, is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW)),
-            "schema_validation_current": is_current(schema_validation_latest_success, is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW)),
-            "real_endpoint_current_reason": current_reason(real_endpoint_latest_success, is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW)),
-            "real_endpoint_matrix_current_reason": current_reason(real_endpoint_matrix_latest_success, is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW)),
-            "schema_validation_current_reason": current_reason(schema_validation_latest_success, is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW)),
+            "real_endpoint_latest_fresh": real_endpoint_latest_fresh,
+            "real_endpoint_matrix_latest_fresh": real_endpoint_matrix_latest_fresh,
+            "schema_validation_latest_fresh": schema_validation_latest_fresh,
+            "real_endpoint_current": real_endpoint_current,
+            "real_endpoint_matrix_current": real_endpoint_matrix_current,
+            "schema_validation_current": schema_validation_current,
+            "real_endpoint_current_reason": current_reason(real_endpoint_latest_success, real_endpoint_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW)),
+            "real_endpoint_matrix_current_reason": current_reason(real_endpoint_matrix_latest_success, real_endpoint_matrix_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW)),
+            "schema_validation_current_reason": current_reason(schema_validation_latest_success, schema_validation_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW)),
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -902,12 +921,12 @@ def build_payload():
             "legacy_live_matrix_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_age_seconds": legacy_live_latest_age_seconds,
             "legacy_live_matrix_latest_age_seconds": legacy_live_matrix_latest_age_seconds,
-            "legacy_live_latest_fresh": is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]),
-            "legacy_live_matrix_latest_fresh": is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]),
-            "legacy_live_current": is_current(legacy_live_latest_success, is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW)),
-            "legacy_live_matrix_current": is_current(legacy_live_matrix_latest_success, is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW)),
-            "legacy_live_current_reason": current_reason(legacy_live_latest_success, is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW)),
-            "legacy_live_matrix_current_reason": current_reason(legacy_live_matrix_latest_success, is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW)),
+            "legacy_live_latest_fresh": legacy_live_latest_fresh,
+            "legacy_live_matrix_latest_fresh": legacy_live_matrix_latest_fresh,
+            "legacy_live_current": legacy_live_current,
+            "legacy_live_matrix_current": legacy_live_matrix_current,
+            "legacy_live_current_reason": current_reason(legacy_live_latest_success, legacy_live_latest_fresh, matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW)),
+            "legacy_live_matrix_current_reason": current_reason(legacy_live_matrix_latest_success, legacy_live_matrix_latest_fresh, matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW)),
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
@@ -934,12 +953,12 @@ def build_payload():
             "remote_recovery_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_age_seconds": remote_happy_latest_age_seconds,
             "remote_recovery_latest_age_seconds": remote_recovery_latest_age_seconds,
-            "remote_happy_latest_fresh": is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]),
-            "remote_recovery_latest_fresh": is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]),
-            "remote_happy_current": is_current(remote_happy_latest_success, is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name)),
-            "remote_recovery_current": is_current(remote_recovery_latest_success, is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name)),
-            "remote_happy_current_reason": current_reason(remote_happy_latest_success, is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name)),
-            "remote_recovery_current_reason": current_reason(remote_recovery_latest_success, is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name)),
+            "remote_happy_latest_fresh": remote_happy_latest_fresh,
+            "remote_recovery_latest_fresh": remote_recovery_latest_fresh,
+            "remote_happy_current": remote_happy_current,
+            "remote_recovery_current": remote_recovery_current,
+            "remote_happy_current_reason": current_reason(remote_happy_latest_success, remote_happy_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name)),
+            "remote_recovery_current_reason": current_reason(remote_recovery_latest_success, remote_recovery_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name)),
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
@@ -1019,6 +1038,9 @@ def print_text(payload):
     print()
     print(f"- Local Env Ready: `{yes_no(payload['summary']['local_env_ready'])}`")
     print(f"- Local Workflow Ready: `{yes_no(payload['summary']['local_workflow_ready'])}`")
+    print(f"- Contract Current Ready: `{yes_no(payload['summary']['contract_current_ready'])}`")
+    print(f"- Real Endpoint Current Ready: `{yes_no(payload['summary']['real_endpoint_current_ready'])}`")
+    print(f"- Legacy Live Current Ready: `{yes_no(payload['summary']['legacy_live_current_ready'])}`")
     print(f"- Real Endpoint Ready: `{yes_no(payload['summary']['real_endpoint_ready'])}`")
     print(f"- Real Endpoint Matrix Ready: `{yes_no(payload['summary']['real_endpoint_matrix_ready'])}`")
     print(f"- Schema Validation Ready: `{yes_no(payload['summary']['schema_validation_ready'])}`")
@@ -1026,6 +1048,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Ready: `{yes_no(payload['summary']['legacy_live_matrix_ready'])}`")
     print(f"- Remote Happy Ready: `{yes_no(payload['summary']['remote_happy_ready'])}`")
     print(f"- Remote Recovery Ready: `{yes_no(payload['summary']['remote_recovery_ready'])}`")
+    print(f"- Remote Happy Current Ready: `{yes_no(payload['summary']['remote_happy_current_ready'])}`")
+    print(f"- Remote Recovery Current Ready: `{yes_no(payload['summary']['remote_recovery_current_ready'])}`")
     print(f"- Real Endpoint Latest Success: `{yes_no(payload['summary']['real_endpoint_latest_success'])}`")
     print(f"- Real Endpoint Matrix Latest Success: `{yes_no(payload['summary']['real_endpoint_matrix_latest_success'])}`")
     print(f"- Schema Validation Latest Success: `{yes_no(payload['summary']['schema_validation_latest_success'])}`")
