@@ -67,6 +67,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports the latest head SHA for each evidence surface, so you can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also reports the latest head branch for each evidence surface, so you can tell whether that evidence came from `main` or another branch without opening GitHub
 - `smoke-ready` now also reports whether each latest-evidence surface matches the current checkout HEAD, so you can tell at a glance whether evidence is stale for the code you are on
+- `smoke-ready` now also reports `current_head_branch` alongside `current_head_sha`, so local tooling can identify the active checkout without shelling out to Git
 - The latest verified GitHub-hosted `Smoke Ready Validate` run is `23706278353`, and it uploaded `smoke-ready-validate-output` with `validation.json` showing `{"valid": true, "schema_version": 1}`
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657083` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657085`

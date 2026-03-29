@@ -35,6 +35,7 @@ Use `make --no-print-directory smoke-ready-json` when you want the same readines
 Use `make --no-print-directory smoke-ready-validate` when you want a human-readable check that the current readiness payload still matches the published schema.
 Use `make --no-print-directory smoke-ready-validate-json` when you want the same schema-validation state in machine-readable form.
 The `smoke-ready` summary now reports latest-evidence metadata as a consistent `result/source/event/head_sha/head_branch/run_id/url/artifact/duration_seconds/age_seconds/created_at` shape across the current evidence surfaces, plus `*_latest_matches_head` booleans relative to the current checkout head.
+The top-level payload now also reports `current_head_branch` alongside `current_head_sha`.
 That same readiness view now also includes `Smoke Ready Validate` as a separate contract-surface signal alongside local, real-endpoint, legacy-live, and remote smoke evidence.
 Use `make --no-print-directory smoke-local` when you want local live-endpoint evidence without external credentials.
 Repository CI runs `make validate`; keep smoke tests opt-in and out of the default CI path.

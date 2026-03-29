@@ -9,6 +9,7 @@
     "generated_at",
     "repo",
     "current_head_sha",
+    "current_head_branch",
     "required",
     "local_env",
     "repo_secrets",
@@ -28,6 +29,9 @@
       "type": "string"
     },
     "current_head_sha": {
+      "type": "string"
+    },
+    "current_head_branch": {
       "type": "string"
     },
     "required": {

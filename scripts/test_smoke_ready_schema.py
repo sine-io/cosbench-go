@@ -9,6 +9,7 @@ import jsonschema
 def run_helper_json():
     env = os.environ.copy()
     env["SMOKE_READY_MOCK_CURRENT_HEAD_SHA"] = "sha-smoke-ready-validate"
+    env["SMOKE_READY_MOCK_CURRENT_HEAD_BRANCH"] = "feature/smoke-ready"
     env["SMOKE_READY_MOCK_REPO_SECRETS"] = "COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY"
     env["SMOKE_READY_MOCK_WORKFLOWS"] = ",".join(
         [
@@ -73,6 +74,7 @@ def test_smoke_ready_schema_contract():
     jsonschema.validate(payload, schema)
     assert payload["schema_version"] == 1
     assert payload["current_head_sha"] == "sha-smoke-ready-validate"
+    assert payload["current_head_branch"] == "feature/smoke-ready"
     for key in ["repo", "required", "local_env", "repo_secrets", "workflows", "summary", "blockers"]:
         assert key in payload
 

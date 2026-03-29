@@ -88,6 +88,16 @@ def resolve_current_head_sha():
     return proc.stdout.strip(), None
 
 
+def resolve_current_head_branch():
+    if "SMOKE_READY_MOCK_CURRENT_HEAD_BRANCH" in os.environ:
+        return os.environ["SMOKE_READY_MOCK_CURRENT_HEAD_BRANCH"], None
+    proc = run("git", "rev-parse", "--abbrev-ref", "HEAD")
+    if proc.returncode != 0:
+        error = (proc.stderr or proc.stdout).strip()
+        return "", error
+    return proc.stdout.strip(), None
+
+
 def load_repo_secret_names(repo):
     if "SMOKE_READY_MOCK_REPO_SECRETS" in os.environ:
         return set(parse_name_list(os.environ["SMOKE_READY_MOCK_REPO_SECRETS"])), True, ""
@@ -654,6 +664,7 @@ def matches_current_head(current_head_sha, workflow_latest, workflow_name):
 def build_payload():
     repo, repo_error = resolve_repo()
     current_head_sha, current_head_error = resolve_current_head_sha()
+    current_head_branch, current_head_branch_error = resolve_current_head_branch()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
     local_ready = all(local_env.values())
 
@@ -706,6 +717,8 @@ def build_payload():
         blockers.append(f"unable to resolve repo: {repo_error}")
     if current_head_error:
         blockers.append(f"unable to resolve current head: {current_head_error}")
+    if current_head_branch_error:
+        blockers.append(f"unable to resolve current head branch: {current_head_branch_error}")
     if not ready:
         missing_local = [name for name, present in local_env.items() if not present]
         if missing_local:
@@ -732,6 +745,7 @@ def build_payload():
         "generated_at": generated_at(),
         "repo": repo,
         "current_head_sha": current_head_sha,
+        "current_head_branch": current_head_branch,
         "required": REQUIRED_SECRETS,
         "local_env": local_env,
         "repo_secrets": {
@@ -874,6 +888,7 @@ def print_text(payload):
     print()
     print(f"Repository: `{payload['repo']}`")
     print(f"Current Head SHA: `{payload['current_head_sha']}`")
+    print(f"Current Head Branch: `{payload['current_head_branch']}`")
     print(f"Generated at: `{payload['generated_at']}`")
     print()
     print("## Local Env")
