@@ -36,6 +36,12 @@ REMOTE_SMOKE_MATRIX_WORKFLOW = "Remote Smoke Matrix"
 REMOTE_SMOKE_RECOVERY_WORKFLOW = "Remote Smoke Recovery"
 REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW = "Remote Smoke Recovery Matrix"
 LEGACY_STEP_NAME = "Run legacy live compare"
+FRESHNESS_THRESHOLDS_SECONDS = {
+    "schema_validation": 172800,
+    "remote": 172800,
+    "real_endpoint": 2592000,
+    "legacy_live": 2592000,
+}
 
 
 def generated_at():
@@ -639,6 +645,12 @@ def latest_age_seconds(workflow_latest, workflow_name, reference_time):
     return age
 
 
+def is_fresh(age_seconds, threshold_seconds):
+    if age_seconds is None:
+        return False
+    return age_seconds <= threshold_seconds
+
+
 def latest_event(workflow_latest, workflow_name):
     if not workflow_name:
         return ""
@@ -731,6 +743,13 @@ def build_payload():
         if remote_recovery_latest_name == REMOTE_SMOKE_RECOVERY_WORKFLOW
         else remote_matrix_result(workflow_latest.get(REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW), remote_details.get(REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW))
     )
+    real_endpoint_latest_age_seconds = latest_age_seconds(workflow_latest, SMOKE_S3_WORKFLOW, payload_generated_at)
+    real_endpoint_matrix_latest_age_seconds = latest_age_seconds(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW, payload_generated_at)
+    schema_validation_latest_age_seconds = latest_age_seconds(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW, payload_generated_at)
+    legacy_live_latest_age_seconds = latest_age_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW, payload_generated_at)
+    legacy_live_matrix_latest_age_seconds = latest_age_seconds(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW, payload_generated_at)
+    remote_happy_latest_age_seconds = latest_age_seconds(workflow_latest, remote_happy_latest_name, payload_generated_at)
+    remote_recovery_latest_age_seconds = latest_age_seconds(workflow_latest, remote_recovery_latest_name, payload_generated_at)
     real_endpoint_latest_success = real_endpoint_latest_result == "executed"
     real_endpoint_matrix_latest_success = real_endpoint_matrix_latest_result == "executed"
     schema_validation_latest_success = schema_validation_latest_result == "validated"
@@ -826,9 +845,12 @@ def build_payload():
             "real_endpoint_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_duration_seconds": latest_duration_seconds(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
-            "real_endpoint_latest_age_seconds": latest_age_seconds(workflow_latest, SMOKE_S3_WORKFLOW, payload_generated_at),
-            "real_endpoint_matrix_latest_age_seconds": latest_age_seconds(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW, payload_generated_at),
-            "schema_validation_latest_age_seconds": latest_age_seconds(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW, payload_generated_at),
+            "real_endpoint_latest_age_seconds": real_endpoint_latest_age_seconds,
+            "real_endpoint_matrix_latest_age_seconds": real_endpoint_matrix_latest_age_seconds,
+            "schema_validation_latest_age_seconds": schema_validation_latest_age_seconds,
+            "real_endpoint_latest_fresh": is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]),
+            "real_endpoint_matrix_latest_fresh": is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]),
+            "schema_validation_latest_fresh": is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]),
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -856,8 +878,10 @@ def build_payload():
             "legacy_live_matrix_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
-            "legacy_live_latest_age_seconds": latest_age_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW, payload_generated_at),
-            "legacy_live_matrix_latest_age_seconds": latest_age_seconds(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW, payload_generated_at),
+            "legacy_live_latest_age_seconds": legacy_live_latest_age_seconds,
+            "legacy_live_matrix_latest_age_seconds": legacy_live_matrix_latest_age_seconds,
+            "legacy_live_latest_fresh": is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]),
+            "legacy_live_matrix_latest_fresh": is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]),
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
@@ -882,14 +906,17 @@ def build_payload():
             "remote_recovery_latest_run_id": latest_run_id(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_recovery_latest_name),
-            "remote_happy_latest_age_seconds": latest_age_seconds(workflow_latest, remote_happy_latest_name, payload_generated_at),
-            "remote_recovery_latest_age_seconds": latest_age_seconds(workflow_latest, remote_recovery_latest_name, payload_generated_at),
+            "remote_happy_latest_age_seconds": remote_happy_latest_age_seconds,
+            "remote_recovery_latest_age_seconds": remote_recovery_latest_age_seconds,
+            "remote_happy_latest_fresh": is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]),
+            "remote_recovery_latest_fresh": is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]),
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
             "remote_recovery_latest_artifact": latest_artifact(remote_recovery_latest_name),
             "remote_happy_latest_created_at": latest_created_at(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_created_at": latest_created_at(workflow_latest, remote_recovery_latest_name),
+            "freshness_thresholds_seconds": FRESHNESS_THRESHOLDS_SECONDS,
             "ready": ready,
         },
         "blockers": blockers,

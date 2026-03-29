@@ -290,6 +290,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["schema_validation_latest_matches_head"] is True
     assert summary["schema_validation_latest_duration_seconds"] == 15
     assert summary["schema_validation_latest_age_seconds"] == 3210
+    assert summary["schema_validation_latest_fresh"] is True
     assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
     assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-summary"
     assert summary["schema_validation_latest_created_at"] == "2026-03-29T00:06:30Z"
@@ -327,6 +328,8 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["real_endpoint_matrix_latest_duration_seconds"] == 50
     assert summary["real_endpoint_latest_age_seconds"] == 3300
     assert summary["real_endpoint_matrix_latest_age_seconds"] == 3240
+    assert summary["real_endpoint_latest_fresh"] is True
+    assert summary["real_endpoint_matrix_latest_fresh"] is True
     assert summary["legacy_live_latest_source"] == "Legacy Live Compare"
     assert summary["legacy_live_matrix_latest_source"] == "Legacy Live Compare Matrix"
     assert summary["legacy_live_latest_event"] == "workflow_dispatch"
@@ -343,9 +346,19 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_latest_duration_seconds"] == 30
     assert summary["legacy_live_latest_age_seconds"] == 3180
     assert summary["legacy_live_matrix_latest_age_seconds"] == 3120
+    assert summary["legacy_live_latest_fresh"] is True
+    assert summary["legacy_live_matrix_latest_fresh"] is True
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
     assert summary["remote_happy_latest_age_seconds"] == 2400
     assert summary["remote_recovery_latest_age_seconds"] == 1200
+    assert summary["remote_happy_latest_fresh"] is True
+    assert summary["remote_recovery_latest_fresh"] is True
+    assert summary["freshness_thresholds_seconds"] == {
+        "schema_validation": 172800,
+        "remote": 172800,
+        "real_endpoint": 2592000,
+        "legacy_live": 2592000,
+    }
     assert summary["remote_recovery_latest_url"] == "https://example.test/remote-smoke-recovery-matrix"
     assert summary["remote_happy_latest_event"] == "schedule"
     assert summary["remote_recovery_latest_event"] == "schedule"
