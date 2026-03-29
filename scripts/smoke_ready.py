@@ -651,6 +651,10 @@ def is_fresh(age_seconds, threshold_seconds):
     return age_seconds <= threshold_seconds
 
 
+def is_current(latest_success, latest_fresh, latest_matches_head):
+    return bool(latest_success and latest_fresh and latest_matches_head)
+
+
 def latest_event(workflow_latest, workflow_name):
     if not workflow_name:
         return ""
@@ -851,6 +855,9 @@ def build_payload():
             "real_endpoint_latest_fresh": is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]),
             "real_endpoint_matrix_latest_fresh": is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]),
             "schema_validation_latest_fresh": is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]),
+            "real_endpoint_current": is_current(real_endpoint_latest_success, is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW)),
+            "real_endpoint_matrix_current": is_current(real_endpoint_matrix_latest_success, is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW)),
+            "schema_validation_current": is_current(schema_validation_latest_success, is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW)),
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -882,6 +889,8 @@ def build_payload():
             "legacy_live_matrix_latest_age_seconds": legacy_live_matrix_latest_age_seconds,
             "legacy_live_latest_fresh": is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]),
             "legacy_live_matrix_latest_fresh": is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]),
+            "legacy_live_current": is_current(legacy_live_latest_success, is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW)),
+            "legacy_live_matrix_current": is_current(legacy_live_matrix_latest_success, is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW)),
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
@@ -910,6 +919,8 @@ def build_payload():
             "remote_recovery_latest_age_seconds": remote_recovery_latest_age_seconds,
             "remote_happy_latest_fresh": is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]),
             "remote_recovery_latest_fresh": is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]),
+            "remote_happy_current": is_current(remote_happy_latest_success, is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name)),
+            "remote_recovery_current": is_current(remote_recovery_latest_success, is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name)),
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
