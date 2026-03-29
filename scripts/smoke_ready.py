@@ -64,6 +64,7 @@ def normalize_latest_run(row):
         "conclusion": row.get("conclusion", ""),
         "event": row.get("event", ""),
         "head_sha": row.get("head_sha", row.get("headSha", "")),
+        "head_branch": row.get("head_branch", row.get("headBranch", "")),
         "created_at": row.get("created_at", row.get("createdAt", "")),
         "started_at": row.get("started_at", row.get("startedAt", "")),
         "updated_at": row.get("updated_at", row.get("updatedAt", "")),
@@ -126,7 +127,7 @@ def load_workflow_latest_runs(repo):
             "--limit",
             "1",
             "--json",
-            "databaseId,status,conclusion,event,headSha,createdAt,startedAt,updatedAt,url",
+            "databaseId,status,conclusion,event,headSha,headBranch,createdAt,startedAt,updatedAt,url",
         )
         if proc.returncode != 0:
             error = (proc.stderr or proc.stdout).strip()
@@ -603,6 +604,12 @@ def latest_head_sha(workflow_latest, workflow_name):
     return (workflow_latest.get(workflow_name) or {}).get("head_sha", "")
 
 
+def latest_head_branch(workflow_latest, workflow_name):
+    if not workflow_name:
+        return ""
+    return (workflow_latest.get(workflow_name) or {}).get("head_branch", "")
+
+
 def latest_artifact(workflow_name):
     artifact_map = {
         SMOKE_S3_WORKFLOW: "smoke-s3-output",
@@ -745,6 +752,9 @@ def build_payload():
             "real_endpoint_latest_head_sha": latest_head_sha(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_head_sha": latest_head_sha(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_head_sha": latest_head_sha(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
+            "real_endpoint_latest_head_branch": latest_head_branch(workflow_latest, SMOKE_S3_WORKFLOW),
+            "real_endpoint_matrix_latest_head_branch": latest_head_branch(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
+            "schema_validation_latest_head_branch": latest_head_branch(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
             "real_endpoint_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_run_id": latest_run_id(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -770,6 +780,8 @@ def build_payload():
             "legacy_live_matrix_latest_event": latest_event(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_head_sha": latest_head_sha(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_head_sha": latest_head_sha(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
+            "legacy_live_latest_head_branch": latest_head_branch(workflow_latest, LEGACY_LIVE_WORKFLOW),
+            "legacy_live_matrix_latest_head_branch": latest_head_branch(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW),
@@ -790,6 +802,8 @@ def build_payload():
             "remote_recovery_latest_event": latest_event(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_head_sha": latest_head_sha(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_head_sha": latest_head_sha(workflow_latest, remote_recovery_latest_name),
+            "remote_happy_latest_head_branch": latest_head_branch(workflow_latest, remote_happy_latest_name),
+            "remote_recovery_latest_head_branch": latest_head_branch(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_run_id": latest_run_id(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_run_id": latest_run_id(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_happy_latest_name),
@@ -892,6 +906,9 @@ def print_text(payload):
     print(f"- Real Endpoint Latest Head SHA: `{payload['summary']['real_endpoint_latest_head_sha']}`")
     print(f"- Real Endpoint Matrix Latest Head SHA: `{payload['summary']['real_endpoint_matrix_latest_head_sha']}`")
     print(f"- Schema Validation Latest Head SHA: `{payload['summary']['schema_validation_latest_head_sha']}`")
+    print(f"- Real Endpoint Latest Head Branch: `{payload['summary']['real_endpoint_latest_head_branch']}`")
+    print(f"- Real Endpoint Matrix Latest Head Branch: `{payload['summary']['real_endpoint_matrix_latest_head_branch']}`")
+    print(f"- Schema Validation Latest Head Branch: `{payload['summary']['schema_validation_latest_head_branch']}`")
     print(f"- Real Endpoint Latest Run ID: `{payload['summary']['real_endpoint_latest_run_id']}`")
     print(f"- Real Endpoint Matrix Latest Run ID: `{payload['summary']['real_endpoint_matrix_latest_run_id']}`")
     print(f"- Schema Validation Latest Run ID: `{payload['summary']['schema_validation_latest_run_id']}`")
@@ -917,6 +934,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Event: `{payload['summary']['legacy_live_matrix_latest_event']}`")
     print(f"- Legacy Live Latest Head SHA: `{payload['summary']['legacy_live_latest_head_sha']}`")
     print(f"- Legacy Live Matrix Latest Head SHA: `{payload['summary']['legacy_live_matrix_latest_head_sha']}`")
+    print(f"- Legacy Live Latest Head Branch: `{payload['summary']['legacy_live_latest_head_branch']}`")
+    print(f"- Legacy Live Matrix Latest Head Branch: `{payload['summary']['legacy_live_matrix_latest_head_branch']}`")
     print(f"- Legacy Live Latest Run ID: `{payload['summary']['legacy_live_latest_run_id']}`")
     print(f"- Legacy Live Matrix Latest Run ID: `{payload['summary']['legacy_live_matrix_latest_run_id']}`")
     print(f"- Legacy Live Latest Duration Seconds: `{payload['summary']['legacy_live_latest_duration_seconds']}`")
@@ -937,6 +956,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Event: `{payload['summary']['remote_recovery_latest_event']}`")
     print(f"- Remote Happy Latest Head SHA: `{payload['summary']['remote_happy_latest_head_sha']}`")
     print(f"- Remote Recovery Latest Head SHA: `{payload['summary']['remote_recovery_latest_head_sha']}`")
+    print(f"- Remote Happy Latest Head Branch: `{payload['summary']['remote_happy_latest_head_branch']}`")
+    print(f"- Remote Recovery Latest Head Branch: `{payload['summary']['remote_recovery_latest_head_branch']}`")
     print(f"- Remote Happy Latest Run ID: `{payload['summary']['remote_happy_latest_run_id']}`")
     print(f"- Remote Recovery Latest Run ID: `{payload['summary']['remote_recovery_latest_run_id']}`")
     print(f"- Remote Happy Latest Duration Seconds: `{payload['summary']['remote_happy_latest_duration_seconds']}`")
