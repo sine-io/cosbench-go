@@ -597,6 +597,7 @@ def build_payload():
         blockers.append(f"unable to query legacy workflow details: {legacy_details_error}")
 
     return {
+        "schema_version": 1,
         "generated_at": generated_at(),
         "repo": repo,
         "required": REQUIRED_SECRETS,
