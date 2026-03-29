@@ -77,11 +77,11 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports `current_head_branch` alongside `current_head_sha`, so local tooling can identify the active checkout without shelling out to Git
 - The latest verified GitHub-hosted `Smoke Ready Validate` run is `23719705227`, and it uploaded both `smoke-ready-validate-output` and `smoke-ready-validate-summary`; `smoke-ready` now prefers the summary artifact, the emitted `smoke-ready.json` includes `*_latest_age_seconds`, and the finalized payload reports both `schema_validation_current=true` and `schema_validation_current_reason=current` for the run that produced the artifact
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
-- `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657083` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657085`
+- `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23719785002` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23719785383`
 - The latest verified GitHub-hosted `Smoke S3` run is `23695743149`, and it uploaded both `smoke-s3-output.txt` and `.artifacts/smoke-s3-summary/summary.json` with `{"result":"skipped"}`
 - The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23695743153`, and its aggregate artifact reports both `s3` and `sio` rows as `skipped`
-- The latest verified GitHub-hosted `Remote Smoke Matrix` run is `23696657083`, and its aggregate artifact still reports all four supported combinations as passing
-- The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23696657085`, and its aggregate artifact still reports both recovery backends as passing
+- The latest verified GitHub-hosted `Remote Smoke Matrix` run is `23719785002`, and its aggregate artifact still reports all four supported combinations as passing
+- The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23719785383`, and its aggregate artifact still reports both recovery backends as passing
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
