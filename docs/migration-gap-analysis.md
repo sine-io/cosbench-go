@@ -38,6 +38,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - `smoke-ready` now also exposes whether each latest-evidence surface matches the current checkout HEAD, so machine consumers can detect stale evidence without re-implementing SHA comparison logic
 - `smoke-ready` now also exposes the current checkout branch alongside `current_head_sha`, so machine consumers can read the active local ref without shelling out separately
 - the latest repository-hosted `Smoke Ready Validate` run on 2026-03-30 (`23717773221`) completed successfully, uploaded both `smoke-ready-validate-output` and `smoke-ready-validate-summary`, and confirms that `smoke-ready` now consumes normalized schema-validation evidence directly while also emitting `*_latest_age_seconds` in the current summary payload so freshness is machine-readable without recomputing from timestamps
+- `Smoke Ready Validate` now also finalizes its own captured `smoke-ready.json` with the current workflow run metadata before upload, so `schema_validation_current` and the latest schema-validation fields describe the run that produced the artifact instead of a previous completed validation run
 
 ## Closed for the Local v1 Boundary
 
