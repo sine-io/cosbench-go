@@ -26,6 +26,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1001,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "push",
                 "created_at": "2026-03-29T00:00:00Z",
                 "url": "https://example.test/smoke-local",
             },
@@ -33,6 +34,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1002,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "workflow_dispatch",
                 "created_at": "2026-03-29T00:05:00Z",
                 "url": "https://example.test/smoke-s3",
             },
@@ -40,6 +42,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1009,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "workflow_dispatch",
                 "created_at": "2026-03-29T00:06:00Z",
                 "url": "https://example.test/smoke-s3-matrix",
             },
@@ -47,6 +50,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1010,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "schedule",
                 "created_at": "2026-03-29T00:06:30Z",
                 "url": "https://example.test/smoke-ready-validate",
             },
@@ -54,6 +58,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1003,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "workflow_dispatch",
                 "created_at": "2026-03-29T00:07:00Z",
                 "url": "https://example.test/legacy-live-compare",
             },
@@ -61,6 +66,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1004,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "workflow_dispatch",
                 "created_at": "2026-03-29T00:08:00Z",
                 "url": "https://example.test/legacy-live-compare-matrix",
             },
@@ -68,6 +74,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1005,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "workflow_dispatch",
                 "created_at": "2026-03-29T00:10:00Z",
                 "url": "https://example.test/remote-smoke-local",
             },
@@ -75,6 +82,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1006,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "schedule",
                 "created_at": "2026-03-29T00:20:00Z",
                 "url": "https://example.test/remote-smoke-matrix",
             },
@@ -82,6 +90,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1007,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "workflow_dispatch",
                 "created_at": "2026-03-29T00:30:00Z",
                 "url": "https://example.test/remote-smoke-recovery",
             },
@@ -89,6 +98,7 @@ def run_helper(*args, env_overrides=None):
                 "databaseId": 1008,
                 "status": "completed",
                 "conclusion": "success",
+                "event": "schedule",
                 "created_at": "2026-03-29T00:40:00Z",
                 "url": "https://example.test/remote-smoke-recovery-matrix",
             },
@@ -194,9 +204,13 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert present["Remote Smoke Recovery Matrix"] is True
     latest = payload["workflows"]["latest"]
     assert latest["Smoke Local"]["conclusion"] == "success"
+    assert latest["Smoke Local"]["event"] == "push"
     assert latest["Smoke S3"]["created_at"] == "2026-03-29T00:05:00Z"
+    assert latest["Smoke S3"]["event"] == "workflow_dispatch"
     assert latest["Smoke S3 Matrix"]["url"] == "https://example.test/smoke-s3-matrix"
+    assert latest["Smoke S3 Matrix"]["event"] == "workflow_dispatch"
     assert latest["Smoke Ready Validate"]["url"] == "https://example.test/smoke-ready-validate"
+    assert latest["Smoke Ready Validate"]["event"] == "schedule"
     assert latest["Legacy Live Compare"]["url"] == "https://example.test/legacy-live-compare"
     assert latest["Legacy Live Compare Matrix"]["url"] == "https://example.test/legacy-live-compare-matrix"
     assert latest["Remote Smoke Local"]["status"] == "completed"
@@ -216,6 +230,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["schema_validation_latest_success"] is True
     assert summary["schema_validation_latest_result"] == "validated"
     assert summary["schema_validation_latest_source"] == "Smoke Ready Validate"
+    assert summary["schema_validation_latest_event"] == "schedule"
     assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
     assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-output"
     assert summary["schema_validation_latest_created_at"] == "2026-03-29T00:06:30Z"
@@ -239,10 +254,16 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_latest_url"] == "https://example.test/legacy-live-compare-matrix"
     assert summary["real_endpoint_latest_source"] == "Smoke S3"
     assert summary["real_endpoint_matrix_latest_source"] == "Smoke S3 Matrix"
+    assert summary["real_endpoint_latest_event"] == "workflow_dispatch"
+    assert summary["real_endpoint_matrix_latest_event"] == "workflow_dispatch"
     assert summary["legacy_live_latest_source"] == "Legacy Live Compare"
     assert summary["legacy_live_matrix_latest_source"] == "Legacy Live Compare Matrix"
+    assert summary["legacy_live_latest_event"] == "workflow_dispatch"
+    assert summary["legacy_live_matrix_latest_event"] == "workflow_dispatch"
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
     assert summary["remote_recovery_latest_url"] == "https://example.test/remote-smoke-recovery-matrix"
+    assert summary["remote_happy_latest_event"] == "schedule"
+    assert summary["remote_recovery_latest_event"] == "schedule"
     assert summary["real_endpoint_latest_artifact"] == "smoke-s3-output"
     assert summary["real_endpoint_matrix_latest_artifact"] == "smoke-s3-matrix-aggregate"
     assert summary["legacy_live_latest_artifact"] == "legacy-live-compare-output"
