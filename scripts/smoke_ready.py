@@ -78,6 +78,16 @@ def resolve_repo():
     return DEFAULT_REPO, None
 
 
+def resolve_current_head_sha():
+    if "SMOKE_READY_MOCK_CURRENT_HEAD_SHA" in os.environ:
+        return os.environ["SMOKE_READY_MOCK_CURRENT_HEAD_SHA"], None
+    proc = run("git", "rev-parse", "HEAD")
+    if proc.returncode != 0:
+        error = (proc.stderr or proc.stdout).strip()
+        return "", error
+    return proc.stdout.strip(), None
+
+
 def load_repo_secret_names(repo):
     if "SMOKE_READY_MOCK_REPO_SECRETS" in os.environ:
         return set(parse_name_list(os.environ["SMOKE_READY_MOCK_REPO_SECRETS"])), True, ""
@@ -635,8 +645,15 @@ def public_workflow_latest(workflow_latest):
     return public
 
 
+def matches_current_head(current_head_sha, workflow_latest, workflow_name):
+    if not current_head_sha or not workflow_name:
+        return False
+    return latest_head_sha(workflow_latest, workflow_name) == current_head_sha
+
+
 def build_payload():
     repo, repo_error = resolve_repo()
+    current_head_sha, current_head_error = resolve_current_head_sha()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
     local_ready = all(local_env.values())
 
@@ -687,6 +704,8 @@ def build_payload():
     blockers = []
     if repo_error:
         blockers.append(f"unable to resolve repo: {repo_error}")
+    if current_head_error:
+        blockers.append(f"unable to resolve current head: {current_head_error}")
     if not ready:
         missing_local = [name for name, present in local_env.items() if not present]
         if missing_local:
@@ -712,6 +731,7 @@ def build_payload():
         "schema_version": 1,
         "generated_at": generated_at(),
         "repo": repo,
+        "current_head_sha": current_head_sha,
         "required": REQUIRED_SECRETS,
         "local_env": local_env,
         "repo_secrets": {
@@ -755,6 +775,9 @@ def build_payload():
             "real_endpoint_latest_head_branch": latest_head_branch(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_head_branch": latest_head_branch(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_head_branch": latest_head_branch(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
+            "real_endpoint_latest_matches_head": matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW),
+            "real_endpoint_matrix_latest_matches_head": matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
+            "schema_validation_latest_matches_head": matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
             "real_endpoint_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_run_id": latest_run_id(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -782,6 +805,8 @@ def build_payload():
             "legacy_live_matrix_latest_head_sha": latest_head_sha(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_head_branch": latest_head_branch(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_head_branch": latest_head_branch(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
+            "legacy_live_latest_matches_head": matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW),
+            "legacy_live_matrix_latest_matches_head": matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_duration_seconds": latest_duration_seconds(workflow_latest, LEGACY_LIVE_WORKFLOW),
@@ -804,6 +829,8 @@ def build_payload():
             "remote_recovery_latest_head_sha": latest_head_sha(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_head_branch": latest_head_branch(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_head_branch": latest_head_branch(workflow_latest, remote_recovery_latest_name),
+            "remote_happy_latest_matches_head": matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name),
+            "remote_recovery_latest_matches_head": matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_run_id": latest_run_id(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_run_id": latest_run_id(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_duration_seconds": latest_duration_seconds(workflow_latest, remote_happy_latest_name),
@@ -846,6 +873,7 @@ def print_text(payload):
     print("# Smoke Ready")
     print()
     print(f"Repository: `{payload['repo']}`")
+    print(f"Current Head SHA: `{payload['current_head_sha']}`")
     print(f"Generated at: `{payload['generated_at']}`")
     print()
     print("## Local Env")
@@ -909,6 +937,9 @@ def print_text(payload):
     print(f"- Real Endpoint Latest Head Branch: `{payload['summary']['real_endpoint_latest_head_branch']}`")
     print(f"- Real Endpoint Matrix Latest Head Branch: `{payload['summary']['real_endpoint_matrix_latest_head_branch']}`")
     print(f"- Schema Validation Latest Head Branch: `{payload['summary']['schema_validation_latest_head_branch']}`")
+    print(f"- Real Endpoint Latest Matches Head: `{yes_no(payload['summary']['real_endpoint_latest_matches_head'])}`")
+    print(f"- Real Endpoint Matrix Latest Matches Head: `{yes_no(payload['summary']['real_endpoint_matrix_latest_matches_head'])}`")
+    print(f"- Schema Validation Latest Matches Head: `{yes_no(payload['summary']['schema_validation_latest_matches_head'])}`")
     print(f"- Real Endpoint Latest Run ID: `{payload['summary']['real_endpoint_latest_run_id']}`")
     print(f"- Real Endpoint Matrix Latest Run ID: `{payload['summary']['real_endpoint_matrix_latest_run_id']}`")
     print(f"- Schema Validation Latest Run ID: `{payload['summary']['schema_validation_latest_run_id']}`")
@@ -936,6 +967,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Head SHA: `{payload['summary']['legacy_live_matrix_latest_head_sha']}`")
     print(f"- Legacy Live Latest Head Branch: `{payload['summary']['legacy_live_latest_head_branch']}`")
     print(f"- Legacy Live Matrix Latest Head Branch: `{payload['summary']['legacy_live_matrix_latest_head_branch']}`")
+    print(f"- Legacy Live Latest Matches Head: `{yes_no(payload['summary']['legacy_live_latest_matches_head'])}`")
+    print(f"- Legacy Live Matrix Latest Matches Head: `{yes_no(payload['summary']['legacy_live_matrix_latest_matches_head'])}`")
     print(f"- Legacy Live Latest Run ID: `{payload['summary']['legacy_live_latest_run_id']}`")
     print(f"- Legacy Live Matrix Latest Run ID: `{payload['summary']['legacy_live_matrix_latest_run_id']}`")
     print(f"- Legacy Live Latest Duration Seconds: `{payload['summary']['legacy_live_latest_duration_seconds']}`")
@@ -958,6 +991,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Head SHA: `{payload['summary']['remote_recovery_latest_head_sha']}`")
     print(f"- Remote Happy Latest Head Branch: `{payload['summary']['remote_happy_latest_head_branch']}`")
     print(f"- Remote Recovery Latest Head Branch: `{payload['summary']['remote_recovery_latest_head_branch']}`")
+    print(f"- Remote Happy Latest Matches Head: `{yes_no(payload['summary']['remote_happy_latest_matches_head'])}`")
+    print(f"- Remote Recovery Latest Matches Head: `{yes_no(payload['summary']['remote_recovery_latest_matches_head'])}`")
     print(f"- Remote Happy Latest Run ID: `{payload['summary']['remote_happy_latest_run_id']}`")
     print(f"- Remote Recovery Latest Run ID: `{payload['summary']['remote_recovery_latest_run_id']}`")
     print(f"- Remote Happy Latest Duration Seconds: `{payload['summary']['remote_happy_latest_duration_seconds']}`")
