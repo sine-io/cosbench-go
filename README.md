@@ -54,6 +54,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - the readiness summary now also shows which remote workflow supplied the latest aggregated happy-path and recovery result
 - the readiness summary now also includes direct run URLs for the latest real-endpoint, legacy-live, and aggregated remote evidence
 - the readiness summary now also includes `*_latest_created_at` timestamps for those latest evidence records
+- the readiness summary now also names the latest artifact to download for each evidence category
 - every latest evidence category now exposes a consistent `result/source/url/created_at` shape in the summary block
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657083` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657085`

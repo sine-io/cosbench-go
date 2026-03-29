@@ -517,6 +517,20 @@ def latest_created_at(workflow_latest, workflow_name):
     return (workflow_latest.get(workflow_name) or {}).get("created_at", "")
 
 
+def latest_artifact(workflow_name):
+    artifact_map = {
+        SMOKE_S3_WORKFLOW: "smoke-s3-output",
+        SMOKE_S3_MATRIX_WORKFLOW: "smoke-s3-matrix-aggregate",
+        LEGACY_LIVE_WORKFLOW: "legacy-live-compare-output",
+        LEGACY_LIVE_MATRIX_WORKFLOW: "legacy-live-compare-matrix-aggregate",
+        REMOTE_SMOKE_LOCAL_WORKFLOW: "remote-smoke-output",
+        REMOTE_SMOKE_MATRIX_WORKFLOW: "remote-smoke-matrix-aggregate",
+        REMOTE_SMOKE_RECOVERY_WORKFLOW: "remote-smoke-recovery-summary",
+        REMOTE_SMOKE_RECOVERY_MATRIX_WORKFLOW: "remote-smoke-recovery-matrix-aggregate",
+    }
+    return artifact_map.get(workflow_name, "")
+
+
 def build_payload():
     repo, repo_error = resolve_repo()
     local_env = {name: bool(os.getenv(name, "").strip()) for name in REQUIRED_SECRETS}
@@ -617,6 +631,8 @@ def build_payload():
             "real_endpoint_matrix_latest_source": SMOKE_S3_MATRIX_WORKFLOW,
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
+            "real_endpoint_latest_artifact": latest_artifact(SMOKE_S3_WORKFLOW),
+            "real_endpoint_matrix_latest_artifact": latest_artifact(SMOKE_S3_MATRIX_WORKFLOW),
             "real_endpoint_latest_created_at": latest_created_at(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_created_at": latest_created_at(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "legacy_live_latest_success": legacy_live_latest_success,
@@ -627,6 +643,8 @@ def build_payload():
             "legacy_live_matrix_latest_source": LEGACY_LIVE_MATRIX_WORKFLOW,
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
+            "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
+            "legacy_live_matrix_latest_artifact": latest_artifact(LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_created_at": latest_created_at(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_created_at": latest_created_at(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "remote_happy_latest_success": remote_happy_latest_success,
@@ -637,6 +655,8 @@ def build_payload():
             "remote_recovery_latest_source": remote_recovery_latest_name or "none",
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
+            "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
+            "remote_recovery_latest_artifact": latest_artifact(remote_recovery_latest_name),
             "remote_happy_latest_created_at": latest_created_at(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_created_at": latest_created_at(workflow_latest, remote_recovery_latest_name),
             "ready": ready,
@@ -722,6 +742,8 @@ def print_text(payload):
     print(f"- Real Endpoint Matrix Latest Source: `{payload['summary']['real_endpoint_matrix_latest_source']}`")
     print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
     print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
+    print(f"- Real Endpoint Latest Artifact: `{payload['summary']['real_endpoint_latest_artifact']}`")
+    print(f"- Real Endpoint Matrix Latest Artifact: `{payload['summary']['real_endpoint_matrix_latest_artifact']}`")
     print(f"- Real Endpoint Latest Created At: `{payload['summary']['real_endpoint_latest_created_at']}`")
     print(f"- Real Endpoint Matrix Latest Created At: `{payload['summary']['real_endpoint_matrix_latest_created_at']}`")
     print(f"- Legacy Live Latest Success: `{yes_no(payload['summary']['legacy_live_latest_success'])}`")
@@ -732,6 +754,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Source: `{payload['summary']['legacy_live_matrix_latest_source']}`")
     print(f"- Legacy Live Latest URL: `{payload['summary']['legacy_live_latest_url']}`")
     print(f"- Legacy Live Matrix Latest URL: `{payload['summary']['legacy_live_matrix_latest_url']}`")
+    print(f"- Legacy Live Latest Artifact: `{payload['summary']['legacy_live_latest_artifact']}`")
+    print(f"- Legacy Live Matrix Latest Artifact: `{payload['summary']['legacy_live_matrix_latest_artifact']}`")
     print(f"- Legacy Live Latest Created At: `{payload['summary']['legacy_live_latest_created_at']}`")
     print(f"- Legacy Live Matrix Latest Created At: `{payload['summary']['legacy_live_matrix_latest_created_at']}`")
     print(f"- Remote Happy Latest Success: `{yes_no(payload['summary']['remote_happy_latest_success'])}`")
@@ -742,6 +766,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Source: `{payload['summary']['remote_recovery_latest_source']}`")
     print(f"- Remote Happy Latest URL: `{payload['summary']['remote_happy_latest_url']}`")
     print(f"- Remote Recovery Latest URL: `{payload['summary']['remote_recovery_latest_url']}`")
+    print(f"- Remote Happy Latest Artifact: `{payload['summary']['remote_happy_latest_artifact']}`")
+    print(f"- Remote Recovery Latest Artifact: `{payload['summary']['remote_recovery_latest_artifact']}`")
     print(f"- Remote Happy Latest Created At: `{payload['summary']['remote_happy_latest_created_at']}`")
     print(f"- Remote Recovery Latest Created At: `{payload['summary']['remote_recovery_latest_created_at']}`")
     print(f"- Overall ready: `{yes_no(payload['summary']['ready'])}`")
