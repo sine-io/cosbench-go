@@ -11,6 +11,7 @@ def build_env():
             "Smoke Local",
             "Smoke S3",
             "Smoke S3 Matrix",
+            "Smoke Ready Validate",
             "Legacy Live Compare",
             "Legacy Live Compare Matrix",
             "Remote Smoke Local",
@@ -24,6 +25,7 @@ def build_env():
             "Smoke Local": {"databaseId": 1, "status": "completed", "conclusion": "success", "created_at": "2026-03-29T00:00:00Z", "url": "https://example.test/smoke-local"},
             "Smoke S3": {"databaseId": 2, "status": "completed", "conclusion": "success", "created_at": "2026-03-29T00:05:00Z", "url": "https://example.test/smoke-s3"},
             "Smoke S3 Matrix": {"databaseId": 3, "status": "completed", "conclusion": "success", "created_at": "2026-03-29T00:06:00Z", "url": "https://example.test/smoke-s3-matrix"},
+            "Smoke Ready Validate": {"databaseId": 10, "status": "completed", "conclusion": "success", "created_at": "2026-03-29T00:06:30Z", "url": "https://example.test/smoke-ready-validate"},
             "Legacy Live Compare": {"databaseId": 4, "status": "completed", "conclusion": "success", "created_at": "2026-03-29T00:07:00Z", "url": "https://example.test/legacy-live-compare"},
             "Legacy Live Compare Matrix": {"databaseId": 5, "status": "completed", "conclusion": "success", "created_at": "2026-03-29T00:08:00Z", "url": "https://example.test/legacy-live-compare-matrix"},
             "Remote Smoke Local": {"databaseId": 6, "status": "completed", "conclusion": "success", "created_at": "2026-03-29T00:10:00Z", "url": "https://example.test/remote-smoke-local"},
@@ -36,6 +38,7 @@ def build_env():
         {
             "Smoke S3": {"summary": {"result": "skipped"}, "output": ""},
             "Smoke S3 Matrix": {"rows": [{"backend": "s3", "status": "skipped"}, {"backend": "sio", "status": "skipped"}]},
+            "Smoke Ready Validate": {"valid": True, "schema_path": "docs/smoke-ready.schema.json", "schema_version": 1, "repo": "sine-io/cosbench-go", "generated_at": "2026-03-29T00:06:31Z", "error": ""},
             "Remote Smoke Local": {"summary": {"overall": "pass", "job_status": "succeeded"}},
             "Remote Smoke Matrix": {"overall": "pass", "rows": [{"backend": "s3", "scenario": "single", "status": "present", "summary": {"overall": "pass"}}]},
             "Remote Smoke Recovery": {"summary": {"overall": "pass", "job_status": "succeeded"}},
