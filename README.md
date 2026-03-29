@@ -69,6 +69,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports the latest age in seconds for each evidence surface, so scripts can tell how stale each evidence record is without re-deriving it from timestamps
 - `smoke-ready` now also reports `*_latest_fresh` booleans plus a `freshness_thresholds_seconds` block, so machine consumers can make freshness decisions without embedding their own thresholds
 - `smoke-ready` now also reports `*_current` booleans, which mean the latest evidence is both successful, fresh, and aligned to the current checkout head
+- `smoke-ready` now also reports `*_current_reason`, so false current signals are explainable as `not_successful`, `stale`, `head_mismatch`, or `current`
 - the human-readable `make --no-print-directory smoke-ready` output now also prints those `Latest Fresh`, `Current`, and `Freshness Thresholds Seconds` signals directly instead of leaving them JSON-only
 - `smoke-ready` now also reports the latest head SHA for each evidence surface, so you can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also reports the latest head branch for each evidence surface, so you can tell whether that evidence came from `main` or another branch without opening GitHub

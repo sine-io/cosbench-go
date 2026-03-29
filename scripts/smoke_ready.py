@@ -655,6 +655,18 @@ def is_current(latest_success, latest_fresh, latest_matches_head):
     return bool(latest_success and latest_fresh and latest_matches_head)
 
 
+def current_reason(latest_success, latest_fresh, latest_matches_head):
+    if latest_success and latest_fresh and latest_matches_head:
+        return "current"
+    if not latest_success:
+        return "not_successful"
+    if not latest_fresh:
+        return "stale"
+    if not latest_matches_head:
+        return "head_mismatch"
+    return "missing"
+
+
 def latest_event(workflow_latest, workflow_name):
     if not workflow_name:
         return ""
@@ -858,6 +870,9 @@ def build_payload():
             "real_endpoint_current": is_current(real_endpoint_latest_success, is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW)),
             "real_endpoint_matrix_current": is_current(real_endpoint_matrix_latest_success, is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW)),
             "schema_validation_current": is_current(schema_validation_latest_success, is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW)),
+            "real_endpoint_current_reason": current_reason(real_endpoint_latest_success, is_fresh(real_endpoint_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW)),
+            "real_endpoint_matrix_current_reason": current_reason(real_endpoint_matrix_latest_success, is_fresh(real_endpoint_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["real_endpoint"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW)),
+            "schema_validation_current_reason": current_reason(schema_validation_latest_success, is_fresh(schema_validation_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["schema_validation"]), matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW)),
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -891,6 +906,8 @@ def build_payload():
             "legacy_live_matrix_latest_fresh": is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]),
             "legacy_live_current": is_current(legacy_live_latest_success, is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW)),
             "legacy_live_matrix_current": is_current(legacy_live_matrix_latest_success, is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW)),
+            "legacy_live_current_reason": current_reason(legacy_live_latest_success, is_fresh(legacy_live_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW)),
+            "legacy_live_matrix_current_reason": current_reason(legacy_live_matrix_latest_success, is_fresh(legacy_live_matrix_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["legacy_live"]), matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW)),
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
@@ -921,6 +938,8 @@ def build_payload():
             "remote_recovery_latest_fresh": is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]),
             "remote_happy_current": is_current(remote_happy_latest_success, is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name)),
             "remote_recovery_current": is_current(remote_recovery_latest_success, is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name)),
+            "remote_happy_current_reason": current_reason(remote_happy_latest_success, is_fresh(remote_happy_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name)),
+            "remote_recovery_current_reason": current_reason(remote_recovery_latest_success, is_fresh(remote_recovery_latest_age_seconds, FRESHNESS_THRESHOLDS_SECONDS["remote"]), matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name)),
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
@@ -1043,6 +1062,9 @@ def print_text(payload):
     print(f"- Real Endpoint Current: `{yes_no(payload['summary']['real_endpoint_current'])}`")
     print(f"- Real Endpoint Matrix Current: `{yes_no(payload['summary']['real_endpoint_matrix_current'])}`")
     print(f"- Schema Validation Current: `{yes_no(payload['summary']['schema_validation_current'])}`")
+    print(f"- Real Endpoint Current Reason: `{payload['summary']['real_endpoint_current_reason']}`")
+    print(f"- Real Endpoint Matrix Current Reason: `{payload['summary']['real_endpoint_matrix_current_reason']}`")
+    print(f"- Schema Validation Current Reason: `{payload['summary']['schema_validation_current_reason']}`")
     print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
     print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
     print(f"- Schema Validation Latest URL: `{payload['summary']['schema_validation_latest_url']}`")
@@ -1076,6 +1098,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Fresh: `{yes_no(payload['summary']['legacy_live_matrix_latest_fresh'])}`")
     print(f"- Legacy Live Current: `{yes_no(payload['summary']['legacy_live_current'])}`")
     print(f"- Legacy Live Matrix Current: `{yes_no(payload['summary']['legacy_live_matrix_current'])}`")
+    print(f"- Legacy Live Current Reason: `{payload['summary']['legacy_live_current_reason']}`")
+    print(f"- Legacy Live Matrix Current Reason: `{payload['summary']['legacy_live_matrix_current_reason']}`")
     print(f"- Legacy Live Latest URL: `{payload['summary']['legacy_live_latest_url']}`")
     print(f"- Legacy Live Matrix Latest URL: `{payload['summary']['legacy_live_matrix_latest_url']}`")
     print(f"- Legacy Live Latest Artifact: `{payload['summary']['legacy_live_latest_artifact']}`")
@@ -1106,6 +1130,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Fresh: `{yes_no(payload['summary']['remote_recovery_latest_fresh'])}`")
     print(f"- Remote Happy Current: `{yes_no(payload['summary']['remote_happy_current'])}`")
     print(f"- Remote Recovery Current: `{yes_no(payload['summary']['remote_recovery_current'])}`")
+    print(f"- Remote Happy Current Reason: `{payload['summary']['remote_happy_current_reason']}`")
+    print(f"- Remote Recovery Current Reason: `{payload['summary']['remote_recovery_current_reason']}`")
     print(f"- Freshness Thresholds Seconds: `{payload['summary']['freshness_thresholds_seconds']}`")
     print(f"- Remote Happy Latest URL: `{payload['summary']['remote_happy_latest_url']}`")
     print(f"- Remote Recovery Latest URL: `{payload['summary']['remote_recovery_latest_url']}`")
