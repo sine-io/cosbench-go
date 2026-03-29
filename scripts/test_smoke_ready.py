@@ -289,7 +289,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["schema_validation_latest_matches_head"] is True
     assert summary["schema_validation_latest_duration_seconds"] == 15
     assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
-    assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-output"
+    assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-summary"
     assert summary["schema_validation_latest_created_at"] == "2026-03-29T00:06:30Z"
     assert summary["real_endpoint_latest_success"] is False
     assert summary["real_endpoint_matrix_latest_success"] is False

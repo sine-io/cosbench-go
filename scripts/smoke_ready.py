@@ -296,16 +296,23 @@ def load_schema_validation_details(repo, workflow_latest):
     run_id = latest.get("database_id")
     if run_id:
         with tempfile.TemporaryDirectory(prefix="smoke-ready-schema-validate-") as tmpdir:
-            proc = run("gh", "run", "download", str(run_id), "--repo", repo, "-n", "smoke-ready-validate-output", "-D", tmpdir)
+            proc = run("gh", "run", "download", str(run_id), "--repo", repo, "-n", "smoke-ready-validate-summary", "-D", tmpdir)
             if proc.returncode == 0:
-                validation_path = os.path.join(tmpdir, "validation.json")
-                if not os.path.exists(validation_path):
-                    validation_path = os.path.join(tmpdir, ".artifacts", "smoke-ready-validate", "validation.json")
-                if os.path.exists(validation_path):
-                    with open(validation_path, "r", encoding="utf-8") as f:
+                summary_path = os.path.join(tmpdir, "summary.json")
+                if os.path.exists(summary_path):
+                    with open(summary_path, "r", encoding="utf-8") as f:
                         details[SMOKE_READY_VALIDATE_WORKFLOW] = json.load(f)
-            elif latest.get("status") == "completed":
-                return {}, False, (proc.stderr or proc.stdout).strip()
+            if SMOKE_READY_VALIDATE_WORKFLOW not in details:
+                proc = run("gh", "run", "download", str(run_id), "--repo", repo, "-n", "smoke-ready-validate-output", "-D", tmpdir)
+                if proc.returncode == 0:
+                    validation_path = os.path.join(tmpdir, "validation.json")
+                    if not os.path.exists(validation_path):
+                        validation_path = os.path.join(tmpdir, ".artifacts", "smoke-ready-validate", "validation.json")
+                    if os.path.exists(validation_path):
+                        with open(validation_path, "r", encoding="utf-8") as f:
+                            details[SMOKE_READY_VALIDATE_WORKFLOW] = json.load(f)
+                elif latest.get("status") == "completed":
+                    return {}, False, (proc.stderr or proc.stdout).strip()
     if SMOKE_READY_VALIDATE_WORKFLOW not in details:
         details[SMOKE_READY_VALIDATE_WORKFLOW] = None
     return details, True, ""
@@ -634,7 +641,7 @@ def latest_artifact(workflow_name):
     artifact_map = {
         SMOKE_S3_WORKFLOW: "smoke-s3-output",
         SMOKE_S3_MATRIX_WORKFLOW: "smoke-s3-matrix-aggregate",
-        SMOKE_READY_VALIDATE_WORKFLOW: "smoke-ready-validate-output",
+        SMOKE_READY_VALIDATE_WORKFLOW: "smoke-ready-validate-summary",
         LEGACY_LIVE_WORKFLOW: "legacy-live-compare-output",
         LEGACY_LIVE_MATRIX_WORKFLOW: "legacy-live-compare-matrix-aggregate",
         REMOTE_SMOKE_LOCAL_WORKFLOW: "remote-smoke-output",
