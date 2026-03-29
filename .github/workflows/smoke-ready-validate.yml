@@ -1,0 +1,38 @@
+name: Smoke Ready Validate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke-ready-validate:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Capture smoke-ready payload
+        run: |
+          mkdir -p .artifacts/smoke-ready-validate
+          make --no-print-directory smoke-ready-json > .artifacts/smoke-ready-validate/smoke-ready.json
+
+      - name: Validate smoke-ready schema
+        run: |
+          make --no-print-directory smoke-ready-validate-json > .artifacts/smoke-ready-validate/validation.json
+
+      - name: Write validation summary
+        if: always()
+        shell: bash
+        run: |
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat .artifacts/smoke-ready-validate/validation.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload validation artifact
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: smoke-ready-validate-output
+          path: .artifacts/smoke-ready-validate
