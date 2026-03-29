@@ -25,6 +25,7 @@ type Config struct {
 	ControllerURL string
 	DriverName string
 	DriverPollInterval time.Duration
+	LeaseSweepInterval time.Duration
 }
 
 type App struct {
@@ -35,6 +36,7 @@ type App struct {
 	ControllerURL string
 	DriverName string
 	DriverPollInterval time.Duration
+	LeaseSweepInterval time.Duration
 	loopbackAgent *driveragent.Agent
 	backgroundOnce sync.Once
 }
@@ -68,6 +70,10 @@ func New(cfg Config) (*App, error) {
 	if driverPollInterval <= 0 {
 		driverPollInterval = 100 * time.Millisecond
 	}
+	leaseSweepInterval := cfg.LeaseSweepInterval
+	if leaseSweepInterval <= 0 {
+		leaseSweepInterval = 100 * time.Millisecond
+	}
 	store, err := snapshot.New(dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot store: %w", err)
@@ -91,43 +97,57 @@ func New(cfg Config) (*App, error) {
 		ControllerURL: controllerURL,
 		DriverName: driverName,
 		DriverPollInterval: driverPollInterval,
+		LeaseSweepInterval: leaseSweepInterval,
 	}, nil
 }
 
 func (a *App) StartBackground(ctx context.Context) error {
-	if a.Mode != ModeDriverOnly {
-		return nil
-	}
-	if strings.TrimSpace(a.ControllerURL) == "" {
+	if a.Mode == ModeDriverOnly && strings.TrimSpace(a.ControllerURL) == "" {
 		return fmt.Errorf("driver-only mode requires controller url")
 	}
 	a.backgroundOnce.Do(func() {
-		agent := &driveragent.Agent{
-			Client: &driveragent.HTTPClient{
-				BaseURL: a.ControllerURL,
-				SharedToken: a.DriverSharedToken,
-			},
-			Name:  a.DriverName,
-			Mode:  domain.DriverModeDriver,
-			Mirror: a.Manager,
-		}
-		go func() {
-			ticker := time.NewTicker(a.DriverPollInterval)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-				_, _ = agent.ProcessOne(ctx)
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-				}
+		switch a.Mode {
+		case ModeDriverOnly:
+			agent := &driveragent.Agent{
+				Client: &driveragent.HTTPClient{
+					BaseURL: a.ControllerURL,
+					SharedToken: a.DriverSharedToken,
+				},
+				Name:  a.DriverName,
+				Mode:  domain.DriverModeDriver,
+				Mirror: a.Manager,
 			}
-		}()
+			go func() {
+				ticker := time.NewTicker(a.DriverPollInterval)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					default:
+					}
+					_, _ = agent.ProcessOne(ctx)
+					select {
+					case <-ctx.Done():
+						return
+					case <-ticker.C:
+					}
+				}
+			}()
+		case ModeControllerOnly, ModeCombined:
+			go func() {
+				ticker := time.NewTicker(a.LeaseSweepInterval)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case <-ticker.C:
+						a.Manager.SweepExpiredLeases(time.Now().UTC())
+					}
+				}
+			}()
+		}
 	})
 	return nil
 }

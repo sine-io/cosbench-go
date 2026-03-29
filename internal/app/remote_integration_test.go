@@ -265,3 +265,86 @@ func TestDriverOnlyModeProgressesAcrossMultipleStages(t *testing.T) {
 	result, _ := controllerApp.Manager.GetJobResult(job.ID)
 	t.Fatalf("expected driver-only multistage result, got %#v", result)
 }
+
+func TestControllerBackgroundSweepRequeuesExpiredMissionForDriverOnlyMode(t *testing.T) {
+	viewDir, err := filepath.Abs(filepath.Join("..", "..", "web", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	controllerApp, err := New(Config{
+		DataDir:            t.TempDir(),
+		ViewDir:            viewDir,
+		Mode:               ModeControllerOnly,
+		DriverSharedToken:  "shared-token",
+		LeaseSweepInterval: 10 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("New(controller): %v", err)
+	}
+	server := httptest.NewServer(controllerApp.Handler)
+	defer server.Close()
+
+	stalledDriver, err := controllerApp.Manager.RegisterDriverNode(domain.DriverNode{Name: "driver-stalled", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatalf("RegisterDriverNode(stalled): %v", err)
+	}
+
+	job, err := controllerApp.Manager.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="driver-only-requeue">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := controllerApp.Manager.StartJob(context.Background(), job.ID); err != nil {
+		t.Fatalf("StartJob(): %v", err)
+	}
+
+	claimed, ok, err := controllerApp.Manager.ClaimMission(stalledDriver.ID, 50*time.Millisecond)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(stalled): mission=%#v ok=%v err=%v", claimed, ok, err)
+	}
+
+	driverApp, err := New(Config{
+		DataDir:            t.TempDir(),
+		ViewDir:            viewDir,
+		Mode:               ModeDriverOnly,
+		DriverSharedToken:  "shared-token",
+		ControllerURL:      server.URL,
+		DriverName:         "driver-live",
+		DriverPollInterval: 20 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("New(driver): %v", err)
+	}
+	bgCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := controllerApp.StartBackground(bgCtx); err != nil {
+		t.Fatalf("controller StartBackground(): %v", err)
+	}
+	if err := driverApp.StartBackground(bgCtx); err != nil {
+		t.Fatalf("driver StartBackground(): %v", err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		result, ok := controllerApp.Manager.GetJobResult(job.ID)
+		if ok && result.Metrics.OperationCount == 1 {
+			attempts := controllerApp.Manager.ListMissionAttempts()
+			if len(attempts) >= 2 {
+				return
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	result, _ := controllerApp.Manager.GetJobResult(job.ID)
+	attempts := controllerApp.Manager.ListMissionAttempts()
+	t.Fatalf("expected background sweep to requeue and finish job, result=%#v attempts=%#v", result, attempts)
+}

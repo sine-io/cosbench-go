@@ -14,6 +14,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The local-only v1 closure now includes stronger start-time preflight checks, modeled auth inheritance, real file-backed `filewrite` / `mfilewrite` behavior, prefetch/range read request shaping, and work-level reporting in exports and job detail views
 - The controller-facing closure now includes matrix, config, advanced-config, stage-detail, timeline, timeline CSV, Prometheus, and controller artifact endpoints under the unified Go service
 - The remote split now includes persisted driver/mission state, registration/heartbeat/claim endpoints, a driver agent, combined-mode loopback execution, and a shared bearer token on driver write endpoints
+- The controller runtime now also includes a proactive lease-sweep loop for remote execution, so expired mission leases can be requeued without waiting for a later claim or heartbeat edge
 - The unified service now also includes driver-facing overview, missions, mission detail, workers, and logs pages under `/driver/...`
 - The repository now also includes a local `smoke-remote-local` path that runs one controller-only process, two driver-only processes, and local MinIO to validate remote work-unit execution end-to-end
 - Remote smoke coverage now spans `single`, `multistage`, and `recovery` scenarios, with `s3` and `sio` parity across the happy-path and recovery surfaces
