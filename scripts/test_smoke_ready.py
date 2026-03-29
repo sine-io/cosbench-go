@@ -213,6 +213,12 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["legacy_live_matrix_latest_url"] == "https://example.test/legacy-live-compare-matrix"
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
     assert summary["remote_recovery_latest_url"] == "https://example.test/remote-smoke-recovery-matrix"
+    assert summary["real_endpoint_latest_created_at"] == "2026-03-29T00:05:00Z"
+    assert summary["real_endpoint_matrix_latest_created_at"] == "2026-03-29T00:06:00Z"
+    assert summary["legacy_live_latest_created_at"] == "2026-03-29T00:07:00Z"
+    assert summary["legacy_live_matrix_latest_created_at"] == "2026-03-29T00:08:00Z"
+    assert summary["remote_happy_latest_created_at"] == "2026-03-29T00:20:00Z"
+    assert summary["remote_recovery_latest_created_at"] == "2026-03-29T00:40:00Z"
     assert "ready" in summary
 
 
@@ -255,6 +261,12 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Legacy Live Matrix Latest URL" in text
     assert "Remote Happy Latest URL" in text
     assert "Remote Recovery Latest URL" in text
+    assert "Real Endpoint Latest Created At" in text
+    assert "Real Endpoint Matrix Latest Created At" in text
+    assert "Legacy Live Latest Created At" in text
+    assert "Legacy Live Matrix Latest Created At" in text
+    assert "Remote Happy Latest Created At" in text
+    assert "Remote Recovery Latest Created At" in text
     assert "skipped" in text
     assert "Remote Happy Latest Success" in text
     assert "Remote Recovery Latest Success" in text
