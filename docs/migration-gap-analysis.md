@@ -30,11 +30,12 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - `smoke-ready` now also exposes the latest trigger event for each evidence surface, so repository-hosted evidence can distinguish manual versus scheduled refreshes
 - `smoke-ready` now also exposes the latest run id for each evidence surface, so machine consumers can join evidence back to GitHub runs without parsing URLs
 - `smoke-ready` now also exposes the latest duration in seconds for each evidence surface, so machine consumers can reason about workflow timing without scraping GitHub
+- `smoke-ready` now also exposes the latest age in seconds for each evidence surface, so machine consumers can detect evidence staleness directly instead of re-deriving it from timestamps
 - `smoke-ready` now also exposes the latest head SHA for each evidence surface, so machine consumers can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also exposes the latest head branch for each evidence surface, so machine consumers can distinguish `main` evidence from non-main evidence without extra GitHub queries
 - `smoke-ready` now also exposes whether each latest-evidence surface matches the current checkout HEAD, so machine consumers can detect stale evidence without re-implementing SHA comparison logic
 - `smoke-ready` now also exposes the current checkout branch alongside `current_head_sha`, so machine consumers can read the active local ref without shelling out separately
-- the latest repository-hosted `Smoke Ready Validate` run on 2026-03-29 (`23706278353`) completed successfully, uploaded `smoke-ready-validate-output`, and the current mainline now layers a dedicated `smoke-ready-validate-summary` artifact on top of that raw output so `smoke-ready` can consume normalized schema-validation evidence directly
+- the latest repository-hosted `Smoke Ready Validate` run on 2026-03-30 (`23717773221`) completed successfully, uploaded both `smoke-ready-validate-output` and `smoke-ready-validate-summary`, and confirms that `smoke-ready` now consumes normalized schema-validation evidence directly while also emitting `*_latest_age_seconds` in the current summary payload
 
 ## Closed for the Local v1 Boundary
 

@@ -65,11 +65,12 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports the latest trigger event for each evidence surface, so you can distinguish `workflow_dispatch`, `schedule`, and `push`
 - `smoke-ready` now also reports the latest run id for each evidence surface, so automation does not need to parse it back out of the URL
 - `smoke-ready` now also reports the latest duration in seconds for each evidence surface, so dashboards and scripts can track workflow cost without scraping GitHub
+- `smoke-ready` now also reports the latest age in seconds for each evidence surface, so scripts can tell how stale each evidence record is without re-deriving it from timestamps
 - `smoke-ready` now also reports the latest head SHA for each evidence surface, so you can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also reports the latest head branch for each evidence surface, so you can tell whether that evidence came from `main` or another branch without opening GitHub
 - `smoke-ready` now also reports whether each latest-evidence surface matches the current checkout HEAD, so you can tell at a glance whether evidence is stale for the code you are on
 - `smoke-ready` now also reports `current_head_branch` alongside `current_head_sha`, so local tooling can identify the active checkout without shelling out to Git
-- The latest verified GitHub-hosted `Smoke Ready Validate` run is `23706278353`, and it uploaded `smoke-ready-validate-output`; after the current mainline change, `smoke-ready` prefers the dedicated `smoke-ready-validate-summary` artifact for normalized schema-validation evidence
+- The latest verified GitHub-hosted `Smoke Ready Validate` run is `23717773221`, and it uploaded both `smoke-ready-validate-output` and `smoke-ready-validate-summary`; `smoke-ready` now prefers the summary artifact and the emitted `smoke-ready.json` includes `*_latest_age_seconds` across the evidence surfaces
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657083` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657085`
 - The latest verified GitHub-hosted `Smoke S3` run is `23695743149`, and it uploaded both `smoke-s3-output.txt` and `.artifacts/smoke-s3-summary/summary.json` with `{"result":"skipped"}`
