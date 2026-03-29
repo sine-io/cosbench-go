@@ -71,6 +71,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - `smoke-ready` now also reports `*_current` booleans, which mean the latest evidence is both successful, fresh, and aligned to the current checkout head
 - `smoke-ready` now also reports `*_current_reason`, so false current signals are explainable as `not_successful`, `stale`, `head_mismatch`, or `current`
 - `smoke-ready` now also reports family-level `*_current_ready` booleans so scripts can answer “do I have current contract / real-endpoint / legacy-live / remote evidence for this checkout?” without recombining the per-surface detail fields
+- `smoke-ready` now also reports family-level `*_current_ready_reason` strings so those aggregate booleans are explainable as `current`, `not_successful`, `stale`, `head_mismatch`, or `mixed`
 - the human-readable `make --no-print-directory smoke-ready` output now also prints those `Latest Fresh`, `Current`, and `Freshness Thresholds Seconds` signals directly instead of leaving them JSON-only
 - `smoke-ready` now also reports the latest head SHA for each evidence surface, so you can tell exactly which commit produced the latest evidence
 - `smoke-ready` now also reports the latest head branch for each evidence surface, so you can tell whether that evidence came from `main` or another branch without opening GitHub
