@@ -1,0 +1,336 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sine-io.github.io/cosbench-go/docs/smoke-ready.schema.json",
+  "title": "smoke-ready-json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "repo",
+    "required",
+    "local_env",
+    "repo_secrets",
+    "workflows",
+    "summary",
+    "blockers"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "repo": {
+      "type": "string"
+    },
+    "required": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "local_env": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "COSBENCH_SMOKE_ENDPOINT",
+        "COSBENCH_SMOKE_ACCESS_KEY",
+        "COSBENCH_SMOKE_SECRET_KEY"
+      ],
+      "properties": {
+        "COSBENCH_SMOKE_ENDPOINT": {
+          "type": "boolean"
+        },
+        "COSBENCH_SMOKE_ACCESS_KEY": {
+          "type": "boolean"
+        },
+        "COSBENCH_SMOKE_SECRET_KEY": {
+          "type": "boolean"
+        }
+      }
+    },
+    "repo_secrets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accessible",
+        "error",
+        "present"
+      ],
+      "properties": {
+        "accessible": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "present": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "COSBENCH_SMOKE_ENDPOINT",
+            "COSBENCH_SMOKE_ACCESS_KEY",
+            "COSBENCH_SMOKE_SECRET_KEY"
+          ],
+          "properties": {
+            "COSBENCH_SMOKE_ENDPOINT": {
+              "type": "boolean"
+            },
+            "COSBENCH_SMOKE_ACCESS_KEY": {
+              "type": "boolean"
+            },
+            "COSBENCH_SMOKE_SECRET_KEY": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "workflows": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accessible",
+        "error",
+        "present",
+        "latest_accessible",
+        "latest_error",
+        "latest"
+      ],
+      "properties": {
+        "accessible": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "present": {
+          "$ref": "#/$defs/workflowPresence"
+        },
+        "latest_accessible": {
+          "type": "boolean"
+        },
+        "latest_error": {
+          "type": "string"
+        },
+        "latest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "Smoke Local",
+            "Smoke S3",
+            "Smoke S3 Matrix",
+            "Legacy Live Compare",
+            "Legacy Live Compare Matrix",
+            "Remote Smoke Local",
+            "Remote Smoke Matrix",
+            "Remote Smoke Recovery",
+            "Remote Smoke Recovery Matrix"
+          ],
+          "properties": {
+            "Smoke Local": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Smoke S3": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Smoke S3 Matrix": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Legacy Live Compare": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Legacy Live Compare Matrix": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Remote Smoke Local": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Remote Smoke Matrix": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Remote Smoke Recovery": {
+              "$ref": "#/$defs/latestRun"
+            },
+            "Remote Smoke Recovery Matrix": {
+              "$ref": "#/$defs/latestRun"
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local_env_ready",
+        "local_workflow_ready",
+        "real_endpoint_ready",
+        "real_endpoint_matrix_ready",
+        "legacy_live_ready",
+        "legacy_live_matrix_ready",
+        "remote_happy_ready",
+        "remote_recovery_ready",
+        "real_endpoint_latest_success",
+        "real_endpoint_matrix_latest_success",
+        "real_endpoint_latest_result",
+        "real_endpoint_matrix_latest_result",
+        "real_endpoint_latest_source",
+        "real_endpoint_matrix_latest_source",
+        "real_endpoint_latest_url",
+        "real_endpoint_matrix_latest_url",
+        "real_endpoint_latest_artifact",
+        "real_endpoint_matrix_latest_artifact",
+        "real_endpoint_latest_created_at",
+        "real_endpoint_matrix_latest_created_at",
+        "legacy_live_latest_success",
+        "legacy_live_matrix_latest_success",
+        "legacy_live_latest_result",
+        "legacy_live_matrix_latest_result",
+        "legacy_live_latest_source",
+        "legacy_live_matrix_latest_source",
+        "legacy_live_latest_url",
+        "legacy_live_matrix_latest_url",
+        "legacy_live_latest_artifact",
+        "legacy_live_matrix_latest_artifact",
+        "legacy_live_latest_created_at",
+        "legacy_live_matrix_latest_created_at",
+        "remote_happy_latest_success",
+        "remote_recovery_latest_success",
+        "remote_happy_latest_result",
+        "remote_recovery_latest_result",
+        "remote_happy_latest_source",
+        "remote_recovery_latest_source",
+        "remote_happy_latest_url",
+        "remote_recovery_latest_url",
+        "remote_happy_latest_artifact",
+        "remote_recovery_latest_artifact",
+        "remote_happy_latest_created_at",
+        "remote_recovery_latest_created_at",
+        "ready"
+      ],
+      "properties": {
+        "local_env_ready": { "type": "boolean" },
+        "local_workflow_ready": { "type": "boolean" },
+        "real_endpoint_ready": { "type": "boolean" },
+        "real_endpoint_matrix_ready": { "type": "boolean" },
+        "legacy_live_ready": { "type": "boolean" },
+        "legacy_live_matrix_ready": { "type": "boolean" },
+        "remote_happy_ready": { "type": "boolean" },
+        "remote_recovery_ready": { "type": "boolean" },
+        "real_endpoint_latest_success": { "type": "boolean" },
+        "real_endpoint_matrix_latest_success": { "type": "boolean" },
+        "real_endpoint_latest_result": { "type": "string" },
+        "real_endpoint_matrix_latest_result": { "type": "string" },
+        "real_endpoint_latest_source": { "type": "string" },
+        "real_endpoint_matrix_latest_source": { "type": "string" },
+        "real_endpoint_latest_url": { "type": "string" },
+        "real_endpoint_matrix_latest_url": { "type": "string" },
+        "real_endpoint_latest_artifact": { "type": "string" },
+        "real_endpoint_matrix_latest_artifact": { "type": "string" },
+        "real_endpoint_latest_created_at": { "type": "string" },
+        "real_endpoint_matrix_latest_created_at": { "type": "string" },
+        "legacy_live_latest_success": { "type": "boolean" },
+        "legacy_live_matrix_latest_success": { "type": "boolean" },
+        "legacy_live_latest_result": { "type": "string" },
+        "legacy_live_matrix_latest_result": { "type": "string" },
+        "legacy_live_latest_source": { "type": "string" },
+        "legacy_live_matrix_latest_source": { "type": "string" },
+        "legacy_live_latest_url": { "type": "string" },
+        "legacy_live_matrix_latest_url": { "type": "string" },
+        "legacy_live_latest_artifact": { "type": "string" },
+        "legacy_live_matrix_latest_artifact": { "type": "string" },
+        "legacy_live_latest_created_at": { "type": "string" },
+        "legacy_live_matrix_latest_created_at": { "type": "string" },
+        "remote_happy_latest_success": { "type": "boolean" },
+        "remote_recovery_latest_success": { "type": "boolean" },
+        "remote_happy_latest_result": { "type": "string" },
+        "remote_recovery_latest_result": { "type": "string" },
+        "remote_happy_latest_source": { "type": "string" },
+        "remote_recovery_latest_source": { "type": "string" },
+        "remote_happy_latest_url": { "type": "string" },
+        "remote_recovery_latest_url": { "type": "string" },
+        "remote_happy_latest_artifact": { "type": "string" },
+        "remote_recovery_latest_artifact": { "type": "string" },
+        "remote_happy_latest_created_at": { "type": "string" },
+        "remote_recovery_latest_created_at": { "type": "string" },
+        "ready": { "type": "boolean" }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "workflowPresence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Smoke Local",
+        "Smoke S3",
+        "Smoke S3 Matrix",
+        "Legacy Live Compare",
+        "Legacy Live Compare Matrix",
+        "Remote Smoke Local",
+        "Remote Smoke Matrix",
+        "Remote Smoke Recovery",
+        "Remote Smoke Recovery Matrix"
+      ],
+      "properties": {
+        "Smoke Local": { "type": "boolean" },
+        "Smoke S3": { "type": "boolean" },
+        "Smoke S3 Matrix": { "type": "boolean" },
+        "Legacy Live Compare": { "type": "boolean" },
+        "Legacy Live Compare Matrix": { "type": "boolean" },
+        "Remote Smoke Local": { "type": "boolean" },
+        "Remote Smoke Matrix": { "type": "boolean" },
+        "Remote Smoke Recovery": { "type": "boolean" },
+        "Remote Smoke Recovery Matrix": { "type": "boolean" }
+      }
+    },
+    "latestRun": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "database_id",
+            "status",
+            "conclusion",
+            "created_at",
+            "url"
+          ],
+          "properties": {
+            "database_id": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "conclusion": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
