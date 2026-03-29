@@ -33,6 +33,18 @@ def age_seconds(generated_at, created_at):
     return seconds if seconds >= 0 else None
 
 
+def current_reason(valid, fresh, matches_head):
+    if valid and fresh and matches_head:
+        return "current"
+    if not valid:
+        return "not_successful"
+    if not fresh:
+        return "stale"
+    if not matches_head:
+        return "head_mismatch"
+    return "missing"
+
+
 def main(argv):
     if len(argv) != 4:
         raise SystemExit(
@@ -83,6 +95,7 @@ def main(argv):
     summary["schema_validation_latest_age_seconds"] = age
     summary["schema_validation_latest_fresh"] = fresh
     summary["schema_validation_current"] = current
+    summary["schema_validation_current_reason"] = current_reason(valid, fresh, matches_head)
     summary["schema_validation_latest_url"] = current_run.get("url", "")
     summary["schema_validation_latest_artifact"] = "smoke-ready-validate-summary"
     summary["schema_validation_latest_created_at"] = created_at

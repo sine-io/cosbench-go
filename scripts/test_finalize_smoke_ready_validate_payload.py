@@ -38,6 +38,7 @@ def test_finalize_smoke_ready_validate_payload_updates_schema_validation_to_curr
             "schema_validation_latest_age_seconds": 999999,
             "schema_validation_latest_fresh": False,
             "schema_validation_current": False,
+            "schema_validation_current_reason": "not_successful",
             "schema_validation_latest_url": "https://example.test/old",
             "schema_validation_latest_artifact": "smoke-ready-validate-summary",
             "schema_validation_latest_created_at": "2026-03-29T00:00:00Z",
@@ -97,6 +98,7 @@ def test_finalize_smoke_ready_validate_payload_updates_schema_validation_to_curr
     assert summary["schema_validation_latest_age_seconds"] == 60
     assert summary["schema_validation_latest_fresh"] is True
     assert summary["schema_validation_current"] is True
+    assert summary["schema_validation_current_reason"] == "current"
     assert summary["schema_validation_latest_url"] == "https://example.test/current"
     assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-summary"
     assert summary["schema_validation_latest_created_at"] == "2026-03-30T00:09:00Z"
