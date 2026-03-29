@@ -194,6 +194,9 @@
         "real_endpoint_latest_head_sha",
         "real_endpoint_matrix_latest_head_sha",
         "schema_validation_latest_head_sha",
+        "real_endpoint_latest_head_branch",
+        "real_endpoint_matrix_latest_head_branch",
+        "schema_validation_latest_head_branch",
         "real_endpoint_latest_run_id",
         "real_endpoint_matrix_latest_run_id",
         "schema_validation_latest_run_id",
@@ -219,6 +222,8 @@
         "legacy_live_matrix_latest_event",
         "legacy_live_latest_head_sha",
         "legacy_live_matrix_latest_head_sha",
+        "legacy_live_latest_head_branch",
+        "legacy_live_matrix_latest_head_branch",
         "legacy_live_latest_run_id",
         "legacy_live_matrix_latest_run_id",
         "legacy_live_latest_duration_seconds",
@@ -239,6 +244,8 @@
         "remote_recovery_latest_event",
         "remote_happy_latest_head_sha",
         "remote_recovery_latest_head_sha",
+        "remote_happy_latest_head_branch",
+        "remote_recovery_latest_head_branch",
         "remote_happy_latest_run_id",
         "remote_recovery_latest_run_id",
         "remote_happy_latest_duration_seconds",
@@ -276,6 +283,9 @@
         "real_endpoint_latest_head_sha": { "type": "string" },
         "real_endpoint_matrix_latest_head_sha": { "type": "string" },
         "schema_validation_latest_head_sha": { "type": "string" },
+        "real_endpoint_latest_head_branch": { "type": "string" },
+        "real_endpoint_matrix_latest_head_branch": { "type": "string" },
+        "schema_validation_latest_head_branch": { "type": "string" },
         "real_endpoint_latest_run_id": { "type": ["integer", "null"] },
         "real_endpoint_matrix_latest_run_id": { "type": ["integer", "null"] },
         "schema_validation_latest_run_id": { "type": ["integer", "null"] },
@@ -301,6 +311,8 @@
         "legacy_live_matrix_latest_event": { "type": "string" },
         "legacy_live_latest_head_sha": { "type": "string" },
         "legacy_live_matrix_latest_head_sha": { "type": "string" },
+        "legacy_live_latest_head_branch": { "type": "string" },
+        "legacy_live_matrix_latest_head_branch": { "type": "string" },
         "legacy_live_latest_run_id": { "type": ["integer", "null"] },
         "legacy_live_matrix_latest_run_id": { "type": ["integer", "null"] },
         "legacy_live_latest_duration_seconds": { "type": ["integer", "null"] },
@@ -321,6 +333,8 @@
         "remote_recovery_latest_event": { "type": "string" },
         "remote_happy_latest_head_sha": { "type": "string" },
         "remote_recovery_latest_head_sha": { "type": "string" },
+        "remote_happy_latest_head_branch": { "type": "string" },
+        "remote_recovery_latest_head_branch": { "type": "string" },
         "remote_happy_latest_run_id": { "type": ["integer", "null"] },
         "remote_recovery_latest_run_id": { "type": ["integer", "null"] },
         "remote_happy_latest_duration_seconds": { "type": ["integer", "null"] },
@@ -384,6 +398,7 @@
             "conclusion",
             "event",
             "head_sha",
+            "head_branch",
             "created_at",
             "url"
           ],
@@ -404,6 +419,9 @@
               "type": "string"
             },
             "head_sha": {
+              "type": "string"
+            },
+            "head_branch": {
               "type": "string"
             },
             "created_at": {
