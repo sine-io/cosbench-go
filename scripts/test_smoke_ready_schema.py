@@ -81,6 +81,11 @@ def test_smoke_ready_schema_contract():
 
     summary = payload["summary"]
     required_summary_keys = [
+        "contract_current_ready",
+        "real_endpoint_current_ready",
+        "legacy_live_current_ready",
+        "remote_happy_current_ready",
+        "remote_recovery_current_ready",
         "real_endpoint_latest_result",
         "real_endpoint_latest_source",
         "real_endpoint_latest_event",
