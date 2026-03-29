@@ -8,7 +8,7 @@ COMPARE_LOCAL_FILTER ?=
 WORKTREE_AUDIT_BASE_REF ?= origin/main
 WORKTREE_CLEANUP_REPORT_PATH ?= .artifacts/worktree-cleanup-report.md
 
-.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-local smoke-ready smoke-ready-json smoke-s3 smoke-remote-local test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-audit-integrated worktree-audit-integrated-json worktree-audit-prune worktree-audit-prune-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale worktree-cleanup-report worktree-cleanup-report-json
+.PHONY: build compare-local compare-local-list compare-local-list-json fmt smoke-local smoke-ready smoke-ready-json smoke-ready-validate smoke-ready-validate-json smoke-s3 smoke-remote-local test tidy validate vet worktree-audit worktree-audit-json worktree-audit-merged worktree-audit-merged-json worktree-audit-integrated worktree-audit-integrated-json worktree-audit-prune worktree-audit-prune-json worktree-prune-plan worktree-prune-plan-json worktree-audit-stale worktree-cleanup-report worktree-cleanup-report-json
 
 build:
 	$(GO) build ./...
@@ -98,6 +98,12 @@ smoke-ready:
 
 smoke-ready-json:
 	@$(PYTHON_ENV) $(PYTHON) ./scripts/smoke_ready.py --json
+
+smoke-ready-validate:
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/validate_smoke_ready_schema.py
+
+smoke-ready-validate-json:
+	@$(PYTHON_ENV) $(PYTHON) ./scripts/validate_smoke_ready_schema.py --json
 
 test:
 	$(GO) test ./...
