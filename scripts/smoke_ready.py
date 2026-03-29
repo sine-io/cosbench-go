@@ -17,6 +17,7 @@ WORKFLOW_NAMES = [
     "Smoke Local",
     "Smoke S3",
     "Smoke S3 Matrix",
+    "Smoke Ready Validate",
     "Legacy Live Compare",
     "Legacy Live Compare Matrix",
     "Remote Smoke Local",
@@ -27,6 +28,7 @@ WORKFLOW_NAMES = [
 DEFAULT_REPO = "sine-io/cosbench-go"
 SMOKE_S3_WORKFLOW = "Smoke S3"
 SMOKE_S3_MATRIX_WORKFLOW = "Smoke S3 Matrix"
+SMOKE_READY_VALIDATE_WORKFLOW = "Smoke Ready Validate"
 LEGACY_LIVE_WORKFLOW = "Legacy Live Compare"
 LEGACY_LIVE_MATRIX_WORKFLOW = "Legacy Live Compare Matrix"
 REMOTE_SMOKE_LOCAL_WORKFLOW = "Remote Smoke Local"
@@ -259,6 +261,31 @@ def load_real_endpoint_details(repo, workflow_latest):
     return details, True, ""
 
 
+def load_schema_validation_details(repo, workflow_latest):
+    if "SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON" in os.environ:
+        details = json.loads(os.environ["SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON"])
+        return {SMOKE_READY_VALIDATE_WORKFLOW: details.get(SMOKE_READY_VALIDATE_WORKFLOW)}, True, ""
+
+    details = {}
+    latest = workflow_latest.get(SMOKE_READY_VALIDATE_WORKFLOW) or {}
+    run_id = latest.get("database_id")
+    if run_id:
+        with tempfile.TemporaryDirectory(prefix="smoke-ready-schema-validate-") as tmpdir:
+            proc = run("gh", "run", "download", str(run_id), "--repo", repo, "-n", "smoke-ready-validate-output", "-D", tmpdir)
+            if proc.returncode == 0:
+                validation_path = os.path.join(tmpdir, "validation.json")
+                if not os.path.exists(validation_path):
+                    validation_path = os.path.join(tmpdir, ".artifacts", "smoke-ready-validate", "validation.json")
+                if os.path.exists(validation_path):
+                    with open(validation_path, "r", encoding="utf-8") as f:
+                        details[SMOKE_READY_VALIDATE_WORKFLOW] = json.load(f)
+            elif latest.get("status") == "completed":
+                return {}, False, (proc.stderr or proc.stdout).strip()
+    if SMOKE_READY_VALIDATE_WORKFLOW not in details:
+        details[SMOKE_READY_VALIDATE_WORKFLOW] = None
+    return details, True, ""
+
+
 def load_remote_workflow_details(repo, workflow_latest):
     if "SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON" in os.environ:
         details = json.loads(os.environ["SMOKE_READY_MOCK_WORKFLOW_DETAILS_JSON"])
@@ -468,6 +495,18 @@ def smoke_matrix_result(latest, detail):
     return "partial"
 
 
+def schema_validation_result(latest, detail):
+    if not latest:
+        return "none"
+    if latest.get("status") != "completed":
+        return "pending"
+    if not detail:
+        return "failed"
+    if detail.get("valid") is True:
+        return "validated"
+    return "failed"
+
+
 def remote_single_result(latest, detail):
     if not latest:
         return "none"
@@ -527,6 +566,7 @@ def latest_artifact(workflow_name):
     artifact_map = {
         SMOKE_S3_WORKFLOW: "smoke-s3-output",
         SMOKE_S3_MATRIX_WORKFLOW: "smoke-s3-matrix-aggregate",
+        SMOKE_READY_VALIDATE_WORKFLOW: "smoke-ready-validate-output",
         LEGACY_LIVE_WORKFLOW: "legacy-live-compare-output",
         LEGACY_LIVE_MATRIX_WORKFLOW: "legacy-live-compare-matrix-aggregate",
         REMOTE_SMOKE_LOCAL_WORKFLOW: "remote-smoke-output",
@@ -547,6 +587,7 @@ def build_payload():
     workflow_latest, workflow_runs_accessible, workflow_runs_error = load_workflow_latest_runs(repo)
     legacy_details, legacy_details_accessible, legacy_details_error = load_legacy_workflow_details(repo, workflow_latest)
     real_endpoint_details, real_endpoint_details_accessible, real_endpoint_details_error = load_real_endpoint_details(repo, workflow_latest)
+    schema_validation_details, schema_validation_details_accessible, schema_validation_details_error = load_schema_validation_details(repo, workflow_latest)
     remote_details, remote_details_accessible, remote_details_error = load_remote_workflow_details(repo, workflow_latest)
 
     repo_secret_presence = {name: name in repo_secret_names for name in REQUIRED_SECRETS}
@@ -554,12 +595,14 @@ def build_payload():
     local_workflow_ready = workflows_accessible and workflow_presence["Smoke Local"]
     real_endpoint_ready = workflows_accessible and workflow_presence["Smoke S3"]
     real_endpoint_matrix_ready = workflows_accessible and workflow_presence["Smoke S3 Matrix"]
+    schema_validation_ready = workflows_accessible and workflow_presence[SMOKE_READY_VALIDATE_WORKFLOW]
     legacy_live_ready = workflows_accessible and workflow_presence["Legacy Live Compare"]
     legacy_live_matrix_ready = workflows_accessible and workflow_presence["Legacy Live Compare Matrix"]
     remote_happy_ready = workflows_accessible and workflow_presence["Remote Smoke Local"] and workflow_presence["Remote Smoke Matrix"]
     remote_recovery_ready = workflows_accessible and workflow_presence["Remote Smoke Recovery"] and workflow_presence["Remote Smoke Recovery Matrix"]
     real_endpoint_latest_result = smoke_summary_result(workflow_latest.get(SMOKE_S3_WORKFLOW), real_endpoint_details.get(SMOKE_S3_WORKFLOW))
     real_endpoint_matrix_latest_result = smoke_matrix_result(workflow_latest.get(SMOKE_S3_MATRIX_WORKFLOW), real_endpoint_details.get(SMOKE_S3_MATRIX_WORKFLOW))
+    schema_validation_latest_result = schema_validation_result(workflow_latest.get(SMOKE_READY_VALIDATE_WORKFLOW), schema_validation_details.get(SMOKE_READY_VALIDATE_WORKFLOW))
     legacy_live_latest_result = classify_single_legacy_result(workflow_latest.get(LEGACY_LIVE_WORKFLOW), legacy_details.get(LEGACY_LIVE_WORKFLOW))
     legacy_live_matrix_latest_result = classify_matrix_legacy_result(workflow_latest.get(LEGACY_LIVE_MATRIX_WORKFLOW), legacy_details.get(LEGACY_LIVE_MATRIX_WORKFLOW))
     remote_happy_latest_name = pick_latest_result(workflow_latest, [REMOTE_SMOKE_LOCAL_WORKFLOW, REMOTE_SMOKE_MATRIX_WORKFLOW])
@@ -576,6 +619,7 @@ def build_payload():
     )
     real_endpoint_latest_success = real_endpoint_latest_result == "executed"
     real_endpoint_matrix_latest_success = real_endpoint_matrix_latest_result == "executed"
+    schema_validation_latest_success = schema_validation_latest_result == "validated"
     legacy_live_latest_success = legacy_live_latest_result == "executed"
     legacy_live_matrix_latest_success = legacy_live_matrix_latest_result == "executed"
     remote_happy_latest_success = remote_happy_latest_result == "executed"
@@ -597,6 +641,8 @@ def build_payload():
         blockers.append(f"unable to query workflow runs: {workflow_runs_error}")
     if workflow_runs_accessible and not real_endpoint_details_accessible and real_endpoint_details_error:
         blockers.append(f"unable to query real-endpoint workflow details: {real_endpoint_details_error}")
+    if workflow_runs_accessible and not schema_validation_details_accessible and schema_validation_details_error:
+        blockers.append(f"unable to query schema-validation workflow details: {schema_validation_details_error}")
     if workflow_runs_accessible and not remote_details_accessible and remote_details_error:
         blockers.append(f"unable to query remote workflow details: {remote_details_error}")
     if workflow_runs_accessible and not legacy_details_accessible and legacy_details_error:
@@ -626,22 +672,29 @@ def build_payload():
             "local_workflow_ready": local_workflow_ready,
             "real_endpoint_ready": real_endpoint_ready,
             "real_endpoint_matrix_ready": real_endpoint_matrix_ready,
+            "schema_validation_ready": schema_validation_ready,
             "legacy_live_ready": legacy_live_ready,
             "legacy_live_matrix_ready": legacy_live_matrix_ready,
             "remote_happy_ready": remote_happy_ready,
             "remote_recovery_ready": remote_recovery_ready,
             "real_endpoint_latest_success": real_endpoint_latest_success,
             "real_endpoint_matrix_latest_success": real_endpoint_matrix_latest_success,
+            "schema_validation_latest_success": schema_validation_latest_success,
             "real_endpoint_latest_result": real_endpoint_latest_result,
             "real_endpoint_matrix_latest_result": real_endpoint_matrix_latest_result,
+            "schema_validation_latest_result": schema_validation_latest_result,
             "real_endpoint_latest_source": SMOKE_S3_WORKFLOW,
             "real_endpoint_matrix_latest_source": SMOKE_S3_MATRIX_WORKFLOW,
+            "schema_validation_latest_source": SMOKE_READY_VALIDATE_WORKFLOW,
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
+            "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
             "real_endpoint_latest_artifact": latest_artifact(SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_artifact": latest_artifact(SMOKE_S3_MATRIX_WORKFLOW),
+            "schema_validation_latest_artifact": latest_artifact(SMOKE_READY_VALIDATE_WORKFLOW),
             "real_endpoint_latest_created_at": latest_created_at(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_created_at": latest_created_at(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
+            "schema_validation_latest_created_at": latest_created_at(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
             "legacy_live_latest_success": legacy_live_latest_success,
             "legacy_live_matrix_latest_success": legacy_live_matrix_latest_success,
             "legacy_live_latest_result": legacy_live_latest_result,
@@ -737,22 +790,29 @@ def print_text(payload):
     print(f"- Local Workflow Ready: `{yes_no(payload['summary']['local_workflow_ready'])}`")
     print(f"- Real Endpoint Ready: `{yes_no(payload['summary']['real_endpoint_ready'])}`")
     print(f"- Real Endpoint Matrix Ready: `{yes_no(payload['summary']['real_endpoint_matrix_ready'])}`")
+    print(f"- Schema Validation Ready: `{yes_no(payload['summary']['schema_validation_ready'])}`")
     print(f"- Legacy Live Ready: `{yes_no(payload['summary']['legacy_live_ready'])}`")
     print(f"- Legacy Live Matrix Ready: `{yes_no(payload['summary']['legacy_live_matrix_ready'])}`")
     print(f"- Remote Happy Ready: `{yes_no(payload['summary']['remote_happy_ready'])}`")
     print(f"- Remote Recovery Ready: `{yes_no(payload['summary']['remote_recovery_ready'])}`")
     print(f"- Real Endpoint Latest Success: `{yes_no(payload['summary']['real_endpoint_latest_success'])}`")
     print(f"- Real Endpoint Matrix Latest Success: `{yes_no(payload['summary']['real_endpoint_matrix_latest_success'])}`")
+    print(f"- Schema Validation Latest Success: `{yes_no(payload['summary']['schema_validation_latest_success'])}`")
     print(f"- Real Endpoint Latest Result: `{payload['summary']['real_endpoint_latest_result']}`")
     print(f"- Real Endpoint Matrix Latest Result: `{payload['summary']['real_endpoint_matrix_latest_result']}`")
+    print(f"- Schema Validation Latest Result: `{payload['summary']['schema_validation_latest_result']}`")
     print(f"- Real Endpoint Latest Source: `{payload['summary']['real_endpoint_latest_source']}`")
     print(f"- Real Endpoint Matrix Latest Source: `{payload['summary']['real_endpoint_matrix_latest_source']}`")
+    print(f"- Schema Validation Latest Source: `{payload['summary']['schema_validation_latest_source']}`")
     print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
     print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
+    print(f"- Schema Validation Latest URL: `{payload['summary']['schema_validation_latest_url']}`")
     print(f"- Real Endpoint Latest Artifact: `{payload['summary']['real_endpoint_latest_artifact']}`")
     print(f"- Real Endpoint Matrix Latest Artifact: `{payload['summary']['real_endpoint_matrix_latest_artifact']}`")
+    print(f"- Schema Validation Latest Artifact: `{payload['summary']['schema_validation_latest_artifact']}`")
     print(f"- Real Endpoint Latest Created At: `{payload['summary']['real_endpoint_latest_created_at']}`")
     print(f"- Real Endpoint Matrix Latest Created At: `{payload['summary']['real_endpoint_matrix_latest_created_at']}`")
+    print(f"- Schema Validation Latest Created At: `{payload['summary']['schema_validation_latest_created_at']}`")
     print(f"- Legacy Live Latest Success: `{yes_no(payload['summary']['legacy_live_latest_success'])}`")
     print(f"- Legacy Live Matrix Latest Success: `{yes_no(payload['summary']['legacy_live_matrix_latest_success'])}`")
     print(f"- Legacy Live Latest Result: `{payload['summary']['legacy_live_latest_result']}`")

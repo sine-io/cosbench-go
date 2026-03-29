@@ -11,6 +11,7 @@ def run_helper(*args, env_overrides=None):
             "Smoke Local",
             "Smoke S3",
             "Smoke S3 Matrix",
+            "Smoke Ready Validate",
             "Legacy Live Compare",
             "Legacy Live Compare Matrix",
             "Remote Smoke Local",
@@ -41,6 +42,13 @@ def run_helper(*args, env_overrides=None):
                 "conclusion": "success",
                 "created_at": "2026-03-29T00:06:00Z",
                 "url": "https://example.test/smoke-s3-matrix",
+            },
+            "Smoke Ready Validate": {
+                "databaseId": 1010,
+                "status": "completed",
+                "conclusion": "success",
+                "created_at": "2026-03-29T00:06:30Z",
+                "url": "https://example.test/smoke-ready-validate",
             },
             "Legacy Live Compare": {
                 "databaseId": 1003,
@@ -106,6 +114,14 @@ def run_helper(*args, env_overrides=None):
                     },
                 ]
             },
+            "Smoke Ready Validate": {
+                "valid": True,
+                "schema_path": "docs/smoke-ready.schema.json",
+                "schema_version": 1,
+                "repo": "sine-io/cosbench-go",
+                "generated_at": "2026-03-29T00:06:31Z",
+                "error": "",
+            },
             "Remote Smoke Local": {
                 "summary": {
                     "overall": "pass",
@@ -169,6 +185,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert present["Smoke Local"] is True
     assert present["Smoke S3"] is True
     assert present["Smoke S3 Matrix"] is True
+    assert present["Smoke Ready Validate"] is True
     assert present["Legacy Live Compare"] is True
     assert present["Legacy Live Compare Matrix"] is True
     assert present["Remote Smoke Local"] is True
@@ -179,6 +196,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert latest["Smoke Local"]["conclusion"] == "success"
     assert latest["Smoke S3"]["created_at"] == "2026-03-29T00:05:00Z"
     assert latest["Smoke S3 Matrix"]["url"] == "https://example.test/smoke-s3-matrix"
+    assert latest["Smoke Ready Validate"]["url"] == "https://example.test/smoke-ready-validate"
     assert latest["Legacy Live Compare"]["url"] == "https://example.test/legacy-live-compare"
     assert latest["Legacy Live Compare Matrix"]["url"] == "https://example.test/legacy-live-compare-matrix"
     assert latest["Remote Smoke Local"]["status"] == "completed"
@@ -188,11 +206,19 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     summary = payload["summary"]
     assert "local_env_ready" in summary
     assert "local_workflow_ready" in summary
+    assert "schema_validation_ready" in summary
     assert "remote_happy_ready" in summary
     assert "remote_recovery_ready" in summary
     assert "legacy_live_ready" in summary
     assert "legacy_live_matrix_ready" in summary
     assert "real_endpoint_matrix_ready" in summary
+    assert summary["schema_validation_ready"] is True
+    assert summary["schema_validation_latest_success"] is True
+    assert summary["schema_validation_latest_result"] == "validated"
+    assert summary["schema_validation_latest_source"] == "Smoke Ready Validate"
+    assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
+    assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-output"
+    assert summary["schema_validation_latest_created_at"] == "2026-03-29T00:06:30Z"
     assert summary["real_endpoint_latest_success"] is False
     assert summary["real_endpoint_matrix_latest_success"] is False
     assert summary["real_endpoint_latest_result"] == "skipped"
