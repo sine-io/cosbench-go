@@ -231,6 +231,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["schema_validation_latest_result"] == "validated"
     assert summary["schema_validation_latest_source"] == "Smoke Ready Validate"
     assert summary["schema_validation_latest_event"] == "schedule"
+    assert summary["schema_validation_latest_run_id"] == 1010
     assert summary["schema_validation_latest_url"] == "https://example.test/smoke-ready-validate"
     assert summary["schema_validation_latest_artifact"] == "smoke-ready-validate-output"
     assert summary["schema_validation_latest_created_at"] == "2026-03-29T00:06:30Z"
@@ -256,14 +257,20 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     assert summary["real_endpoint_matrix_latest_source"] == "Smoke S3 Matrix"
     assert summary["real_endpoint_latest_event"] == "workflow_dispatch"
     assert summary["real_endpoint_matrix_latest_event"] == "workflow_dispatch"
+    assert summary["real_endpoint_latest_run_id"] == 1002
+    assert summary["real_endpoint_matrix_latest_run_id"] == 1009
     assert summary["legacy_live_latest_source"] == "Legacy Live Compare"
     assert summary["legacy_live_matrix_latest_source"] == "Legacy Live Compare Matrix"
     assert summary["legacy_live_latest_event"] == "workflow_dispatch"
     assert summary["legacy_live_matrix_latest_event"] == "workflow_dispatch"
+    assert summary["legacy_live_latest_run_id"] == 1003
+    assert summary["legacy_live_matrix_latest_run_id"] == 1004
     assert summary["remote_happy_latest_url"] == "https://example.test/remote-smoke-matrix"
     assert summary["remote_recovery_latest_url"] == "https://example.test/remote-smoke-recovery-matrix"
     assert summary["remote_happy_latest_event"] == "schedule"
     assert summary["remote_recovery_latest_event"] == "schedule"
+    assert summary["remote_happy_latest_run_id"] == 1006
+    assert summary["remote_recovery_latest_run_id"] == 1008
     assert summary["real_endpoint_latest_artifact"] == "smoke-s3-output"
     assert summary["real_endpoint_matrix_latest_artifact"] == "smoke-s3-matrix-aggregate"
     assert summary["legacy_live_latest_artifact"] == "legacy-live-compare-output"

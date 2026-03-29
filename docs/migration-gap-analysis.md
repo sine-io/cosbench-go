@@ -28,6 +28,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - `smoke-ready` / `smoke-ready-json` reporting for local readiness, real-endpoint smoke readiness, real-endpoint smoke result states, legacy live compare readiness, legacy live compare matrix readiness, remote happy-path readiness, remote recovery readiness, the latest known workflow run state across those surfaces, and legacy live result states such as `executed` versus `skipped`, with the real-endpoint path now consuming structured smoke summaries first
 - `smoke-ready` now also reports `Smoke Ready Validate` as a separate contract-surface signal, including its latest validation result plus direct URL, artifact, and timestamp fields
 - `smoke-ready` now also exposes the latest trigger event for each evidence surface, so repository-hosted evidence can distinguish manual versus scheduled refreshes
+- `smoke-ready` now also exposes the latest run id for each evidence surface, so machine consumers can join evidence back to GitHub runs without parsing URLs
 - the latest repository-hosted `Smoke Ready Validate` run on 2026-03-29 (`23699563386`) completed successfully, uploaded `smoke-ready-validate-output`, and confirms that the schema-validation artifact chain still aligns with `smoke-ready` consumption on the current mainline head
 
 ## Closed for the Local v1 Boundary
