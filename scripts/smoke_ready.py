@@ -557,6 +557,12 @@ def latest_url(workflow_latest, workflow_name):
     return (workflow_latest.get(workflow_name) or {}).get("url", "")
 
 
+def latest_run_id(workflow_latest, workflow_name):
+    if not workflow_name:
+        return None
+    return (workflow_latest.get(workflow_name) or {}).get("database_id")
+
+
 def latest_created_at(workflow_latest, workflow_name):
     if not workflow_name:
         return ""
@@ -696,6 +702,9 @@ def build_payload():
             "real_endpoint_latest_event": latest_event(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_event": latest_event(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_event": latest_event(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
+            "real_endpoint_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_WORKFLOW),
+            "real_endpoint_matrix_latest_run_id": latest_run_id(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
+            "schema_validation_latest_run_id": latest_run_id(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
             "real_endpoint_latest_url": latest_url(workflow_latest, SMOKE_S3_WORKFLOW),
             "real_endpoint_matrix_latest_url": latest_url(workflow_latest, SMOKE_S3_MATRIX_WORKFLOW),
             "schema_validation_latest_url": latest_url(workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW),
@@ -713,6 +722,8 @@ def build_payload():
             "legacy_live_matrix_latest_source": LEGACY_LIVE_MATRIX_WORKFLOW,
             "legacy_live_latest_event": latest_event(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_event": latest_event(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
+            "legacy_live_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_WORKFLOW),
+            "legacy_live_matrix_latest_run_id": latest_run_id(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_url": latest_url(workflow_latest, LEGACY_LIVE_WORKFLOW),
             "legacy_live_matrix_latest_url": latest_url(workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW),
             "legacy_live_latest_artifact": latest_artifact(LEGACY_LIVE_WORKFLOW),
@@ -727,6 +738,8 @@ def build_payload():
             "remote_recovery_latest_source": remote_recovery_latest_name or "none",
             "remote_happy_latest_event": latest_event(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_event": latest_event(workflow_latest, remote_recovery_latest_name),
+            "remote_happy_latest_run_id": latest_run_id(workflow_latest, remote_happy_latest_name),
+            "remote_recovery_latest_run_id": latest_run_id(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_url": latest_url(workflow_latest, remote_happy_latest_name),
             "remote_recovery_latest_url": latest_url(workflow_latest, remote_recovery_latest_name),
             "remote_happy_latest_artifact": latest_artifact(remote_happy_latest_name),
@@ -822,6 +835,9 @@ def print_text(payload):
     print(f"- Real Endpoint Latest Event: `{payload['summary']['real_endpoint_latest_event']}`")
     print(f"- Real Endpoint Matrix Latest Event: `{payload['summary']['real_endpoint_matrix_latest_event']}`")
     print(f"- Schema Validation Latest Event: `{payload['summary']['schema_validation_latest_event']}`")
+    print(f"- Real Endpoint Latest Run ID: `{payload['summary']['real_endpoint_latest_run_id']}`")
+    print(f"- Real Endpoint Matrix Latest Run ID: `{payload['summary']['real_endpoint_matrix_latest_run_id']}`")
+    print(f"- Schema Validation Latest Run ID: `{payload['summary']['schema_validation_latest_run_id']}`")
     print(f"- Real Endpoint Latest URL: `{payload['summary']['real_endpoint_latest_url']}`")
     print(f"- Real Endpoint Matrix Latest URL: `{payload['summary']['real_endpoint_matrix_latest_url']}`")
     print(f"- Schema Validation Latest URL: `{payload['summary']['schema_validation_latest_url']}`")
@@ -839,6 +855,8 @@ def print_text(payload):
     print(f"- Legacy Live Matrix Latest Source: `{payload['summary']['legacy_live_matrix_latest_source']}`")
     print(f"- Legacy Live Latest Event: `{payload['summary']['legacy_live_latest_event']}`")
     print(f"- Legacy Live Matrix Latest Event: `{payload['summary']['legacy_live_matrix_latest_event']}`")
+    print(f"- Legacy Live Latest Run ID: `{payload['summary']['legacy_live_latest_run_id']}`")
+    print(f"- Legacy Live Matrix Latest Run ID: `{payload['summary']['legacy_live_matrix_latest_run_id']}`")
     print(f"- Legacy Live Latest URL: `{payload['summary']['legacy_live_latest_url']}`")
     print(f"- Legacy Live Matrix Latest URL: `{payload['summary']['legacy_live_matrix_latest_url']}`")
     print(f"- Legacy Live Latest Artifact: `{payload['summary']['legacy_live_latest_artifact']}`")
@@ -853,6 +871,8 @@ def print_text(payload):
     print(f"- Remote Recovery Latest Source: `{payload['summary']['remote_recovery_latest_source']}`")
     print(f"- Remote Happy Latest Event: `{payload['summary']['remote_happy_latest_event']}`")
     print(f"- Remote Recovery Latest Event: `{payload['summary']['remote_recovery_latest_event']}`")
+    print(f"- Remote Happy Latest Run ID: `{payload['summary']['remote_happy_latest_run_id']}`")
+    print(f"- Remote Recovery Latest Run ID: `{payload['summary']['remote_recovery_latest_run_id']}`")
     print(f"- Remote Happy Latest URL: `{payload['summary']['remote_happy_latest_url']}`")
     print(f"- Remote Recovery Latest URL: `{payload['summary']['remote_recovery_latest_url']}`")
     print(f"- Remote Happy Latest Artifact: `{payload['summary']['remote_happy_latest_artifact']}`")

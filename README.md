@@ -62,6 +62,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - trigger the same validation remotely with `gh workflow run "Smoke Ready Validate" --repo sine-io/cosbench-go`; the workflow also runs on a non-blocking daily schedule
 - `smoke-ready` now also reports `Smoke Ready Validate` as a separate contract-surface signal, including its latest result, URL, artifact, and timestamp
 - `smoke-ready` now also reports the latest trigger event for each evidence surface, so you can distinguish `workflow_dispatch`, `schedule`, and `push`
+- `smoke-ready` now also reports the latest run id for each evidence surface, so automation does not need to parse it back out of the URL
 - The latest verified GitHub-hosted `Smoke Ready Validate` run is `23699563386`, and it uploaded `smoke-ready-validate-output` with `validation.json` showing `{"valid": true, "schema_version": 1}`
 - `smoke-ready` currently reports `remote_happy_latest_source=Remote Smoke Matrix` and `remote_recovery_latest_source=Remote Smoke Recovery Matrix`
 - `smoke-ready` currently reports `remote_happy_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657083` and `remote_recovery_latest_url=https://github.com/sine-io/cosbench-go/actions/runs/23696657085`
