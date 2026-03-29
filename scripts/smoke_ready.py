@@ -667,6 +667,18 @@ def current_reason(latest_success, latest_fresh, latest_matches_head):
     return "missing"
 
 
+def family_current_reason(*reasons):
+    filtered = [reason for reason in reasons if reason]
+    if not filtered:
+        return "missing"
+    if "current" in filtered:
+        return "current"
+    unique = set(filtered)
+    if len(unique) == 1:
+        return filtered[0]
+    return "mixed"
+
+
 def latest_event(workflow_latest, workflow_name):
     if not workflow_name:
         return ""
@@ -787,6 +799,13 @@ def build_payload():
     legacy_live_matrix_current = is_current(legacy_live_matrix_latest_success, legacy_live_matrix_latest_fresh, matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW))
     remote_happy_current = is_current(remote_happy_latest_success, remote_happy_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name))
     remote_recovery_current = is_current(remote_recovery_latest_success, remote_recovery_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name))
+    real_endpoint_current_reason = current_reason(real_endpoint_latest_success, real_endpoint_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_WORKFLOW))
+    real_endpoint_matrix_current_reason = current_reason(real_endpoint_matrix_latest_success, real_endpoint_matrix_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_S3_MATRIX_WORKFLOW))
+    schema_validation_current_reason = current_reason(schema_validation_latest_success, schema_validation_latest_fresh, matches_current_head(current_head_sha, workflow_latest, SMOKE_READY_VALIDATE_WORKFLOW))
+    legacy_live_current_reason = current_reason(legacy_live_latest_success, legacy_live_latest_fresh, matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_WORKFLOW))
+    legacy_live_matrix_current_reason = current_reason(legacy_live_matrix_latest_success, legacy_live_matrix_latest_fresh, matches_current_head(current_head_sha, workflow_latest, LEGACY_LIVE_MATRIX_WORKFLOW))
+    remote_happy_current_reason = current_reason(remote_happy_latest_success, remote_happy_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_happy_latest_name))
+    remote_recovery_current_reason = current_reason(remote_recovery_latest_success, remote_recovery_latest_fresh, matches_current_head(current_head_sha, workflow_latest, remote_recovery_latest_name))
     ready = local_ready or local_workflow_ready
 
     blockers = []
@@ -846,6 +865,11 @@ def build_payload():
             "legacy_live_current_ready": legacy_live_current or legacy_live_matrix_current,
             "remote_happy_current_ready": remote_happy_current,
             "remote_recovery_current_ready": remote_recovery_current,
+            "contract_current_ready_reason": schema_validation_current_reason,
+            "real_endpoint_current_ready_reason": family_current_reason(real_endpoint_current_reason, real_endpoint_matrix_current_reason),
+            "legacy_live_current_ready_reason": family_current_reason(legacy_live_current_reason, legacy_live_matrix_current_reason),
+            "remote_happy_current_ready_reason": remote_happy_current_reason,
+            "remote_recovery_current_ready_reason": remote_recovery_current_reason,
             "real_endpoint_ready": real_endpoint_ready,
             "real_endpoint_matrix_ready": real_endpoint_matrix_ready,
             "schema_validation_ready": schema_validation_ready,
@@ -1041,6 +1065,9 @@ def print_text(payload):
     print(f"- Contract Current Ready: `{yes_no(payload['summary']['contract_current_ready'])}`")
     print(f"- Real Endpoint Current Ready: `{yes_no(payload['summary']['real_endpoint_current_ready'])}`")
     print(f"- Legacy Live Current Ready: `{yes_no(payload['summary']['legacy_live_current_ready'])}`")
+    print(f"- Contract Current Ready Reason: `{payload['summary']['contract_current_ready_reason']}`")
+    print(f"- Real Endpoint Current Ready Reason: `{payload['summary']['real_endpoint_current_ready_reason']}`")
+    print(f"- Legacy Live Current Ready Reason: `{payload['summary']['legacy_live_current_ready_reason']}`")
     print(f"- Real Endpoint Ready: `{yes_no(payload['summary']['real_endpoint_ready'])}`")
     print(f"- Real Endpoint Matrix Ready: `{yes_no(payload['summary']['real_endpoint_matrix_ready'])}`")
     print(f"- Schema Validation Ready: `{yes_no(payload['summary']['schema_validation_ready'])}`")
@@ -1050,6 +1077,8 @@ def print_text(payload):
     print(f"- Remote Recovery Ready: `{yes_no(payload['summary']['remote_recovery_ready'])}`")
     print(f"- Remote Happy Current Ready: `{yes_no(payload['summary']['remote_happy_current_ready'])}`")
     print(f"- Remote Recovery Current Ready: `{yes_no(payload['summary']['remote_recovery_current_ready'])}`")
+    print(f"- Remote Happy Current Ready Reason: `{payload['summary']['remote_happy_current_ready_reason']}`")
+    print(f"- Remote Recovery Current Ready Reason: `{payload['summary']['remote_recovery_current_ready_reason']}`")
     print(f"- Real Endpoint Latest Success: `{yes_no(payload['summary']['real_endpoint_latest_success'])}`")
     print(f"- Real Endpoint Matrix Latest Success: `{yes_no(payload['summary']['real_endpoint_matrix_latest_success'])}`")
     print(f"- Schema Validation Latest Success: `{yes_no(payload['summary']['schema_validation_latest_success'])}`")
