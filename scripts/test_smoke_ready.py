@@ -6,6 +6,7 @@ import subprocess
 def run_helper(*args, env_overrides=None):
     env = os.environ.copy()
     env["SMOKE_READY_MOCK_CURRENT_HEAD_SHA"] = "sha-smoke-ready-validate"
+    env["SMOKE_READY_MOCK_CURRENT_HEAD_BRANCH"] = "feature/smoke-ready"
     env["SMOKE_READY_MOCK_REPO_SECRETS"] = "COSBENCH_SMOKE_ENDPOINT,COSBENCH_SMOKE_ACCESS_KEY,COSBENCH_SMOKE_SECRET_KEY"
     env["SMOKE_READY_MOCK_WORKFLOWS"] = ",".join(
         [
@@ -233,6 +234,7 @@ def test_smoke_ready_json_reports_full_workflow_surface():
     proc = run_helper("--json")
     payload = json.loads(proc.stdout)
     assert payload["current_head_sha"] == "sha-smoke-ready-validate"
+    assert payload["current_head_branch"] == "feature/smoke-ready"
     present = payload["workflows"]["present"]
     assert present["Smoke Local"] is True
     assert present["Smoke S3"] is True
