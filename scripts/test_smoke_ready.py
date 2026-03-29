@@ -419,12 +419,19 @@ def test_smoke_ready_text_reports_remote_categories():
     assert "Real Endpoint Matrix Latest Success" in text
     assert "Real Endpoint Latest Result" in text
     assert "Real Endpoint Matrix Latest Result" in text
+    assert "Real Endpoint Current" in text
+    assert "Real Endpoint Matrix Current" in text
     assert "Legacy Live Latest Success" in text
     assert "Legacy Live Matrix Latest Success" in text
     assert "Legacy Live Latest Result" in text
     assert "Legacy Live Matrix Latest Result" in text
+    assert "Legacy Live Current" in text
+    assert "Legacy Live Matrix Current" in text
     assert "Remote Happy Latest Result" in text
     assert "Remote Recovery Latest Result" in text
+    assert "Schema Validation Current" in text
+    assert "Remote Happy Current" in text
+    assert "Remote Recovery Current" in text
     assert "Remote Happy Latest Source" in text
     assert "Remote Recovery Latest Source" in text
     assert "Real Endpoint Latest URL" in text
