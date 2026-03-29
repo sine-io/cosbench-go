@@ -55,7 +55,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - the readiness summary now also includes direct run URLs for the latest real-endpoint, legacy-live, and aggregated remote evidence
 - the readiness summary now also includes `*_latest_created_at` timestamps for those latest evidence records
 - the readiness summary now also names the latest artifact to download for each evidence category
-- every latest evidence category now exposes a consistent `result/source/url/created_at` shape in the summary block
+- every latest evidence category now exposes a consistent `result/source/event/run_id/url/artifact/duration_seconds/created_at` shape in the summary block
 - `smoke-ready-json` now also includes a top-level `schema_version` for machine consumers
 - machine consumers can also validate that payload against [docs/smoke-ready.schema.json](docs/smoke-ready.schema.json)
 - run `make --no-print-directory smoke-ready-validate` or `make --no-print-directory smoke-ready-validate-json` when you want the repository to validate the current helper output against that schema directly
