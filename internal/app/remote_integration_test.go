@@ -148,6 +148,51 @@ func TestDriverOnlyModeProcessesControllerMissions(t *testing.T) {
 	t.Fatalf("expected driver-only mode to process remote mission, got %#v", result)
 }
 
+func TestControllerBackgroundSweepMarksStaleDriverUnhealthy(t *testing.T) {
+	viewDir, err := filepath.Abs(filepath.Join("..", "..", "web", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	controllerApp, err := New(Config{
+		DataDir:            t.TempDir(),
+		ViewDir:            viewDir,
+		Mode:               ModeControllerOnly,
+		DriverSharedToken:  "shared-token",
+		LeaseSweepInterval: 10 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("New(controller): %v", err)
+	}
+
+	driver, err := controllerApp.Manager.RegisterDriverNode(domain.DriverNode{Name: "driver-stale", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatalf("RegisterDriverNode(): %v", err)
+	}
+	staleAt := time.Now().UTC().Add(-2 * time.Minute)
+	driver.LastHeartbeatAt = &staleAt
+	driver.Status = domain.DriverStatusHealthy
+	if err := controllerApp.Manager.PutDriverNode(driver); err != nil {
+		t.Fatalf("PutDriverNode(): %v", err)
+	}
+
+	bgCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := controllerApp.StartBackground(bgCtx); err != nil {
+		t.Fatalf("StartBackground(): %v", err)
+	}
+
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		loaded, ok := controllerApp.Manager.GetDriverNode(driver.ID)
+		if ok && loaded.Status == domain.DriverStatusUnhealthy {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	loaded, _ := controllerApp.Manager.GetDriverNode(driver.ID)
+	t.Fatalf("expected stale driver to become unhealthy, got %#v", loaded)
+}
+
 func TestCombinedModeProgressesAcrossMultipleStages(t *testing.T) {
 	viewDir, err := filepath.Abs(filepath.Join("..", "..", "web", "templates"))
 	if err != nil {

@@ -60,6 +60,13 @@ func (m *Manager) SweepExpiredLeases(at time.Time) {
 	m.expireLeasesLocked(at)
 }
 
+func (m *Manager) SweepRemoteState(at time.Time) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.expireLeasesLocked(at)
+	m.refreshDriverHealthLocked(at)
+}
+
 func (m *Manager) refreshDriverHealthLocked(now time.Time) {
 	for driverID, driver := range m.drivers {
 		if driver.LastHeartbeatAt == nil {

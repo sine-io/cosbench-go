@@ -143,7 +143,7 @@ func (a *App) StartBackground(ctx context.Context) error {
 					case <-ctx.Done():
 						return
 					case <-ticker.C:
-						a.Manager.SweepExpiredLeases(time.Now().UTC())
+						a.Manager.SweepRemoteState(time.Now().UTC())
 					}
 				}
 			}()
