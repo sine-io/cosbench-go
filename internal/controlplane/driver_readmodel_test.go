@@ -130,3 +130,60 @@ func TestSweepRemoteStateMarksStaleDriverAsUnhealthyWithoutReadPath(t *testing.T
 		t.Fatalf("driver after sweep = %#v", loaded)
 	}
 }
+
+func TestSweepRemoteStateEmitsDriverUnhealthyEventForAffectedJob(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-stale", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := mgr.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="driver-unhealthy-event">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=c(1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.ScheduleJobStage(job.ID); err != nil {
+		t.Fatal(err)
+	}
+	mission, ok, err := mgr.ClaimMission(driver.ID, 30*time.Second)
+	if err != nil || !ok {
+		t.Fatalf("ClaimMission(): mission=%#v ok=%v err=%v", mission, ok, err)
+	}
+
+	staleAt := time.Now().UTC().Add(-2 * driverHeartbeatTimeout)
+	driver.LastHeartbeatAt = &staleAt
+	driver.Status = domain.DriverStatusHealthy
+	if err := mgr.PutDriverNode(driver); err != nil {
+		t.Fatal(err)
+	}
+
+	mgr.SweepRemoteState(time.Now().UTC())
+
+	events := mgr.GetJobEvents(job.ID)
+	count := 0
+	for _, event := range events {
+		if event.Message == "driver driver-stale marked unhealthy by heartbeat timeout" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("driver unhealthy events = %d events=%#v", count, events)
+	}
+}
