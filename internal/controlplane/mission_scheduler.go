@@ -150,6 +150,7 @@ func (m *Manager) expireLeasesLocked(now time.Time) {
 			}
 		}
 		delete(m.missionSamples, missionID)
+		m.appendEventLocked(mission.JobID, domain.EventLevelError, "mission lease expired")
 		_ = m.store.SaveMission(mission)
 		affectedJobs[mission.JobID] = struct{}{}
 	}

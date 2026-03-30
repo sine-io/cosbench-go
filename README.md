@@ -15,6 +15,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The controller-facing closure now includes matrix, config, advanced-config, stage-detail, timeline, timeline CSV, Prometheus, and controller artifact endpoints under the unified Go service
 - The remote split now includes persisted driver/mission state, registration/heartbeat/claim endpoints, a driver agent, combined-mode loopback execution, and a shared bearer token on driver write endpoints
 - The controller runtime now also includes a proactive lease-sweep loop for remote execution, so expired mission leases can be requeued without waiting for a later claim or heartbeat edge
+- Expired remote mission leases now also emit a controller-side job error event (`mission lease expired`), so recovery is visible in job detail and controller-facing logs
 - The controller runtime now also refreshes stale driver health in that same background sweep, so `controller-only` and `combined` modes proactively mark timed-out drivers `unhealthy`
 - The unified service now also includes driver-facing overview, missions, mission detail, workers, and logs pages under `/driver/...`
 - The repository now also includes a local `smoke-remote-local` path that runs one controller-only process, two driver-only processes, and local MinIO to validate remote work-unit execution end-to-end
