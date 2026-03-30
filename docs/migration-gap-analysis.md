@@ -17,6 +17,7 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - stage-level and operation-level result summaries
 - remote driver registration, heartbeat, scheduling, mission claim, mission reporting, and combined-mode loopback execution
 - controller-side proactive lease sweep and automatic mission requeue for expired remote leases
+- controller-side proactive stale-driver health sweep for remote execution
 - local multi-process MinIO smoke for one controller-only and two driver-only processes
 - local and remote happy-path smoke parity across both `s3` and `sio`
 - local recovery smoke parity across both `s3` and `sio`
