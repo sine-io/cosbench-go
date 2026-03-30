@@ -18,27 +18,29 @@ import (
 )
 
 type Config struct {
-	DataDir string
-	ViewDir string
-	Mode    Mode
-	DriverSharedToken string
-	ControllerURL string
-	DriverName string
-	DriverPollInterval time.Duration
-	LeaseSweepInterval time.Duration
+	DataDir                string
+	ViewDir                string
+	Mode                   Mode
+	DriverSharedToken      string
+	ControllerURL          string
+	DriverName             string
+	DriverPollInterval     time.Duration
+	LeaseSweepInterval     time.Duration
+	DriverHeartbeatTimeout time.Duration
 }
 
 type App struct {
-	Mode         Mode
-	Manager      *controlplane.Manager
-	Handler      http.Handler
-	DriverSharedToken string
-	ControllerURL string
-	DriverName string
-	DriverPollInterval time.Duration
-	LeaseSweepInterval time.Duration
-	loopbackAgent *driveragent.Agent
-	backgroundOnce sync.Once
+	Mode                   Mode
+	Manager                *controlplane.Manager
+	Handler                http.Handler
+	DriverSharedToken      string
+	ControllerURL          string
+	DriverName             string
+	DriverPollInterval     time.Duration
+	LeaseSweepInterval     time.Duration
+	DriverHeartbeatTimeout time.Duration
+	loopbackAgent          *driveragent.Agent
+	backgroundOnce         sync.Once
 }
 
 func New(cfg Config) (*App, error) {
@@ -74,6 +76,7 @@ func New(cfg Config) (*App, error) {
 	if leaseSweepInterval <= 0 {
 		leaseSweepInterval = 100 * time.Millisecond
 	}
+	driverHeartbeatTimeout := cfg.DriverHeartbeatTimeout
 	store, err := snapshot.New(dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot store: %w", err)
@@ -85,19 +88,23 @@ func New(cfg Config) (*App, error) {
 	if mode == ModeControllerOnly {
 		manager.SetRemoteScheduling(true)
 	}
+	if driverHeartbeatTimeout > 0 {
+		manager.SetDriverHeartbeatTimeout(driverHeartbeatTimeout)
+	}
 	handler, err := web.NewHandler(manager, viewDir, driverSharedToken)
 	if err != nil {
 		return nil, err
 	}
 	return &App{
-		Mode: mode,
-		Manager: manager,
-		Handler: handler,
-		DriverSharedToken: driverSharedToken,
-		ControllerURL: controllerURL,
-		DriverName: driverName,
-		DriverPollInterval: driverPollInterval,
-		LeaseSweepInterval: leaseSweepInterval,
+		Mode:                   mode,
+		Manager:                manager,
+		Handler:                handler,
+		DriverSharedToken:      driverSharedToken,
+		ControllerURL:          controllerURL,
+		DriverName:             driverName,
+		DriverPollInterval:     driverPollInterval,
+		LeaseSweepInterval:     leaseSweepInterval,
+		DriverHeartbeatTimeout: driverHeartbeatTimeout,
 	}, nil
 }
 
@@ -110,11 +117,11 @@ func (a *App) StartBackground(ctx context.Context) error {
 		case ModeDriverOnly:
 			agent := &driveragent.Agent{
 				Client: &driveragent.HTTPClient{
-					BaseURL: a.ControllerURL,
+					BaseURL:     a.ControllerURL,
 					SharedToken: a.DriverSharedToken,
 				},
-				Name:  a.DriverName,
-				Mode:  domain.DriverModeDriver,
+				Name:   a.DriverName,
+				Mode:   domain.DriverModeDriver,
 				Mirror: a.Manager,
 			}
 			go func() {

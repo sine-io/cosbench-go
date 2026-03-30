@@ -84,7 +84,7 @@ func TestDriverOverviewMarksStaleHeartbeatAsUnhealthy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	staleAt := time.Now().UTC().Add(-2 * driverHeartbeatTimeout)
+	staleAt := time.Now().UTC().Add(-2 * defaultDriverHeartbeatTimeout)
 	driver.LastHeartbeatAt = &staleAt
 	driver.Status = domain.DriverStatusHealthy
 	if err := mgr.PutDriverNode(driver); err != nil {
@@ -113,7 +113,7 @@ func TestSweepRemoteStateMarksStaleDriverAsUnhealthyWithoutReadPath(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	staleAt := time.Now().UTC().Add(-2 * driverHeartbeatTimeout)
+	staleAt := time.Now().UTC().Add(-2 * defaultDriverHeartbeatTimeout)
 	driver.LastHeartbeatAt = &staleAt
 	driver.Status = domain.DriverStatusHealthy
 	if err := mgr.PutDriverNode(driver); err != nil {
@@ -128,6 +128,38 @@ func TestSweepRemoteStateMarksStaleDriverAsUnhealthyWithoutReadPath(t *testing.T
 	}
 	if loaded.Status != domain.DriverStatusUnhealthy {
 		t.Fatalf("driver after sweep = %#v", loaded)
+	}
+}
+
+func TestSweepRemoteStateUsesConfiguredDriverHeartbeatTimeout(t *testing.T) {
+	store, err := snapshot.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr, err := New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mgr.SetDriverHeartbeatTimeout(20 * time.Millisecond)
+	driver, err := mgr.RegisterDriverNode(domain.DriverNode{Name: "driver-stale", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatal(err)
+	}
+	staleAt := time.Now().UTC().Add(-40 * time.Millisecond)
+	driver.LastHeartbeatAt = &staleAt
+	driver.Status = domain.DriverStatusHealthy
+	if err := mgr.PutDriverNode(driver); err != nil {
+		t.Fatal(err)
+	}
+
+	mgr.SweepRemoteState(time.Now().UTC())
+
+	loaded, ok := mgr.GetDriverNode(driver.ID)
+	if !ok {
+		t.Fatal("expected driver")
+	}
+	if loaded.Status != domain.DriverStatusUnhealthy {
+		t.Fatalf("driver after custom-timeout sweep = %#v", loaded)
 	}
 }
 
@@ -167,7 +199,7 @@ func TestSweepRemoteStateEmitsDriverUnhealthyEventForAffectedJob(t *testing.T) {
 		t.Fatalf("ClaimMission(): mission=%#v ok=%v err=%v", mission, ok, err)
 	}
 
-	staleAt := time.Now().UTC().Add(-2 * driverHeartbeatTimeout)
+	staleAt := time.Now().UTC().Add(-2 * defaultDriverHeartbeatTimeout)
 	driver.LastHeartbeatAt = &staleAt
 	driver.Status = domain.DriverStatusHealthy
 	if err := mgr.PutDriverNode(driver); err != nil {

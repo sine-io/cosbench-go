@@ -261,6 +261,75 @@ func TestControllerBackgroundSweepEmitsDriverUnhealthyJobEvent(t *testing.T) {
 	t.Fatalf("expected driver unhealthy event, events=%#v", events)
 }
 
+func TestControllerBackgroundSweepUsesConfiguredDriverHeartbeatTimeoutForJobEvent(t *testing.T) {
+	viewDir, err := filepath.Abs(filepath.Join("..", "..", "web", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	controllerApp, err := New(Config{
+		DataDir:                t.TempDir(),
+		ViewDir:                viewDir,
+		Mode:                   ModeControllerOnly,
+		DriverSharedToken:      "shared-token",
+		LeaseSweepInterval:     10 * time.Millisecond,
+		DriverHeartbeatTimeout: 20 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("New(controller): %v", err)
+	}
+
+	driver, err := controllerApp.Manager.RegisterDriverNode(domain.DriverNode{Name: "driver-stale", Mode: domain.DriverModeDriver})
+	if err != nil {
+		t.Fatalf("RegisterDriverNode(): %v", err)
+	}
+	job, err := controllerApp.Manager.CreateJobFromXML([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<workload name="driver-unhealthy-event-app-custom-timeout">
+  <storage type="mock" />
+  <workflow>
+    <workstage name="main">
+      <work name="main" workers="1" totalOps="1">
+        <operation type="write" ratio="100" config="cprefix=t;containers=c(1);objects=s(1,1);sizes=c(1)KB" />
+      </work>
+    </workstage>
+  </workflow>
+</workload>`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := controllerApp.Manager.ScheduleJobStage(job.ID); err != nil {
+		t.Fatalf("ScheduleJobStage(): %v", err)
+	}
+	if _, ok, err := controllerApp.Manager.ClaimMission(driver.ID, 30*time.Second); err != nil || !ok {
+		t.Fatalf("ClaimMission(): ok=%v err=%v", ok, err)
+	}
+
+	staleAt := time.Now().UTC().Add(-40 * time.Millisecond)
+	driver.LastHeartbeatAt = &staleAt
+	driver.Status = domain.DriverStatusHealthy
+	if err := controllerApp.Manager.PutDriverNode(driver); err != nil {
+		t.Fatalf("PutDriverNode(): %v", err)
+	}
+
+	bgCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := controllerApp.StartBackground(bgCtx); err != nil {
+		t.Fatalf("StartBackground(): %v", err)
+	}
+
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		events := controllerApp.Manager.GetJobEvents(job.ID)
+		for _, event := range events {
+			if event.Message == "driver driver-stale marked unhealthy by heartbeat timeout" {
+				return
+			}
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	events := controllerApp.Manager.GetJobEvents(job.ID)
+	t.Fatalf("expected driver unhealthy event with custom timeout, events=%#v", events)
+}
+
 func TestCombinedModeProgressesAcrossMultipleStages(t *testing.T) {
 	viewDir, err := filepath.Abs(filepath.Join("..", "..", "web", "templates"))
 	if err != nil {

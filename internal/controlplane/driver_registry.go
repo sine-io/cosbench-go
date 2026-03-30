@@ -8,7 +8,7 @@ import (
 	"github.com/sine-io/cosbench-go/internal/domain"
 )
 
-const driverHeartbeatTimeout = 90 * time.Second
+const defaultDriverHeartbeatTimeout = 90 * time.Second
 
 func (m *Manager) RegisterDriverNode(input domain.DriverNode) (domain.DriverNode, error) {
 	name := strings.TrimSpace(input.Name)
@@ -72,7 +72,7 @@ func (m *Manager) refreshDriverHealthLocked(now time.Time) {
 		if driver.LastHeartbeatAt == nil {
 			continue
 		}
-		if now.Sub(*driver.LastHeartbeatAt) <= driverHeartbeatTimeout {
+		if now.Sub(*driver.LastHeartbeatAt) <= m.driverHeartbeatTimeout {
 			continue
 		}
 		if driver.Status == domain.DriverStatusUnhealthy {

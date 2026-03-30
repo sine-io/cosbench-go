@@ -107,11 +107,52 @@ def test_build_summary_can_include_recovery_fields():
         stages_seen=1,
         recovery_observed=True,
         reclaimed_units=1,
-        checks={"recovery_observed": "pass"},
+        lease_expiry_event_observed=True,
+        driver_unhealthy_event_observed=True,
+        checks={
+            "recovery_observed": "pass",
+            "lease_expiry_event": "pass",
+            "driver_unhealthy_event": "pass",
+        },
     )
     assert summary["recovery_observed"] is True
     assert summary["reclaimed_units"] == 1
+    assert summary["lease_expiry_event_observed"] is True
+    assert summary["driver_unhealthy_event_observed"] is True
     json.dumps(summary)
+
+
+def test_recovery_event_flags_detects_expected_events():
+    events = [
+        {"message": "mission lease expired"},
+        {"message": "driver driver-1 marked unhealthy by heartbeat timeout"},
+    ]
+    flags = smoke.recovery_event_flags(events, "driver-1")
+    assert flags == {
+        "lease_expiry_event_observed": True,
+        "driver_unhealthy_event_observed": True,
+    }
+
+
+def test_controller_server_cmd_omits_driver_heartbeat_timeout_for_single_scenario():
+    cmd = smoke.controller_server_cmd(
+        controller_port=19088,
+        controller_data=pathlib.Path("/tmp/controller-data"),
+        shared_token="remote-smoke-token",
+        scenario="single",
+    )
+    assert "-driver-heartbeat-timeout" not in cmd
+
+
+def test_controller_server_cmd_includes_short_driver_heartbeat_timeout_for_recovery():
+    cmd = smoke.controller_server_cmd(
+        controller_port=19088,
+        controller_data=pathlib.Path("/tmp/controller-data"),
+        shared_token="remote-smoke-token",
+        scenario="recovery",
+    )
+    assert "-driver-heartbeat-timeout" in cmd
+    assert "2s" in cmd
 
 
 def test_build_failure_summary_for_missing_process():

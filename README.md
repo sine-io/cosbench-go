@@ -17,6 +17,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The controller runtime now also includes a proactive lease-sweep loop for remote execution, so expired mission leases can be requeued without waiting for a later claim or heartbeat edge
 - Expired remote mission leases now also emit a controller-side job error event (`mission lease expired`), so recovery is visible in job detail and controller-facing logs
 - The controller runtime now also refreshes stale driver health in that same background sweep, so `controller-only` and `combined` modes proactively mark timed-out drivers `unhealthy`
+- That same stale-driver health sweep now also emits a controller-side job error event (`driver <name> marked unhealthy by heartbeat timeout`) for affected claimed or running missions
 - The unified service now also includes driver-facing overview, missions, mission detail, workers, and logs pages under `/driver/...`
 - The repository now also includes a local `smoke-remote-local` path that runs one controller-only process, two driver-only processes, and local MinIO to validate remote work-unit execution end-to-end
 - Remote smoke coverage now spans `single`, `multistage`, and `recovery` scenarios, with `s3` and `sio` parity across the happy-path and recovery surfaces
@@ -45,6 +46,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - Set `SMOKE_REMOTE_LOCAL_BACKEND=sio` when you want the same helper to validate the SIO remote path instead of the default S3 path
 - Set `SMOKE_REMOTE_LOCAL_SCENARIO=multistage` when you want the helper to validate multi-stage remote progression instead of the default single-stage path
 - Set `SMOKE_REMOTE_LOCAL_SCENARIO=recovery` when you want the helper to validate lease-expiry reassignment after one driver disappears
+- That recovery scenario now also validates that controller job events recorded both `mission lease expired` and the stale-driver heartbeat-timeout event before the job recovered
 - Set `SMOKE_REMOTE_LOCAL_BACKEND=sio SMOKE_REMOTE_LOCAL_SCENARIO=recovery` when you want the same recovery validation against the SIO path
 - Run `make --no-print-directory smoke-ready` for a human-readable local/repo readiness summary across local live smoke, remote happy-path workflows, and remote recovery workflows
 - Run `make --no-print-directory smoke-ready-json` for the same readiness view as JSON

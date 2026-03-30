@@ -19,9 +19,11 @@ This document tracks the remaining gaps against the **local-only v1 migration bo
 - controller-side proactive lease sweep and automatic mission requeue for expired remote leases
 - controller-side error-event emission for expired remote mission leases
 - controller-side proactive stale-driver health sweep for remote execution
+- controller-side error-event emission for claimed or running jobs affected by stale-driver heartbeat timeout
 - local multi-process MinIO smoke for one controller-only and two driver-only processes
 - local and remote happy-path smoke parity across both `s3` and `sio`
 - local recovery smoke parity across both `s3` and `sio`
+- local recovery smoke now also validates the controller-side `mission lease expired` and stale-driver heartbeat-timeout events, not just reassignment success
 - dedicated manual GitHub workflows for remote happy-path and recovery smoke
 - non-blocking GitHub workflows for remote happy-path and recovery matrices, including aggregate summaries and aggregate artifacts
 - structured remote smoke and remote recovery summary artifacts, plus aggregate result reporting that `smoke-ready` now consumes directly

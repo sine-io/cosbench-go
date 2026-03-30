@@ -18,34 +18,36 @@ import (
 )
 
 type Manager struct {
-	mu        sync.RWMutex
-	store     *snapshot.Store
-	jobs      map[string]domain.Job
-	results   map[string]domain.JobResult
-	events    map[string][]domain.JobEvent
-	timelines map[string]domain.JobTimeline
-	drivers   map[string]domain.DriverNode
-	workUnits map[string]domain.WorkUnit
-	missions  map[string]domain.Mission
-	missionSamples map[string][]legacyexec.Sample
-	remoteScheduling bool
-	endpoints map[string]domain.EndpointConfig
-	running   map[string]context.CancelFunc
+	mu                     sync.RWMutex
+	store                  *snapshot.Store
+	jobs                   map[string]domain.Job
+	results                map[string]domain.JobResult
+	events                 map[string][]domain.JobEvent
+	timelines              map[string]domain.JobTimeline
+	drivers                map[string]domain.DriverNode
+	workUnits              map[string]domain.WorkUnit
+	missions               map[string]domain.Mission
+	missionSamples         map[string][]legacyexec.Sample
+	driverHeartbeatTimeout time.Duration
+	remoteScheduling       bool
+	endpoints              map[string]domain.EndpointConfig
+	running                map[string]context.CancelFunc
 }
 
 func New(store *snapshot.Store) (*Manager, error) {
 	m := &Manager{
-		store:     store,
-		jobs:      map[string]domain.Job{},
-		results:   map[string]domain.JobResult{},
-		events:    map[string][]domain.JobEvent{},
-		timelines: map[string]domain.JobTimeline{},
-		drivers:   map[string]domain.DriverNode{},
-		workUnits: map[string]domain.WorkUnit{},
-		missions:  map[string]domain.Mission{},
-		missionSamples: map[string][]legacyexec.Sample{},
-		endpoints: map[string]domain.EndpointConfig{},
-		running:   map[string]context.CancelFunc{},
+		store:                  store,
+		jobs:                   map[string]domain.Job{},
+		results:                map[string]domain.JobResult{},
+		events:                 map[string][]domain.JobEvent{},
+		timelines:              map[string]domain.JobTimeline{},
+		drivers:                map[string]domain.DriverNode{},
+		workUnits:              map[string]domain.WorkUnit{},
+		missions:               map[string]domain.Mission{},
+		missionSamples:         map[string][]legacyexec.Sample{},
+		driverHeartbeatTimeout: defaultDriverHeartbeatTimeout,
+		endpoints:              map[string]domain.EndpointConfig{},
+		running:                map[string]context.CancelFunc{},
 	}
 	if err := m.loadSnapshots(); err != nil {
 		return nil, err
@@ -151,15 +153,15 @@ func (m *Manager) CreateJobFromXML(raw []byte, endpointID string) (domain.Job, e
 		return domain.Job{}, err
 	}
 	job := domain.Job{
-		ID:         newID("job"),
-		Name:       workload.Name,
-		Status:     domain.JobStatusCreated,
-		Workload:   workload,
-		RawXML:     string(raw),
-		CreatedAt:  time.Now().UTC(),
+		ID:               newID("job"),
+		Name:             workload.Name,
+		Status:           domain.JobStatusCreated,
+		Workload:         workload,
+		RawXML:           string(raw),
+		CreatedAt:        time.Now().UTC(),
 		ActiveStageIndex: 0,
-		Stages:     domain.NewStageStates(workload),
-		EndpointID: endpointID,
+		Stages:           domain.NewStageStates(workload),
+		EndpointID:       endpointID,
 	}
 	if endpointID != "" {
 		endpoint, ok := m.GetEndpoint(endpointID)

@@ -20,6 +20,16 @@ func (m *Manager) SetRemoteScheduling(enabled bool) {
 	m.remoteScheduling = enabled
 }
 
+func (m *Manager) SetDriverHeartbeatTimeout(timeout time.Duration) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if timeout <= 0 {
+		m.driverHeartbeatTimeout = defaultDriverHeartbeatTimeout
+		return
+	}
+	m.driverHeartbeatTimeout = timeout
+}
+
 func (m *Manager) ListDriverNodes() []domain.DriverNode {
 	m.mu.Lock()
 	m.refreshDriverHealthLocked(time.Now().UTC())

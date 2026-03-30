@@ -31,6 +31,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_GO = os.environ.get("GO", "/snap/bin/go")
 DEFAULT_MINIO_ACCESS_KEY = "minioadmin"
 DEFAULT_MINIO_SECRET_KEY = "minioadmin"
+RECOVERY_DRIVER_HEARTBEAT_TIMEOUT = "2s"
 
 
 def build_summary(
@@ -50,6 +51,8 @@ def build_summary(
     stages_seen,
     recovery_observed=None,
     reclaimed_units=None,
+    lease_expiry_event_observed=None,
+    driver_unhealthy_event_observed=None,
     checks,
 ):
     overall = "pass" if all(value == "pass" for value in checks.values()) else "fail"
@@ -74,6 +77,10 @@ def build_summary(
         summary["recovery_observed"] = recovery_observed
     if reclaimed_units is not None:
         summary["reclaimed_units"] = reclaimed_units
+    if lease_expiry_event_observed is not None:
+        summary["lease_expiry_event_observed"] = lease_expiry_event_observed
+    if driver_unhealthy_event_observed is not None:
+        summary["driver_unhealthy_event_observed"] = driver_unhealthy_event_observed
     return summary
 
 
@@ -103,6 +110,8 @@ def render_summary_md(summary):
         "stages_seen",
         "recovery_observed",
         "reclaimed_units",
+        "lease_expiry_event_observed",
+        "driver_unhealthy_event_observed",
         "overall",
     ]:
         if key in summary:
@@ -294,6 +303,20 @@ def stop_process(proc, log_file):
     log_file.close()
 
 
+def controller_server_cmd(*, controller_port, controller_data, shared_token, scenario):
+    cmd = [
+        DEFAULT_GO, "run", "./cmd/server",
+        "-listen", f"{DEFAULT_HOST}:{controller_port}",
+        "-mode", "controller-only",
+        "-data-dir", str(controller_data),
+        "-view-dir", "web/templates",
+        "-driver-shared-token", shared_token,
+    ]
+    if normalize_scenario(scenario) == "recovery":
+        cmd.extend(["-driver-heartbeat-timeout", RECOVERY_DRIVER_HEARTBEAT_TIMEOUT])
+    return cmd
+
+
 def make_multipart_request(url, field_name, file_path):
     boundary = "----codex-" + uuid.uuid4().hex
     file_name = file_path.name
@@ -358,6 +381,22 @@ def load_json_rows(directory):
     for item in sorted(path.glob("*.json")):
         rows.append(json.loads(item.read_text(encoding="utf-8")))
     return rows
+
+
+def recovery_event_flags(events, driver_name):
+    lease_expiry = False
+    driver_unhealthy = False
+    target = f"driver {driver_name} marked unhealthy by heartbeat timeout"
+    for event in events:
+        message = event.get("message", "")
+        if message == "mission lease expired":
+            lease_expiry = True
+        if message == target:
+            driver_unhealthy = True
+    return {
+        "lease_expiry_event_observed": lease_expiry,
+        "driver_unhealthy_event_observed": driver_unhealthy,
+    }
 
 
 def wait_for_driver_id(controller_data, driver_name, timeout_seconds=20):
@@ -433,14 +472,12 @@ def run_real():
         wait_for_socket(DEFAULT_HOST, minio_port)
 
         controller_proc, controller_log = start_process(
-            [
-                DEFAULT_GO, "run", "./cmd/server",
-                "-listen", f"{DEFAULT_HOST}:{controller_port}",
-                "-mode", "controller-only",
-                "-data-dir", str(controller_data),
-                "-view-dir", "web/templates",
-                "-driver-shared-token", shared_token,
-            ],
+            controller_server_cmd(
+                controller_port=controller_port,
+                controller_data=controller_data,
+                shared_token=shared_token,
+                scenario=scenario,
+            ),
             os.environ.copy(),
             ARTIFACT_DIR / "controller.log",
         )
@@ -543,10 +580,15 @@ def run_real():
                 recovery_claim.get("work_unit_id"),
                 int(recovery_claim.get("attempt", 0)),
             )
+            event_flags = recovery_event_flags(payload.get("events", []), "driver-1")
             checks.update({
                 "recovery_observed": "pass" if reclaimed_units >= 1 else "fail",
+                "lease_expiry_event": "pass" if event_flags["lease_expiry_event_observed"] else "fail",
+                "driver_unhealthy_event": "pass" if event_flags["driver_unhealthy_event_observed"] else "fail",
                 "recovery_job_succeeded": "pass" if payload["job"]["status"] == "succeeded" else "fail",
             })
+        else:
+            event_flags = None
 
         driver_ids = [item["id"] for item in controller_drivers]
         # prove driver APIs are live
@@ -579,6 +621,8 @@ def run_real():
             stages_seen=len(stage_names),
             recovery_observed=(reclaimed_units >= 1 if scenario == "recovery" else None),
             reclaimed_units=reclaimed_units,
+            lease_expiry_event_observed=(event_flags["lease_expiry_event_observed"] if event_flags is not None else None),
+            driver_unhealthy_event_observed=(event_flags["driver_unhealthy_event_observed"] if event_flags is not None else None),
             checks=checks,
         )
         write_summary(summary)

@@ -328,7 +328,7 @@ func TestClaimMissionRejectsStaleUnhealthyDriver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	staleAt := time.Now().UTC().Add(-2 * driverHeartbeatTimeout)
+	staleAt := time.Now().UTC().Add(-2 * defaultDriverHeartbeatTimeout)
 	staleDriver.LastHeartbeatAt = &staleAt
 	staleDriver.Status = domain.DriverStatusHealthy
 	if err := mgr.PutDriverNode(staleDriver); err != nil {
