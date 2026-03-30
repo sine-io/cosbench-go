@@ -88,7 +88,7 @@ Go re-implementation of COSBench with behavioral compatibility focused on the ac
 - The latest verified GitHub-hosted `Smoke S3` run is `23721784622`, and it still uploaded a structured summary with `result=skipped`
 - The latest verified GitHub-hosted `Smoke S3 Matrix` run is `23721785194`, and its aggregate artifact still reports both `s3` and `sio` rows as `skipped`
 - The latest verified GitHub-hosted `Remote Smoke Matrix` run is `23721783308`, and its aggregate artifact still reports all four supported combinations as passing
-- The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23723374807`, and its aggregate artifact still reports both recovery backends as passing
+- The latest verified GitHub-hosted `Remote Smoke Recovery Matrix` run is `23726248808`, and its aggregate artifact reports both recovery backends as passing with `lease_expiry_event=pass` and `driver_unhealthy_event=pass`
 - Run `GO=$(which go || echo /snap/bin/go) make smoke-s3`
 - Required env:
   - `COSBENCH_SMOKE_ENDPOINT`
