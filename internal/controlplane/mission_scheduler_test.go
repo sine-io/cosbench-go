@@ -222,6 +222,16 @@ func TestSweepExpiredLeasesRequeuesWithoutNewClaim(t *testing.T) {
 	if len(units) != 1 || units[0].Status != domain.WorkUnitStatusPending {
 		t.Fatalf("units after sweep = %#v", units)
 	}
+	events := mgr.GetJobEvents(job.ID)
+	count := 0
+	for _, event := range events {
+		if event.Message == "mission lease expired" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("mission lease expired events = %d events=%#v", count, events)
+	}
 }
 
 func TestMissionReportingIsIdempotentPerBatch(t *testing.T) {
