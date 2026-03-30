@@ -80,6 +80,23 @@ func (m *Manager) refreshDriverHealthLocked(now time.Time) {
 		}
 		driver.Status = domain.DriverStatusUnhealthy
 		m.drivers[driverID] = driver
+		affectedJobs := map[string]struct{}{}
+		for _, mission := range m.missions {
+			if mission.Lease == nil {
+				continue
+			}
+			if mission.Lease.DriverID != driverID {
+				continue
+			}
+			if mission.Status != domain.MissionStatusClaimed && mission.Status != domain.MissionStatusRunning {
+				continue
+			}
+			affectedJobs[mission.JobID] = struct{}{}
+		}
+		for jobID := range affectedJobs {
+			m.appendEventLocked(jobID, domain.EventLevelError, "driver "+driver.Name+" marked unhealthy by heartbeat timeout")
+			m.persistLocked(jobID)
+		}
 		_ = m.store.SaveDriverNode(driver)
 	}
 }
